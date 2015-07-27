@@ -23,7 +23,6 @@ package com.uber.tchannel.messages;
 
 import java.util.Optional;
 
-
 public enum MessageType {
 
     InitRequest((byte) 0x01),

@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public class InitMessageCodec extends MessageToMessageCodec<TFrame, AbstractInitMessage> {
     @Override
     protected void encode(ChannelHandlerContext ctx, AbstractInitMessage msg, List<Object> out) throws Exception {
@@ -74,7 +73,6 @@ public class InitMessageCodec extends MessageToMessageCodec<TFrame, AbstractInit
                 out.add(new InitResponse(frame.id, version, hostPort, processName));
                 break;
         }
-
 
     }
 

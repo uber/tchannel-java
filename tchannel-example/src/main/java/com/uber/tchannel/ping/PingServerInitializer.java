@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.ping;
 
-
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.framing.TFrame;
@@ -33,10 +32,19 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 public class PingServerInitializer extends ChannelInitializer<SocketChannel> {
     @Override
     public void initChannel(SocketChannel ch) throws Exception {
-        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true)); // Translates TCP Streams to Raw Frames
-        ch.pipeline().addLast(new TFrameCodec()); // Translates Raw Frames into TFrames
-        ch.pipeline().addLast(new MessageCodec()); // Translates TFrames into Messages
-        ch.pipeline().addLast(new InitRequestHandler()); // Handles Protocol Handshake
-        ch.pipeline().addLast(new PingServerHandler()); // Responds to PingRequests with PingResponses
+        // Translates TCP Streams to Raw Frames
+        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true));
+
+        // Translates Raw Frames into TFrames
+        ch.pipeline().addLast(new TFrameCodec());
+
+        // Translates TFrames into Messages
+        ch.pipeline().addLast(new MessageCodec());
+
+        // Handles Protocol Handshake
+        ch.pipeline().addLast(new InitRequestHandler());
+
+        // Responds to PingRequests with PingResponses
+        ch.pipeline().addLast(new PingServerHandler());
     }
 }

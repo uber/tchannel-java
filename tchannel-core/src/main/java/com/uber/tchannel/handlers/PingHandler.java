@@ -26,7 +26,6 @@ import com.uber.tchannel.messages.PingResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-
 public class PingHandler extends SimpleChannelInboundHandler<PingRequest> {
 
     @Override

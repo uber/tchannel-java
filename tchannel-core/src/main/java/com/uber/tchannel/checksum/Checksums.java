@@ -26,11 +26,10 @@ import com.uber.tchannel.messages.AbstractCallMessage;
 import java.util.List;
 import java.util.zip.Adler32;
 
-public class Checksums {
+public final class Checksums {
     public static boolean verifyChecksum(AbstractCallMessage msg) {
         return (calculateChecksum(msg) == msg.getChecksum());
     }
-
 
     public static boolean verifyChecksum(List<AbstractCallMessage> messageList) {
 
@@ -78,6 +77,5 @@ public class Checksums {
 
         return checksum;
     }
-
 
 }

@@ -64,7 +64,6 @@ public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessag
                     callRequest.getArg3()
             ));
 
-
         } else if (msg instanceof CallRequestContinue) {
 
             CallRequestContinue callRequestContinue = (CallRequestContinue) msg;
@@ -83,7 +82,6 @@ public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessag
 
             this.messageMap.replace(messageId, updatedFullMessage);
 
-
         }
 
         if (!msg.moreFragmentsRemain()) {
@@ -92,6 +90,5 @@ public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessag
         }
 
     }
-
 
 }

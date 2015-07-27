@@ -38,5 +38,4 @@ public abstract class AbstractMessage implements Message {
         return this.messageType;
     }
 
-
 }

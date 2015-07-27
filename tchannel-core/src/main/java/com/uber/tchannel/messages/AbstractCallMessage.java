@@ -30,7 +30,8 @@ public abstract class AbstractCallMessage extends AbstractMessage {
 
     private final byte flags;
     private final byte checksumType;
-    private final int checksum; // TODO: `checksums` are optional, can be removed for possible perf. wins.. //
+    // TODO: `checksums` are optional, can be removed for possible perf. wins.. //
+    private final int checksum;
     private ByteBuf arg1;
     private ByteBuf arg2;
     private ByteBuf arg3;

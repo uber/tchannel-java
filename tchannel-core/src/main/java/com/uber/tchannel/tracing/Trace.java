@@ -26,9 +26,14 @@ public class Trace {
     public static final int TRACING_HEADER_LENGTH = 25;
     private static final byte TRACING_ENABLED_MASK = (byte) 0x01;
 
-    public final long spanId; // Unsigned
-    public final long parentId; // Unsigned
-    public final long traceId; // Unsigned
+    // Unsigned
+    public final long spanId;
+
+    // Unsigned
+    public final long parentId;
+
+    // Unsigned
+    public final long traceId;
     public final byte traceFlags;
 
     public Trace(long spanId, long parentId, long traceId, byte traceFlags) {
