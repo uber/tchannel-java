@@ -162,11 +162,9 @@ public class CallRequestCodec extends MessageToMessageCodec<TFrame, AbstractCall
 
     }
 
-
     private int bytesRemaining(ByteBuf buffer, TFrame frame) {
         return frame.size - buffer.readerIndex();
     }
-
 
     private ByteBuf processBuffer(ByteBuf buffer, TFrame frame) {
 
@@ -237,7 +235,6 @@ public class CallRequestCodec extends MessageToMessageCodec<TFrame, AbstractCall
             default:
                 throw new RuntimeException(String.format("Unexpected 'DefragmentationState': %s", currentState));
         }
-
 
     }
 

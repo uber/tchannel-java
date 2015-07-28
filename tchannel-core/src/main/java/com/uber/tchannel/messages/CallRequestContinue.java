@@ -24,7 +24,8 @@ package com.uber.tchannel.messages;
 import io.netty.buffer.ByteBuf;
 
 public class CallRequestContinue extends AbstractCallMessage {
-    public CallRequestContinue(long id, byte flags, byte checksumType, int checksum, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    public CallRequestContinue(long id, byte flags, byte checksumType, int checksum, ByteBuf arg1, ByteBuf arg2,
+                               ByteBuf arg3) {
         super(id, MessageType.CallRequestContinue, flags, checksumType, checksum, arg1, arg2, arg3);
     }
 }

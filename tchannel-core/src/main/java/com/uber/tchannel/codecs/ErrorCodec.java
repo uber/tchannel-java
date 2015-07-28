@@ -54,7 +54,6 @@ public class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorMessage> {
         // code:1
         ErrorMessage.ErrorType type = ErrorMessage.ErrorType.fromByte(frame.payload.readByte()).get();
 
-
         // tracing:25
         Trace tracing = CodecUtils.decodeTrace(frame.payload);
 

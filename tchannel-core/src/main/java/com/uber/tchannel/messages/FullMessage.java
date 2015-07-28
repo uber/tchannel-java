@@ -34,7 +34,6 @@ public class FullMessage implements Message {
     private final ByteBuf arg2;
     private final ByteBuf arg3;
 
-
     public FullMessage(long id, Map<String, String> headers, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
         this.headers = headers;

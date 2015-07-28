@@ -21,7 +21,11 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.messages.*;
+import com.uber.tchannel.messages.AbstractInitMessage;
+import com.uber.tchannel.messages.AbstractMessage;
+import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.messages.InitResponse;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -29,7 +33,6 @@ import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 
 public class InitRequestHandler extends ChannelHandlerAdapter {
-
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object object) throws Exception {
@@ -73,6 +76,5 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
 
         }
     }
-
 
 }

@@ -26,7 +26,6 @@ import io.netty.buffer.ByteBuf;
 
 public class TFrame {
 
-
     public static final int MAX_FRAME_LENGTH = 65536;
     public static final int FRAME_HEADER_LENGTH = 16;
 
@@ -34,7 +33,6 @@ public class TFrame {
     public final byte type;
     public final long id;
     public final ByteBuf payload;
-
 
     public TFrame(int size, byte type, long id, ByteBuf payload) {
         this.size = size;

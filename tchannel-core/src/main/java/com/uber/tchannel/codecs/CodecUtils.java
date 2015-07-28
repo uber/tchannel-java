@@ -27,8 +27,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CodecUtils {
-
+public final class CodecUtils {
 
     public static String decodeString(ByteBuf inBuf) {
         int valueLength = inBuf.readUnsignedShort();
@@ -131,7 +130,6 @@ public class CodecUtils {
         inBuf.readBytes(outBytes);
         return outBytes;
     }
-
 
     public static void encodeArg(byte[] arg, ByteBuf outBuf) {
         outBuf.writeShort((short) arg.length);

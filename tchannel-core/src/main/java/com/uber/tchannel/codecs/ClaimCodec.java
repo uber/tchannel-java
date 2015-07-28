@@ -33,7 +33,8 @@ import java.util.List;
 public class ClaimCodec extends MessageToMessageCodec<TFrame, Claim> {
     @Override
     protected void encode(ChannelHandlerContext ctx, Claim msg, List<Object> out) throws Exception {
-        ByteBuf buffer = ctx.alloc().buffer(Trace.TRACING_HEADER_LENGTH + Integer.BYTES); // Tracing + TTL
+
+        ByteBuf buffer = ctx.alloc().buffer(Trace.TRACING_HEADER_LENGTH + Integer.BYTES);
 
         // ttl: 4
         buffer.writeInt((int) msg.getTtl());

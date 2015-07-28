@@ -54,5 +54,4 @@ public enum ChecksumType {
         return this.type;
     }
 
-
 }

@@ -22,6 +22,6 @@
 
 package com.uber.tchannel.messages;
 
-public interface Message {
-    public long getId();
+interface Message {
+    long getId();
 }

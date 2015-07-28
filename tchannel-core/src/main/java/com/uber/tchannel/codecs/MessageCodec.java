@@ -22,7 +22,14 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.*;
+import com.uber.tchannel.messages.AbstractMessage;
+import com.uber.tchannel.messages.CallRequest;
+import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.messages.InitResponse;
+import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.messages.PingRequest;
+import com.uber.tchannel.messages.PingResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
