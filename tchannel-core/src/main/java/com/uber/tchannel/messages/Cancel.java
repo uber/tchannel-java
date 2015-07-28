@@ -27,13 +27,13 @@ public class Cancel extends AbstractMessage {
 
     private final long ttl;
     private final Trace tracing;
-    private final String message;
+    private final String why;
 
-    public Cancel(long id, long ttl, Trace tracing, String message) {
+    public Cancel(long id, long ttl, Trace tracing, String why) {
         super(id, MessageType.Cancel);
         this.ttl = ttl;
         this.tracing = tracing;
-        this.message = message;
+        this.why = why;
     }
 
     public long getTtl() {
@@ -44,7 +44,7 @@ public class Cancel extends AbstractMessage {
         return tracing;
     }
 
-    public String getMessage() {
-        return message;
+    public String getWhy() {
+        return why;
     }
 }

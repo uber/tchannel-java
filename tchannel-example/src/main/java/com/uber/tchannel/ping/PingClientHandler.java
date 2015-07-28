@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.ping;
 
+import com.uber.tchannel.messages.AbstractInitMessage;
 import com.uber.tchannel.messages.AbstractMessage;
 import com.uber.tchannel.messages.ErrorMessage;
 import com.uber.tchannel.messages.InitRequest;
@@ -32,11 +33,21 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 
+import java.util.HashMap;
+
 public class PingClientHandler extends ChannelHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        InitRequest initRequest = new InitRequest(42, InitRequest.DEFAULT_VERSION, "0.0.0.0:0", "test-process");
+        InitRequest initRequest = new InitRequest(42,
+                AbstractInitMessage.DEFAULT_VERSION,
+                new HashMap<String, String>() {
+                    {
+                        put(AbstractInitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                        put(AbstractInitMessage.PROCESS_NAME_KEY, "test-process");
+                    }
+                }
+        );
         ChannelFuture f = ctx.writeAndFlush(initRequest);
         f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }

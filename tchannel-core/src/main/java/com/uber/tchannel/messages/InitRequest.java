@@ -21,10 +21,17 @@
  */
 package com.uber.tchannel.messages;
 
+import java.util.Map;
+
+/**
+ * This must be the first message sent on a new connection. It is used to negotiate a common protocol version
+ * and describe the service names on both ends. In the future, we will likely use this to negotiate authentication
+ * and authorization between services.
+ */
 public class InitRequest extends AbstractInitMessage {
 
-    public InitRequest(long id, int version, String hostPort, String processName) {
-        super(id, MessageType.InitRequest, version, hostPort, processName);
+    public InitRequest(long id, int version, Map<String, String> headers) {
+        super(id, MessageType.InitRequest, version, headers);
     }
 
 }

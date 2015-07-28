@@ -21,20 +21,21 @@
  */
 package com.uber.tchannel.messages;
 
+import java.util.Map;
+
 public abstract class AbstractInitMessage extends AbstractMessage {
     public static final int DEFAULT_VERSION = 2;
+    public static final String DEFAULT_HOST_PORT = "0.0.0.0:0";
     public static final String HOST_PORT_KEY = "host_port";
     public static final String PROCESS_NAME_KEY = "process_name";
 
-    private final int version;
-    private final String hostPort;
-    private final String processName;
+    protected final int version;
+    protected final Map<String, String> headers;
 
-    public AbstractInitMessage(long id, MessageType messageType, int version, String hostPort, String processName) {
+    public AbstractInitMessage(long id, MessageType messageType, int version, Map<String, String> headers) {
         super(id, messageType);
         this.version = version;
-        this.hostPort = hostPort;
-        this.processName = processName;
+        this.headers = headers;
     }
 
     @Override
@@ -42,22 +43,58 @@ public abstract class AbstractInitMessage extends AbstractMessage {
         return String.format(
                 "<%s id=%d version=%d hostPort=%s processName=%s>",
                 this.getClass().getCanonicalName(),
-                this.getId(),
+                this.id,
                 this.version,
-                this.hostPort,
-                this.processName
+                this.getHostPort(),
+                this.getProcessName()
         );
     }
 
+    /**
+     * version is a 16 bit number. The currently specified protocol version is 2.
+     * If new versions are required, this is where a common version can be negotiated.
+     *
+     * @return 16-bit unsigned integer representing the specified protocol version.
+     */
     public int getVersion() {
         return version;
     }
 
-    public String getHostPort() {
-        return hostPort;
+    /**
+     * There are a variable number of key/value pairs. For version 2, the following are required:
+     * <p>
+     * host_port: where this process can be reached. format: address:port
+     * process_name: additional identifier for this instance, used for logging. format: arbitrary string
+     *
+     * @return Map of headers
+     */
+    public Map<String, String> getHeaders() {
+        return headers;
     }
 
+    /**
+     * Where the sending process can be reached.
+     * <p>
+     * Key: host_port
+     * Format: address:port
+     * Protocol Description: where this process can be reached
+     *
+     * @return the `host_port` key for the `headers` member.
+     */
+    public String getHostPort() {
+        return this.headers.get(HOST_PORT_KEY);
+    }
+
+    /**
+     * An additional process identifier for the sending process, used for logging.
+     * <p>
+     * Key: process_name
+     * Format: arbitrary string
+     * Protocol Description: additional identifier for this instance, used for logging
+     *
+     * @return the `process_name` key for the `headers` member.
+     */
     public String getProcessName() {
-        return processName;
+        return this.headers.get(PROCESS_NAME_KEY);
     }
 }

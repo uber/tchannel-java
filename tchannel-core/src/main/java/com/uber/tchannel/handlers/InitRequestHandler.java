@@ -48,8 +48,7 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
                     ctx.writeAndFlush(new InitResponse(
                             initRequestMessage.getId(),
                             AbstractInitMessage.DEFAULT_VERSION,
-                            initRequestMessage.getHostPort(),
-                            initRequestMessage.getProcessName()
+                            initRequestMessage.getHeaders()
                     ));
                     ctx.pipeline().remove(this);
                 } else {
