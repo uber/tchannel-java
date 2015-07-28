@@ -26,6 +26,20 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.Map;
 
+/**
+ * This is the primary RPC mechanism. The triple of (arg1, arg2, arg3) is sent to "service" via the remote end
+ * of this connection.
+ * <p>
+ * Whether connecting directly to a service or through a service router, the service name is always specified.
+ * This supports an explicit router model as well as peers electing to delegate some requests to another service.
+ * <p>
+ * A forwarding intermediary can relay payloads without understanding the contents of the args triple.
+ * <p>
+ * A {@link CallRequest} may be fragmented across multiple frames. If so, the first frame is a {@link CallRequest},
+ * and all subsequent frames are {@link CallRequestContinue} frames.
+ * <p>
+ * The size of arg1 is at most 16KiB.
+ */
 public class CallRequest extends AbstractCallMessage {
 
     private final long ttl;
@@ -33,9 +47,9 @@ public class CallRequest extends AbstractCallMessage {
     private final String service;
     private final Map<String, String> headers;
 
-    public CallRequest(long id, byte flags, long ttl, Trace tracing, String service,
-                       Map<String, String> headers, byte checksumType, int checksum,
-                       ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    public CallRequest(long id, byte flags, long ttl, Trace tracing, String service, Map<String, String> headers,
+                       byte checksumType, int checksum, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+
         super(id, MessageType.CallRequest, flags, checksumType, checksum, arg1, arg2, arg3);
         this.ttl = ttl;
         this.service = service;

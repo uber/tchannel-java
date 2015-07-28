@@ -23,11 +23,14 @@ package com.uber.tchannel.codecs;
  */
 
 import com.uber.tchannel.framing.TFrame;
+import com.uber.tchannel.messages.AbstractInitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.junit.Test;
+
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +45,14 @@ public class InitMessageCodecTest {
                 new InitMessageCodec()
         );
 
-        InitRequest initReq = new InitRequest(42, InitRequest.DEFAULT_VERSION, "0.0.0.0:0", "test-process");
+        InitRequest initReq = new InitRequest(
+                42,
+                InitRequest.DEFAULT_VERSION,
+                new HashMap<String, String>() {{
+                    put(AbstractInitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(AbstractInitMessage.PROCESS_NAME_KEY, "test-process");
+                }}
+        );
 
         channel.writeOutbound(initReq);
         channel.writeInbound(channel.readOutbound());
@@ -65,7 +75,14 @@ public class InitMessageCodecTest {
                 new InitMessageCodec()
         );
 
-        InitResponse initResponse = new InitResponse(42, InitRequest.DEFAULT_VERSION, "0.0.0.0:0", "test-process");
+        InitResponse initResponse = new InitResponse(
+                42,
+                InitRequest.DEFAULT_VERSION,
+                new HashMap<String, String>() {{
+                    put(AbstractInitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(AbstractInitMessage.PROCESS_NAME_KEY, "test-process");
+                }}
+        );
 
         channel.writeOutbound(initResponse);
         channel.writeInbound(channel.readOutbound());

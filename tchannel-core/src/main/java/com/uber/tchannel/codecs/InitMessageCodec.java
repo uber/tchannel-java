@@ -30,7 +30,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,10 +44,7 @@ public class InitMessageCodec extends MessageToMessageCodec<TFrame, AbstractInit
         buffer.writeShort(msg.getVersion());
 
         // nh:2 (key~2 value~2){nh}
-        Map<String, String> headers = new HashMap<String, String>();
-        headers.put(AbstractInitMessage.HOST_PORT_KEY, msg.getHostPort());
-        headers.put(AbstractInitMessage.PROCESS_NAME_KEY, msg.getProcessName());
-        CodecUtils.encodeHeaders(headers, buffer);
+        CodecUtils.encodeHeaders(msg.getHeaders(), buffer);
 
         TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
         out.add(frame);
@@ -60,17 +56,14 @@ public class InitMessageCodec extends MessageToMessageCodec<TFrame, AbstractInit
         int version = frame.payload.readUnsignedShort();
 
         Map<String, String> headers = CodecUtils.decodeHeaders(frame.payload);
-        String hostPort = headers.get(AbstractInitMessage.HOST_PORT_KEY);
-        String processName = headers.get(AbstractInitMessage.PROCESS_NAME_KEY);
-
         MessageType type = MessageType.fromByte(frame.type).get();
 
         switch (type) {
             case InitRequest:
-                out.add(new InitRequest(frame.id, version, hostPort, processName));
+                out.add(new InitRequest(frame.id, version, headers));
                 break;
             case InitResponse:
-                out.add(new InitResponse(frame.id, version, hostPort, processName));
+                out.add(new InitResponse(frame.id, version, headers));
                 break;
         }
 

@@ -22,13 +22,18 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.Fixtures;
-import com.uber.tchannel.messages.*;
+import com.uber.tchannel.messages.AbstractInitMessage;
+import com.uber.tchannel.messages.CallRequest;
+import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.messages.InitResponse;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.HashMap;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -48,7 +53,15 @@ public class InitRequestHandlerTest {
 
         assertEquals(channel.pipeline().names().size(), 3);
 
-        InitRequest initRequest = new InitRequest(42, AbstractInitMessage.DEFAULT_VERSION, "0.0.0.0:0", "test-process");
+        InitRequest initRequest = new InitRequest(
+                42,
+                AbstractInitMessage.DEFAULT_VERSION,
+                new HashMap<String, String>() {{
+                    put(AbstractInitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(AbstractInitMessage.PROCESS_NAME_KEY, "test-process");
+                }}
+        );
+
         channel.writeInbound(initRequest);
         channel.writeOutbound(channel.readInbound());
 
@@ -83,7 +96,14 @@ public class InitRequestHandlerTest {
         );
 
 
-        InitRequest initRequest = new InitRequest(42, AbstractInitMessage.DEFAULT_VERSION, "0.0.0.0:0", "test-process");
+        InitRequest initRequest = new InitRequest(42,
+                AbstractInitMessage.DEFAULT_VERSION,
+                new HashMap<String, String>() {{
+                    put(AbstractInitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(AbstractInitMessage.PROCESS_NAME_KEY, "test-process");
+                }}
+        );
+
         channel.writeInbound(initRequest);
         channel.writeOutbound(channel.readInbound());
 

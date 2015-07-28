@@ -21,10 +21,17 @@
  */
 package com.uber.tchannel.messages;
 
+import java.util.Map;
+
+/**
+ * Similar to {@link InitRequest}. The initiator requests a version number, and the server responds with the
+ * actual version that will be used for the rest of this connection. The header name/values are the same,
+ * but identify the server.
+ */
 public class InitResponse extends AbstractInitMessage {
 
-    public InitResponse(long id, int version, String hostPort, String processName) {
-        super(id, MessageType.InitResponse, version, hostPort, processName);
+    public InitResponse(long id, int version, Map<String, String> headers) {
+        super(id, MessageType.InitResponse, version, headers);
     }
 
 }

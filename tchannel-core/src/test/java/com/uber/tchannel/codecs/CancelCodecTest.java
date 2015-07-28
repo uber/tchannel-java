@@ -50,7 +50,7 @@ public class CancelCodecTest {
         assertEquals(cancel.getTtl(), newCancel.getTtl());
         assertTrue(newCancel.getTtl() > 0);
         assertEquals(cancel.getTracing().traceId, newCancel.getTracing().traceId);
-        assertEquals(cancel.getMessage(), newCancel.getMessage());
+        assertEquals(cancel.getWhy(), newCancel.getWhy());
 
     }
 

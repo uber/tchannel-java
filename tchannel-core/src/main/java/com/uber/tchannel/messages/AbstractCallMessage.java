@@ -28,16 +28,17 @@ public abstract class AbstractCallMessage extends AbstractMessage {
     public static final int MAX_ARG1_LENGTH = 16384;
     public static final byte MORE_FRAGMENTS_TO_FOLLOW_MASK = (byte) 0x01;
 
-    private final byte flags;
-    private final byte checksumType;
+    protected final byte flags;
+    protected final byte checksumType;
     // TODO: `checksums` are optional, can be removed for possible perf. wins.. //
-    private final int checksum;
-    private ByteBuf arg1;
-    private ByteBuf arg2;
-    private ByteBuf arg3;
+    protected final int checksum;
+    protected ByteBuf arg1;
+    protected ByteBuf arg2;
+    protected ByteBuf arg3;
 
     public AbstractCallMessage(long id, MessageType messageType, byte flags, byte checksumType, int checksum,
                                ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+
         super(id, messageType);
         this.flags = flags;
         this.checksumType = checksumType;
