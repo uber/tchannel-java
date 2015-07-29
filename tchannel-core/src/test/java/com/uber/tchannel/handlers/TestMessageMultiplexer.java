@@ -64,7 +64,7 @@ public class TestMessageMultiplexer {
 
         assertEquals(
                 ByteBufUtil.hexDump(fullMessage.getArg1()),
-                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg1arg1arg1".getBytes()))
+                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg1".getBytes()))
         );
 
         assertEquals(

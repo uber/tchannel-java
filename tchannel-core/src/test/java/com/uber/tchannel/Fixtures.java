@@ -67,7 +67,6 @@ public class Fixtures {
                 (byte) 0x00,
                 (byte) 0x00,
                 0,
-                Unpooled.wrappedBuffer("arg1".getBytes()),
                 Unpooled.wrappedBuffer("arg2".getBytes()),
                 Unpooled.wrappedBuffer("arg3".getBytes())
         );
@@ -79,7 +78,6 @@ public class Fixtures {
                 AbstractCallMessage.MORE_FRAGMENTS_TO_FOLLOW_MASK,
                 (byte) 0x00,
                 0,
-                Unpooled.wrappedBuffer("arg1".getBytes()),
                 Unpooled.wrappedBuffer("arg2".getBytes()),
                 Unpooled.wrappedBuffer("arg3".getBytes())
         );

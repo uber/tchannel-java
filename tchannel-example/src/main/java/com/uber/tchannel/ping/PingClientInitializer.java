@@ -32,9 +32,16 @@ public class PingClientInitializer extends ChannelInitializer<SocketChannel> {
 
     @Override
     public void initChannel(SocketChannel ch) throws Exception {
+        // Translates TCP Streams to Raw Frames
         ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true));
+
+        // Translates Raw Frames into TFrames
         ch.pipeline().addLast(new TFrameCodec());
+
+        // Translates TFrames into Messages
         ch.pipeline().addLast(new MessageCodec());
+
+        // Fires off a series of messages to test the Server
         ch.pipeline().addLast(new PingClientHandler());
     }
 
