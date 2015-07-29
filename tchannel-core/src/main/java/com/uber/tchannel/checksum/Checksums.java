@@ -21,43 +21,28 @@
  */
 package com.uber.tchannel.checksum;
 
-import com.uber.tchannel.messages.AbstractCallMessage;
+import com.uber.tchannel.messages.CallMessage;
 
-import java.util.List;
 import java.util.zip.Adler32;
 
 public final class Checksums {
-    public static boolean verifyChecksum(AbstractCallMessage msg) {
+    public static boolean verifyChecksum(CallMessage msg) {
         return (calculateChecksum(msg) == msg.getChecksum());
     }
 
-    public static boolean verifyChecksum(List<AbstractCallMessage> messageList) {
-
-        long checksum = 0L;
-
-        for (AbstractCallMessage msg : messageList) {
-            checksum = calculateChecksum(msg, checksum);
-            if (checksum != msg.getChecksum()) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public static boolean verifyExistingChecksum(AbstractCallMessage msg, long checksum) {
+    public static boolean verifyExistingChecksum(CallMessage msg, long checksum) {
         return (msg.getChecksum() == checksum);
     }
 
-    public static long calculateChecksum(AbstractCallMessage msg) {
+    public static long calculateChecksum(CallMessage msg) {
         return calculateChecksum(msg, 0L);
     }
 
-    public static long calculateChecksum(AbstractCallMessage msg, long digestSeed) {
+    public static long calculateChecksum(CallMessage msg, long digestSeed) {
 
         long checksum;
 
-        switch (ChecksumType.fromByte(msg.getChecksumType()).get()) {
+        switch (msg.getChecksumType()) {
 
             case Adler32:
                 Adler32 f = new Adler32();

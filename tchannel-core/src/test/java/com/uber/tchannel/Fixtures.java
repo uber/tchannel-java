@@ -21,7 +21,8 @@
  */
 package com.uber.tchannel;
 
-import com.uber.tchannel.messages.AbstractCallMessage;
+import com.uber.tchannel.checksum.ChecksumType;
+import com.uber.tchannel.messages.CallMessage;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
 import io.netty.buffer.Unpooled;
@@ -36,7 +37,7 @@ public class Fixtures {
                 null,
                 null,
                 null,
-                (byte) 0x00,
+                ChecksumType.NoChecksum,
                 0,
                 Unpooled.wrappedBuffer("arg1".getBytes()),
                 Unpooled.wrappedBuffer("arg2".getBytes()),
@@ -47,12 +48,12 @@ public class Fixtures {
     public static CallRequest callRequestWithIdAndMoreFragments(long id) {
         return new CallRequest(
                 id,
-                AbstractCallMessage.MORE_FRAGMENTS_TO_FOLLOW_MASK,
+                CallMessage.MORE_FRAGMENTS_REMAIN_MASK,
                 0L,
                 null,
                 null,
                 null,
-                (byte) 0x00,
+                ChecksumType.NoChecksum,
                 0,
                 Unpooled.wrappedBuffer("arg1".getBytes()),
                 Unpooled.wrappedBuffer("arg2".getBytes()),
@@ -65,7 +66,7 @@ public class Fixtures {
         return new CallRequestContinue(
                 id,
                 (byte) 0x00,
-                (byte) 0x00,
+                ChecksumType.NoChecksum,
                 0,
                 Unpooled.wrappedBuffer("arg2".getBytes()),
                 Unpooled.wrappedBuffer("arg3".getBytes())
@@ -75,8 +76,8 @@ public class Fixtures {
     public static CallRequestContinue callRequestContinueWithIdAndMoreFragments(long id) {
         return new CallRequestContinue(
                 id,
-                AbstractCallMessage.MORE_FRAGMENTS_TO_FOLLOW_MASK,
-                (byte) 0x00,
+                CallMessage.MORE_FRAGMENTS_REMAIN_MASK,
+                ChecksumType.NoChecksum,
                 0,
                 Unpooled.wrappedBuffer("arg2".getBytes()),
                 Unpooled.wrappedBuffer("arg3".getBytes())

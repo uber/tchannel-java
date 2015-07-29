@@ -21,11 +21,11 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.messages.AbstractInitMessage;
-import com.uber.tchannel.messages.AbstractMessage;
 import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
+import com.uber.tchannel.messages.Message;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -37,17 +37,17 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object object) throws Exception {
 
-        AbstractMessage message = (AbstractMessage) object;
+        Message message = (Message) object;
 
         switch (message.getMessageType()) {
 
             case InitRequest:
                 InitRequest initRequestMessage = (InitRequest) message;
 
-                if (initRequestMessage.getVersion() == AbstractInitMessage.DEFAULT_VERSION) {
+                if (initRequestMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
                     ctx.writeAndFlush(new InitResponse(
                             initRequestMessage.getId(),
-                            AbstractInitMessage.DEFAULT_VERSION,
+                            InitMessage.DEFAULT_VERSION,
                             initRequestMessage.getHeaders()
                     ));
                     ctx.pipeline().remove(this);
@@ -56,7 +56,7 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
                             message.getId(),
                             ErrorMessage.ErrorType.FatalProtocolError,
                             new Trace(0, 0, 0, (byte) 0x00),
-                            String.format("Expected Protocol version: %d", AbstractInitMessage.DEFAULT_VERSION)
+                            String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION)
                     ));
                     versionErrorFuture.addListener(ChannelFutureListener.CLOSE);
                 }

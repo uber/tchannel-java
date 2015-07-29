@@ -21,11 +21,63 @@
  */
 package com.uber.tchannel.messages;
 
+import com.uber.tchannel.checksum.ChecksumType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-public class CallRequestContinue extends AbstractCallMessage {
-    public CallRequestContinue(long id, byte flags, byte checksumType, int checksum, ByteBuf arg2, ByteBuf arg3) {
-        super(id, MessageType.CallRequestContinue, flags, checksumType, checksum, Unpooled.EMPTY_BUFFER, arg2, arg3);
+public class CallRequestContinue implements Message, CallMessage {
+
+    private final long id;
+    private final byte flags;
+    private final ChecksumType checksumType;
+    private final int checksum;
+    private final ByteBuf arg2;
+    private final ByteBuf arg3;
+
+    public CallRequestContinue(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf arg2,
+                               ByteBuf arg3) {
+        this.id = id;
+        this.flags = flags;
+        this.checksumType = checksumType;
+        this.checksum = checksum;
+        this.arg2 = arg2;
+        this.arg3 = arg3;
     }
+
+    public byte getFlags() {
+        return flags;
+    }
+
+    public ChecksumType getChecksumType() {
+        return checksumType;
+    }
+
+    public int getChecksum() {
+        return checksum;
+    }
+
+    public ByteBuf getArg1() {
+        return Unpooled.EMPTY_BUFFER;
+    }
+
+    public ByteBuf getArg2() {
+        return arg2;
+    }
+
+    public ByteBuf getArg3() {
+        return arg3;
+    }
+
+    public boolean moreFragmentsFollow() {
+        return ((this.flags & CallMessage.MORE_FRAGMENTS_REMAIN_MASK) == 1);
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.CallRequestContinue;
+    }
+
 }

@@ -22,7 +22,7 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.AbstractInitMessage;
+import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
 import com.uber.tchannel.messages.MessageType;
@@ -33,9 +33,10 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import java.util.List;
 import java.util.Map;
 
-public class InitMessageCodec extends MessageToMessageCodec<TFrame, AbstractInitMessage> {
+public class InitMessageCodec extends MessageToMessageCodec<TFrame, InitMessage> {
+
     @Override
-    protected void encode(ChannelHandlerContext ctx, AbstractInitMessage msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, InitMessage msg, List<Object> out) throws Exception {
 
         // Allocate new ByteBuf
         ByteBuf buffer = ctx.alloc().buffer();

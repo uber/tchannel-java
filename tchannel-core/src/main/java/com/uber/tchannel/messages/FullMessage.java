@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.Map;
 
-public class FullMessage implements Message {
+public class FullMessage {
 
     private final long id;
     private final Map<String, String> headers;
@@ -61,4 +61,5 @@ public class FullMessage implements Message {
     public ByteBuf getArg3() {
         return arg3;
     }
+
 }

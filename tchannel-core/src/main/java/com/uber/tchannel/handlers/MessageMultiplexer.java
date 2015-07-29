@@ -21,7 +21,7 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.messages.AbstractCallMessage;
+import com.uber.tchannel.messages.CallMessage;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.FullMessage;
@@ -33,7 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessage, FullMessage> {
+public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullMessage> {
 
     /* Maintains a mapping of MessageId -> Incomplete CallRequest */
     private final Map<Long, FullMessage> messageMap = new HashMap<Long, FullMessage>();
@@ -47,7 +47,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessag
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, AbstractCallMessage msg, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, CallMessage msg, List<Object> out) throws Exception {
 
         long messageId = msg.getId();
 
@@ -74,7 +74,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessag
             FullMessage updatedFullMessage = new FullMessage(
                     partialFullMessage.getId(),
                     partialFullMessage.getHeaders(),
-                    Unpooled.wrappedBuffer(partialFullMessage.getArg1(), callRequestContinue.getArg1()),
+                    partialFullMessage.getArg1(),
                     Unpooled.wrappedBuffer(partialFullMessage.getArg2(), callRequestContinue.getArg2()),
                     Unpooled.wrappedBuffer(partialFullMessage.getArg3(), callRequestContinue.getArg3())
 
@@ -84,7 +84,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessag
 
         }
 
-        if (!msg.moreFragmentsRemain()) {
+        if (!msg.moreFragmentsFollow()) {
             FullMessage completeFullMessage = this.messageMap.remove(messageId);
             out.add(completeFullMessage);
         }

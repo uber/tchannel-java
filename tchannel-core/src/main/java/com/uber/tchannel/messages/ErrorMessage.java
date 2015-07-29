@@ -25,21 +25,38 @@ import com.uber.tchannel.tracing.Trace;
 
 import java.util.Optional;
 
-public class ErrorMessage extends AbstractMessage {
+public class ErrorMessage implements Message {
 
-    private final ErrorType type;
+    private final long id;
+    private final ErrorType errorType;
     private final Trace tracing;
     private final String message;
 
-    public ErrorMessage(long id, ErrorType type, Trace tracing, String message) {
-        super(id, MessageType.Error);
-        this.type = type;
+    /**
+     * Designated Constructor
+     *
+     * @param id        unique of the message
+     * @param errorType the type of Error this represents
+     * @param tracing   tracing information
+     * @param message   human readable string meant for logs
+     */
+    public ErrorMessage(long id, ErrorType errorType, Trace tracing, String message) {
+        this.id = id;
+        this.errorType = errorType;
         this.tracing = tracing;
         this.message = message;
     }
 
+    public long getId() {
+        return this.id;
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.Error;
+    }
+
     public ErrorType getType() {
-        return type;
+        return errorType;
     }
 
     public Trace getTracing() {
@@ -53,10 +70,9 @@ public class ErrorMessage extends AbstractMessage {
     @Override
     public String toString() {
         return String.format(
-                "<%s id=%d type=%s message=%s>",
-                this.getClass().getCanonicalName(),
+                "<%s id=%d message=%s>",
+                this.getClass().getSimpleName(),
                 this.getId(),
-                this.type,
                 this.message
         );
     }
@@ -110,4 +126,5 @@ public class ErrorMessage extends AbstractMessage {
             return this.code;
         }
     }
+
 }

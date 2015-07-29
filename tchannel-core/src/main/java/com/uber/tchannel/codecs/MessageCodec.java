@@ -22,7 +22,7 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.AbstractMessage;
+import com.uber.tchannel.messages.Message;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.ErrorMessage;
 import com.uber.tchannel.messages.InitRequest;
@@ -35,7 +35,7 @@ import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public class MessageCodec extends MessageToMessageCodec<TFrame, AbstractMessage> {
+public class MessageCodec extends MessageToMessageCodec<TFrame, Message> {
 
     private final InitMessageCodec initMessageCodec = new InitMessageCodec();
     private final PingMessageCodec pingMessageCodec = new PingMessageCodec();
@@ -43,7 +43,7 @@ public class MessageCodec extends MessageToMessageCodec<TFrame, AbstractMessage>
     private final ErrorCodec errorCodec = new ErrorCodec();
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, AbstractMessage msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) throws Exception {
         switch (msg.getMessageType()) {
             case InitRequest:
                 this.initMessageCodec.encode(ctx, (InitRequest) msg, out);

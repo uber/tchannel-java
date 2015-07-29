@@ -21,8 +21,26 @@
  */
 package com.uber.tchannel.messages;
 
-public abstract class AbstractPingMessage extends AbstractMessage {
-    public AbstractPingMessage(long id, MessageType messageType) {
-        super(id, messageType);
-    }
+import com.uber.tchannel.checksum.ChecksumType;
+import io.netty.buffer.ByteBuf;
+
+public interface CallMessage extends Message {
+
+    byte MORE_FRAGMENTS_REMAIN_MASK = (byte) 0x01;
+    short MAX_ARG1_LENGTH = 16384;
+
+    boolean moreFragmentsFollow();
+
+    byte getFlags();
+
+    ChecksumType getChecksumType();
+
+    int getChecksum();
+
+    ByteBuf getArg1();
+
+    ByteBuf getArg2();
+
+    ByteBuf getArg3();
+
 }

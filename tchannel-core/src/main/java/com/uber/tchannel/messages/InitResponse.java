@@ -28,10 +28,40 @@ import java.util.Map;
  * actual version that will be used for the rest of this connection. The header name/values are the same,
  * but identify the server.
  */
-public class InitResponse extends AbstractInitMessage {
+public class InitResponse implements InitMessage, Message {
+
+    private final long id;
+    private final int version;
+    private final Map<String, String> headers;
 
     public InitResponse(long id, int version, Map<String, String> headers) {
-        super(id, MessageType.InitResponse, version, headers);
+        this.id = id;
+        this.version = version;
+        this.headers = headers;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.InitResponse;
+    }
+
+    public String getHostPort() {
+        return this.headers.get(HOST_PORT_KEY);
+    }
+
+    public String getProcessName() {
+        return this.headers.get(PROCESS_NAME_KEY);
     }
 
 }

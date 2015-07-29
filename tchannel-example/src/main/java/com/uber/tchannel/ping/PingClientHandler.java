@@ -21,8 +21,8 @@
  */
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.messages.AbstractInitMessage;
-import com.uber.tchannel.messages.AbstractMessage;
+import com.uber.tchannel.messages.InitMessage;
+import com.uber.tchannel.messages.Message;
 import com.uber.tchannel.messages.ErrorMessage;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
@@ -40,11 +40,11 @@ public class PingClientHandler extends ChannelHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         InitRequest initRequest = new InitRequest(42,
-                AbstractInitMessage.DEFAULT_VERSION,
+                InitMessage.DEFAULT_VERSION,
                 new HashMap<String, String>() {
                     {
-                        put(AbstractInitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                        put(AbstractInitMessage.PROCESS_NAME_KEY, "test-process");
+                        put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                        put(InitMessage.PROCESS_NAME_KEY, "test-process");
                     }
                 }
         );
@@ -55,7 +55,7 @@ public class PingClientHandler extends ChannelHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
 
-        AbstractMessage message = (AbstractMessage) msg;
+        Message message = (Message) msg;
 
         switch (message.getMessageType()) {
             case InitResponse:

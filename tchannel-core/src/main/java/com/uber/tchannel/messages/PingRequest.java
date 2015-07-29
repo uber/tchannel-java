@@ -21,8 +21,20 @@
  */
 package com.uber.tchannel.messages;
 
-public class PingRequest extends AbstractPingMessage {
+public class PingRequest implements Message, PingMessage {
+
+    private final long id;
+
     public PingRequest(long id) {
-        super(id, MessageType.PingRequest);
+        this.id = id;
     }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.PingRequest;
+    }
+
 }

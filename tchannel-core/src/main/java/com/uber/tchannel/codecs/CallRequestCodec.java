@@ -24,7 +24,7 @@ package com.uber.tchannel.codecs;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.fragmentation.DefragmentationState;
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.AbstractCallMessage;
+import com.uber.tchannel.messages.CallMessage;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.MessageType;
@@ -39,7 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class CallRequestCodec extends MessageToMessageCodec<TFrame, AbstractCallMessage> {
+public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallMessage> {
 
     private final Map<Long, DefragmentationState> defragmentationState = new HashMap<Long, DefragmentationState>();
 
@@ -48,7 +48,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, AbstractCallMessage msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CallMessage msg, List<Object> out) throws Exception {
         MessageType type = msg.getMessageType();
         switch (type) {
             case CallRequest:
@@ -97,7 +97,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
     @Override
     public boolean acceptOutboundMessage(Object msg) throws Exception {
 
-        // Will accept any AbstractCallMessage, we only want CallRequest or CallRequestContinue messages
+        // Will accept any CallMessage, we only want CallRequest or CallRequestContinue messages
         if (super.acceptOutboundMessage(msg)) {
             return (msg instanceof CallRequest || msg instanceof CallRequestContinue);
         } else {
@@ -109,7 +109,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
     protected void encodeCallRequest(ChannelHandlerContext ctx, CallRequest msg, List<Object> out) {
         /* Allocate a buffer for the rest of the pipeline */
         /* TODO: Figure out sane initial buffer size allocation */
-        ByteBuf buffer = ctx.alloc().buffer(AbstractCallMessage.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
+        ByteBuf buffer = ctx.alloc().buffer(CallMessage.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
 
         // flags:1
         buffer.writeByte(msg.getFlags());
@@ -127,11 +127,10 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
         CodecUtils.encodeSmallHeaders(msg.getHeaders(), buffer);
 
         // csumtype:1
-        buffer.writeByte(msg.getChecksumType());
+        buffer.writeByte(msg.getChecksumType().byteValue());
 
         // (csum:4){0,1}
-        ChecksumType type = ChecksumType.fromByte(msg.getChecksumType()).get();
-        switch (type) {
+        switch (msg.getChecksumType()) {
             case Adler32:
             case FarmhashFingerPrint32:
             case CRC32C:
@@ -144,8 +143,8 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
 
         // arg1~2
         int bytesWritten = this.writeArg(msg.getArg1(), buffer);
-        assert bytesWritten <= AbstractCallMessage.MAX_ARG1_LENGTH;
-        if (bytesWritten == 0 && !msg.moreFragmentsRemain()) {
+        assert bytesWritten <= CallMessage.MAX_ARG1_LENGTH;
+        if (bytesWritten == 0 && !msg.moreFragmentsFollow()) {
             this.writeEmptyArg(buffer);
         }
 
@@ -153,7 +152,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
         bytesWritten = this.writeArg(msg.getArg2(), buffer);
 
         // If this is the last frame, we need to close out arg2
-        if (bytesWritten == 0 && !msg.moreFragmentsRemain()) {
+        if (bytesWritten == 0 && !msg.moreFragmentsFollow()) {
             this.writeEmptyArg(buffer);
         }
 
@@ -161,7 +160,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
         bytesWritten = this.writeArg(msg.getArg3(), buffer);
 
         // If this is the last frame, we need to close out arg3
-        if (bytesWritten == 0 && !msg.moreFragmentsRemain()) {
+        if (bytesWritten == 0 && !msg.moreFragmentsFollow()) {
             this.writeEmptyArg(buffer);
         }
 
@@ -231,12 +230,11 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
         Map<String, String> headers = CodecUtils.decodeSmallHeaders(buffer);
 
         // csumtype:1
-        byte checksumType = buffer.readByte();
-        ChecksumType type = ChecksumType.fromByte(checksumType).get();
+        ChecksumType checksumType = ChecksumType.fromByte(buffer.readByte()).get();
 
         // (csum:4){0,1}
         int checksum = 0;
-        switch (type) {
+        switch (checksumType) {
             case Adler32:
             case FarmhashFingerPrint32:
             case CRC32C:
@@ -252,10 +250,8 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
         ByteBuf arg2 = this.readArg(frame.id, frame.size, this.moreFragmentsFollow(flags), buffer);
         ByteBuf arg3 = this.readArg(frame.id, frame.size, this.moreFragmentsFollow(flags), buffer);
 
-        CallRequest req = new CallRequest(frame.id, flags, ttl, trace, service, headers, checksumType, checksum,
-                arg1,
-                arg2,
-                arg3
+        CallRequest req = new CallRequest(
+                frame.id, flags, ttl, trace, service, headers, checksumType, checksum, arg1, arg2, arg3
         );
 
         out.add(req);
@@ -270,12 +266,11 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
         byte flags = buffer.readByte();
 
         // csumtype:1
-        byte checksumType = buffer.readByte();
-        ChecksumType type = ChecksumType.fromByte(checksumType).get();
+        ChecksumType checksumType = ChecksumType.fromByte(buffer.readByte()).get();
 
         // (csum:4){0,1}
         int checksum = 0;
-        switch (type) {
+        switch (checksumType) {
             case NoChecksum:
                 break;
             case Adler32:
@@ -289,9 +284,8 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
         ByteBuf arg2 = this.readArg(frame.id, frame.size, this.moreFragmentsFollow(flags), buffer);
         ByteBuf arg3 = this.readArg(frame.id, frame.size, this.moreFragmentsFollow(flags), buffer);
 
-        CallRequestContinue req = new CallRequestContinue(frame.id, flags, checksumType, checksum,
-                arg2,
-                arg3
+        CallRequestContinue req = new CallRequestContinue(
+                frame.id, flags, checksumType, checksum, arg2, arg3
         );
 
         out.add(req);
@@ -304,7 +298,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
     }
 
     protected boolean moreFragmentsFollow(byte flags) {
-        return ((flags & AbstractCallMessage.MORE_FRAGMENTS_TO_FOLLOW_MASK) == 0);
+        return ((flags & CallMessage.MORE_FRAGMENTS_REMAIN_MASK) == 0);
     }
 
     protected ByteBuf readArg(long id, int size, boolean moreFragmentsFollow, ByteBuf buffer) {
@@ -327,7 +321,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, Abstra
 
                 /* arg1~2. CANNOT be fragmented. MUST be < 16k */
                 argLength = buffer.readUnsignedShort();
-                assert argLength <= AbstractCallMessage.MAX_ARG1_LENGTH;
+                assert argLength <= CallMessage.MAX_ARG1_LENGTH;
 
                 /* Read a slice, retain a copy */
                 ByteBuf arg1 = buffer.readSlice(argLength);
