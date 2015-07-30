@@ -28,7 +28,7 @@ import java.util.Map;
  * and describe the service names on both ends. In the future, we will likely use this to negotiate authentication
  * and authorization between services.
  */
-public class InitRequest implements Message, InitMessage {
+public final class InitRequest implements Message, InitMessage {
 
     private final long id;
     private final int version;
@@ -62,6 +62,16 @@ public class InitRequest implements Message, InitMessage {
 
     public String getProcessName() {
         return this.headers.get(PROCESS_NAME_KEY);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<%s id=%d version=%d headers=%s>",
+                this.getClass().getSimpleName(),
+                this.id,
+                this.version,
+                this.headers
+        );
     }
 
 }

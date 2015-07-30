@@ -22,13 +22,7 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.fragmentation.DefragmentationState;
-import io.netty.buffer.Unpooled;
 import org.junit.Test;
-
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
 
 
 public class CallRequestCodecTest {

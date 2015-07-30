@@ -25,7 +25,7 @@ import com.uber.tchannel.tracing.Trace;
 
 import java.util.Optional;
 
-public class ErrorMessage implements Message {
+public final class ErrorMessage implements Message {
 
     private final long id;
     private final ErrorType errorType;

@@ -21,7 +21,7 @@
  */
 package com.uber.tchannel.messages;
 
-public class PingRequest implements Message, PingMessage {
+public final class PingRequest implements Message, PingMessage {
 
     private final long id;
 
@@ -35,6 +35,14 @@ public class PingRequest implements Message, PingMessage {
 
     public MessageType getMessageType() {
         return MessageType.PingRequest;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<%s id=%d>",
+                this.getClass().getSimpleName(),
+                this.id
+        );
     }
 
 }

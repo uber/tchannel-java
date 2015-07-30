@@ -41,7 +41,7 @@ import java.util.Map;
  * <p>
  * The size of arg1 is at most 16KiB.
  */
-public class CallRequest implements Message, CallMessage {
+public final class CallRequest implements Message, CallMessage {
 
     private final long id;
     private final byte flags;

@@ -23,7 +23,7 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.tracing.Trace;
 
-public class Cancel implements Message {
+public final class Cancel implements Message {
 
     private final long id;
     private final long ttl;

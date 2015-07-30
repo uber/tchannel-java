@@ -21,11 +21,11 @@
  */
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.Message;
 import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
+import com.uber.tchannel.messages.Message;
 import com.uber.tchannel.messages.PingRequest;
 import com.uber.tchannel.messages.PingResponse;
 import io.netty.channel.ChannelFuture;

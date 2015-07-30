@@ -22,8 +22,8 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.PingMessage;
 import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.messages.PingMessage;
 import com.uber.tchannel.messages.PingRequest;
 import com.uber.tchannel.messages.PingResponse;
 import io.netty.buffer.Unpooled;

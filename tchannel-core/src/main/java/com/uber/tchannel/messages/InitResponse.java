@@ -28,7 +28,7 @@ import java.util.Map;
  * actual version that will be used for the rest of this connection. The header name/values are the same,
  * but identify the server.
  */
-public class InitResponse implements InitMessage, Message {
+public final class InitResponse implements InitMessage, Message {
 
     private final long id;
     private final int version;
@@ -64,4 +64,13 @@ public class InitResponse implements InitMessage, Message {
         return this.headers.get(PROCESS_NAME_KEY);
     }
 
+    @Override
+    public String toString() {
+        return String.format("<%s id=%d version=%d headers=%s>",
+                this.getClass().getSimpleName(),
+                this.id,
+                this.version,
+                this.headers
+        );
+    }
 }

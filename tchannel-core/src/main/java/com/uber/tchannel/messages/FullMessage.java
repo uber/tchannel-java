@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.Map;
 
-public class FullMessage {
+public final class FullMessage {
 
     private final long id;
     private final Map<String, String> headers;

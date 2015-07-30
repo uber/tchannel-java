@@ -24,7 +24,7 @@ package com.uber.tchannel.messages;
 import com.uber.tchannel.checksum.ChecksumType;
 import io.netty.buffer.ByteBuf;
 
-public class CallResponseContinue implements Message, CallMessage {
+public final class CallResponseContinue implements Message, CallMessage {
 
     private final long id;
     private final byte flags;
