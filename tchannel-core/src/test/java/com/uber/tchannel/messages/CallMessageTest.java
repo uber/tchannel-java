@@ -19,41 +19,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.checksum;
 
-import com.uber.tchannel.messages.CallMessage;
+package com.uber.tchannel.messages;
 
-import java.util.zip.Adler32;
+import org.junit.Test;
 
-public final class Checksums {
-    public static boolean verifyChecksum(CallMessage msg) {
-        return (calculateChecksum(msg) == msg.getChecksum());
-    }
 
-    public static boolean verifyExistingChecksum(CallMessage msg, long checksum) {
-        return (msg.getChecksum() == checksum);
-    }
+public class CallMessageTest {
 
-    public static long calculateChecksum(CallMessage msg) {
-        return calculateChecksum(msg, 0L);
-    }
-
-    public static long calculateChecksum(CallMessage msg, long digestSeed) {
-
-        switch (msg.getChecksumType()) {
-
-            case Adler32:
-                Adler32 f = new Adler32();
-                f.update((int) digestSeed);
-                f.update(msg.getPayload().nioBuffer());
-                return f.getValue();
-            case FarmhashFingerPrint32:
-            case NoChecksum:
-            case CRC32C:
-            default:
-                return 0;
-        }
+    @Test
+    public void testMoreFragmentsFollow() throws Exception {
 
     }
 
+    @Test
+    public void testGetFlags() throws Exception {
+
+    }
+
+    @Test
+    public void testGetChecksumType() throws Exception {
+
+    }
+
+    @Test
+    public void testGetChecksum() throws Exception {
+
+    }
+
+    @Test
+    public void testGetPayload() throws Exception {
+
+    }
+
+    @Test
+    public void testGetPayloadSize() throws Exception {
+
+    }
+
+    @Test
+    public void testSetPayloadSize() throws Exception {
+
+    }
 }

@@ -23,7 +23,6 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 public class CallRequestContinue implements Message, CallMessage {
 
@@ -31,17 +30,18 @@ public class CallRequestContinue implements Message, CallMessage {
     private final byte flags;
     private final ChecksumType checksumType;
     private final int checksum;
-    private final ByteBuf arg2;
-    private final ByteBuf arg3;
+    private final ByteBuf payload;
 
-    public CallRequestContinue(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf arg2,
-                               ByteBuf arg3) {
+    public CallRequestContinue(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
         this.flags = flags;
         this.checksumType = checksumType;
         this.checksum = checksum;
-        this.arg2 = arg2;
-        this.arg3 = arg3;
+        this.payload = payload;
+    }
+
+    public int getPayloadSize() {
+        return this.payload.writerIndex() - this.payload.readerIndex();
     }
 
     public byte getFlags() {
@@ -56,16 +56,8 @@ public class CallRequestContinue implements Message, CallMessage {
         return checksum;
     }
 
-    public ByteBuf getArg1() {
-        return Unpooled.EMPTY_BUFFER;
-    }
-
-    public ByteBuf getArg2() {
-        return arg2;
-    }
-
-    public ByteBuf getArg3() {
-        return arg3;
+    public ByteBuf getPayload() {
+        return payload;
     }
 
     public boolean moreFragmentsFollow() {

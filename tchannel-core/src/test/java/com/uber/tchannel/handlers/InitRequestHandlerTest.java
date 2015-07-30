@@ -22,11 +22,12 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.Fixtures;
-import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Rule;
 import org.junit.Test;
@@ -126,7 +127,7 @@ public class InitRequestHandlerTest {
         );
 
 
-        CallRequest callRequest = Fixtures.callRequestWithId(0);
+        CallRequest callRequest = Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER);
         channel.writeInbound(callRequest);
         ErrorMessage error = channel.readOutbound();
         assertThat(error.getType(), is(ErrorMessage.ErrorType.FatalProtocolError));

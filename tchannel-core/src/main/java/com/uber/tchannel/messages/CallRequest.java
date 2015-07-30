@@ -51,13 +51,10 @@ public class CallRequest implements Message, CallMessage {
     private final Map<String, String> headers;
     private final ChecksumType checksumType;
     private final int checksum;
-    private final ByteBuf arg1;
-    private final ByteBuf arg2;
-    private final ByteBuf arg3;
+    private final ByteBuf payload;
 
-    public CallRequest(long id, byte flags, long ttl, Trace tracing, String service,
-                       Map<String, String> headers, ChecksumType checksumType, int checksum,
-                       ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    public CallRequest(long id, byte flags, long ttl, Trace tracing, String service, Map<String, String> headers,
+                       ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
         this.flags = flags;
         this.ttl = ttl;
@@ -66,9 +63,7 @@ public class CallRequest implements Message, CallMessage {
         this.headers = headers;
         this.checksumType = checksumType;
         this.checksum = checksum;
-        this.arg1 = arg1;
-        this.arg2 = arg2;
-        this.arg3 = arg3;
+        this.payload = payload;
     }
 
     public byte getFlags() {
@@ -87,20 +82,16 @@ public class CallRequest implements Message, CallMessage {
         return this.checksum;
     }
 
-    public ByteBuf getArg1() {
-        return this.arg1;
-    }
-
-    public ByteBuf getArg2() {
-        return this.arg2;
-    }
-
-    public ByteBuf getArg3() {
-        return this.arg3;
+    public ByteBuf getPayload() {
+        return payload;
     }
 
     public long getId() {
         return this.id;
+    }
+
+    public int getPayloadSize() {
+        return this.payload.writerIndex() - this.payload.readerIndex();
     }
 
     public MessageType getMessageType() {

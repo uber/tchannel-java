@@ -37,10 +37,7 @@ public interface CallMessage extends Message {
 
     int getChecksum();
 
-    ByteBuf getArg1();
+    ByteBuf getPayload();
 
-    ByteBuf getArg2();
-
-    ByteBuf getArg3();
-
+    int getPayloadSize();
 }

@@ -39,9 +39,6 @@ import java.util.Optional;
  */
 public final class CallResponse implements Message, CallMessage {
 
-    private static final byte OK_VALUE = (byte) 0;
-    private static final byte ERROR_VALUE = (byte) 1;
-
     private final long id;
     private final byte flags;
     private final CallResponseCode code;
@@ -49,12 +46,10 @@ public final class CallResponse implements Message, CallMessage {
     private final Map<String, String> headers;
     private final ChecksumType checksumType;
     private final int checksum;
-    private final ByteBuf arg1;
-    private final ByteBuf arg2;
-    private final ByteBuf arg3;
+    private final ByteBuf payload;
 
     public CallResponse(long id, byte flags, CallResponseCode code, Trace tracing, Map<String, String> headers,
-                        ChecksumType checksumType, int checksum, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+                        ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
         this.flags = flags;
         this.code = code;
@@ -62,13 +57,15 @@ public final class CallResponse implements Message, CallMessage {
         this.headers = headers;
         this.checksumType = checksumType;
         this.checksum = checksum;
-        this.arg1 = arg1;
-        this.arg2 = arg2;
-        this.arg3 = arg3;
+        this.payload = payload;
     }
 
     public byte getFlags() {
-        return flags;
+        return this.flags;
+    }
+
+    public int getPayloadSize() {
+        return this.payload.writerIndex() - this.payload.readerIndex();
     }
 
     public boolean ok() {
@@ -103,16 +100,8 @@ public final class CallResponse implements Message, CallMessage {
         return this.checksum;
     }
 
-    public ByteBuf getArg1() {
-        return this.arg1;
-    }
-
-    public ByteBuf getArg2() {
-        return this.arg2;
-    }
-
-    public ByteBuf getArg3() {
-        return this.arg3;
+    public ByteBuf getPayload() {
+        return this.payload;
     }
 
     public CallResponseCode getCode() {
@@ -138,6 +127,10 @@ public final class CallResponse implements Message, CallMessage {
                 default:
                     return Optional.empty();
             }
+        }
+
+        byte byteValue() {
+            return this.code;
         }
     }
 

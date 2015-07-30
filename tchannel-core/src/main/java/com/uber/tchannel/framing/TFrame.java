@@ -29,9 +29,20 @@ public class TFrame {
     public static final int MAX_FRAME_LENGTH = 65536;
     public static final int FRAME_HEADER_LENGTH = 16;
 
+    /**
+     * Payload size
+     * <p>
+     * Does *not* include the 16 bytes for the frame header
+     */
     public final int size;
+
+    // Payload message type
     public final byte type;
+
+    // Message id
     public final long id;
+
+    // Contents of the payload
     public final ByteBuf payload;
 
     public TFrame(int size, byte type, long id, ByteBuf payload) {
@@ -48,7 +59,8 @@ public class TFrame {
     @Override
     public String toString() {
         return String.format(
-                "<TFrame size=%d type=0x%d id=%d payload=%s>",
+                "<%s size=%d type=0x%d id=%d payload=%s>",
+                this.getClass().getSimpleName(),
                 this.size,
                 this.type,
                 this.id,
