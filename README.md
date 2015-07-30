@@ -2,7 +2,7 @@
 
 A Java implementation of the [TChannel](https://github.com/uber/tchannel) protocol.
 
-## Stability: *Experimental*
+#### Stability: *Experimental*
 
 ## Completed
 - Frame codecs
@@ -43,7 +43,7 @@ response.addListener(new ChannelFutureListener {
 });
 ```
 
-## To run the examples
+## Run The Examples
 #### PingServer
 ```bash
 mvn package
@@ -66,3 +66,7 @@ java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tcha
 #com.uber.tchannel.messages.PingResponse@18ec223
 #Stopping Client...
 ```
+
+## Contributing
+
+Contributions are welcome and encouraged! Please push contributions to branches namespaced by your username and then create a pull request. Pull requests *must* have thorough testing and be reviewed by at least one other party. 
