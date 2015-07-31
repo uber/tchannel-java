@@ -129,7 +129,7 @@ public final class CallResponse implements Message, CallMessage {
             }
         }
 
-        byte byteValue() {
+        public byte byteValue() {
             return this.code;
         }
     }

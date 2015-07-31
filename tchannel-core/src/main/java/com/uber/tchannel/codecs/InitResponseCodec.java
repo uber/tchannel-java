@@ -23,9 +23,7 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
-import com.uber.tchannel.messages.MessageType;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -33,18 +31,17 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import java.util.List;
 import java.util.Map;
 
-public class InitMessageCodec extends MessageToMessageCodec<TFrame, InitMessage> {
+public final class InitResponseCodec extends MessageToMessageCodec<TFrame, InitMessage> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, InitMessage msg, List<Object> out) throws Exception {
-
         // Allocate new ByteBuf
         ByteBuf buffer = ctx.alloc().buffer();
 
         // version:2
         buffer.writeShort(msg.getVersion());
 
-        // nh:2 (key~2 value~2){nh}
+        // headers -> nh:2 (key~2 value~2){nh}
         CodecUtils.encodeHeaders(msg.getHeaders(), buffer);
 
         TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
@@ -53,21 +50,14 @@ public class InitMessageCodec extends MessageToMessageCodec<TFrame, InitMessage>
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-
+        // version:2
         int version = frame.payload.readUnsignedShort();
 
+        // headers -> nh:2 (key~2 value~2){nh}
         Map<String, String> headers = CodecUtils.decodeHeaders(frame.payload);
-        MessageType type = MessageType.fromByte(frame.type).get();
 
-        switch (type) {
-            case InitRequest:
-                out.add(new InitRequest(frame.id, version, headers));
-                break;
-            case InitResponse:
-                out.add(new InitResponse(frame.id, version, headers));
-                break;
-        }
-
+        InitResponse initResponse = new InitResponse(frame.id, version, headers);
+        out.add(initResponse);
     }
 
 }

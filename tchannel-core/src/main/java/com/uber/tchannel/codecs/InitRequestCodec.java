@@ -19,37 +19,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.MessageType;
-import com.uber.tchannel.messages.PingMessage;
-import com.uber.tchannel.messages.PingRequest;
-import com.uber.tchannel.messages.PingResponse;
-import io.netty.buffer.Unpooled;
+import com.uber.tchannel.messages.InitRequest;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
+import java.util.Map;
 
-public class PingMessageCodec extends MessageToMessageCodec<TFrame, PingMessage> {
+public class InitRequestCodec extends MessageToMessageCodec<TFrame, InitRequest> {
+
     @Override
-    protected void encode(ChannelHandlerContext ctx, PingMessage msg, List<Object> out) throws Exception {
-        out.add(new TFrame(0, msg.getMessageType(), msg.getId(), Unpooled.EMPTY_BUFFER));
+    protected void encode(ChannelHandlerContext ctx, InitRequest msg, List<Object> out) throws Exception {
+        // Allocate new ByteBuf
+        ByteBuf buffer = ctx.alloc().buffer();
+
+        // version:2
+        buffer.writeShort(msg.getVersion());
+
+        // headers -> nh:2 (key~2 value~2){nh}
+        CodecUtils.encodeHeaders(msg.getHeaders(), buffer);
+
+        TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
+        out.add(frame);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        MessageType type = MessageType.fromByte(frame.type).get();
+        // version:2
+        int version = frame.payload.readUnsignedShort();
 
-        switch (type) {
-            case PingRequest:
-                out.add(new PingRequest(frame.id));
-                break;
-            case PingResponse:
-                out.add(new PingResponse(frame.id));
-                break;
-        }
+        // headers -> nh:2 (key~2 value~2){nh}
+        Map<String, String> headers = CodecUtils.decodeHeaders(frame.payload);
 
+        InitRequest initRequest = new InitRequest(frame.id, version, headers);
+        out.add(initRequest);
     }
 }

@@ -28,7 +28,7 @@ import io.netty.handler.codec.ByteToMessageCodec;
 
 import java.util.List;
 
-public class TFrameCodec extends ByteToMessageCodec<TFrame> {
+public final class TFrameCodec extends ByteToMessageCodec<TFrame> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, TFrame frame, ByteBuf out) throws Exception {

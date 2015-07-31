@@ -34,37 +34,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
-public class InitMessageCodecTest {
-
-    @Test
-    public void shouldEncodeAndDecodeInitRequest() {
-
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true),
-                new TFrameCodec(),
-                new InitMessageCodec()
-        );
-
-        InitRequest initReq = new InitRequest(
-                42,
-                InitRequest.DEFAULT_VERSION,
-                new HashMap<String, String>() {{
-                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
-                }}
-        );
-
-        channel.writeOutbound(initReq);
-        channel.writeInbound(channel.readOutbound());
-
-        InitRequest newInitReq = channel.readInbound();
-        assertEquals(newInitReq.getMessageType(), initReq.getMessageType());
-        assertEquals(newInitReq.getId(), initReq.getId());
-        assertEquals(newInitReq.getVersion(), initReq.getVersion());
-        assertEquals(newInitReq.getHostPort(), initReq.getHostPort());
-        assertEquals(newInitReq.getProcessName(), initReq.getProcessName());
-
-    }
+public class InitResponseCodecTest {
 
     @Test
     public void shouldEncodeAndDecodeInitResponse() {
@@ -72,7 +42,7 @@ public class InitMessageCodecTest {
         EmbeddedChannel channel = new EmbeddedChannel(
                 new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true),
                 new TFrameCodec(),
-                new InitMessageCodec()
+                new InitResponseCodec()
         );
 
         InitResponse initResponse = new InitResponse(

@@ -24,18 +24,40 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.framing.TFrame;
+import com.uber.tchannel.messages.CallMessage;
 import com.uber.tchannel.messages.CallRequestContinue;
+import com.uber.tchannel.messages.MessageType;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public class CallRequestContinueCodec extends MessageToMessageCodec<TFrame, CallRequestContinue> {
+public final class CallRequestContinueCodec extends MessageToMessageCodec<TFrame, CallRequestContinue> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, CallRequestContinue msg, List<Object> out) throws Exception {
+        /**
+         * Allocate a buffer for the rest of the pipeline
+         *
+         * TODO: Figure out sane initial buffer size allocation
+         */
+        ByteBuf buffer = ctx.alloc().buffer(CallMessage.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
 
+        // flags:1
+        buffer.writeByte(msg.getFlags());
+
+        // csumtype:1
+        buffer.writeByte(msg.getChecksumType().byteValue());
+
+        // (csum:4){0,1}
+        CodecUtils.encodeChecksum(msg.getChecksum(), msg.getChecksumType(), buffer);
+
+        // {continuation}
+        buffer.writeBytes(msg.getPayload());
+
+        TFrame frame = new TFrame(buffer.writerIndex(), MessageType.CallRequestContinue, msg.getId(), buffer);
+        out.add(frame);
     }
 
     @Override
@@ -47,16 +69,7 @@ public class CallRequestContinueCodec extends MessageToMessageCodec<TFrame, Call
         ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte()).get();
 
         // (csum:4){0,1}
-        int checksum = 0;
-        switch (checksumType) {
-            case NoChecksum:
-                break;
-            case Adler32:
-            case FarmhashFingerPrint32:
-            case CRC32C:
-                checksum = frame.payload.readInt();
-                break;
-        }
+        int checksum = CodecUtils.decodeChecksum(checksumType, frame.payload);
 
         // {continuation}
         int payloadSize = frame.size - frame.payload.readerIndex();

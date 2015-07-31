@@ -19,12 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.CallMessage;
-import com.uber.tchannel.messages.CallRequest;
+import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.MessageType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
@@ -34,10 +35,10 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import java.util.List;
 import java.util.Map;
 
-public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRequest> {
+public final class CallResponseCodec extends MessageToMessageCodec<TFrame, CallResponse> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, CallRequest msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CallResponse msg, List<Object> out) throws Exception {
         /**
          * Allocate a buffer for the rest of the pipeline
          *
@@ -48,16 +49,13 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
         // flags:1
         buffer.writeByte(msg.getFlags());
 
-        // ttl:4
-        buffer.writeInt((int) msg.getTtl());
+        // code:1
+        buffer.writeByte(msg.getCode().byteValue());
 
         // tracing:25
         CodecUtils.encodeTrace(msg.getTracing(), buffer);
 
-        // service~1
-        CodecUtils.encodeSmallString(msg.getService(), buffer);
-
-        // nh:1 (hk~1, hv~1){nh}
+        // headers -> nh:1 (hk~1 hv~1){nh}
         CodecUtils.encodeSmallHeaders(msg.getHeaders(), buffer);
 
         // csumtype:1
@@ -76,25 +74,23 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
          */
         buffer.writeBytes(msg.getPayload());
 
-        TFrame frame = new TFrame(buffer.writerIndex(), MessageType.CallRequest, msg.getId(), buffer);
+        TFrame frame = new TFrame(buffer.writerIndex(), MessageType.CallResponse, msg.getId(), buffer);
         out.add(frame);
+
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) {
+    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
         // flags:1
         byte flags = frame.payload.readByte();
 
-        // ttl:4
-        long ttl = frame.payload.readUnsignedInt();
+        // code:1
+        CallResponse.CallResponseCode code = CallResponse.CallResponseCode.fromByte(frame.payload.readByte()).get();
 
         // tracing:25
         Trace trace = CodecUtils.decodeTrace(frame.payload);
 
-        // service~1
-        String service = CodecUtils.decodeSmallString(frame.payload);
-
-        // nh:1 (hk~1, hv~1){nh}
+        // headers -> nh:1 (hk~1, hv~1){nh}
         Map<String, String> headers = CodecUtils.decodeSmallHeaders(frame.payload);
 
         // csumtype:1
@@ -108,8 +104,8 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
         ByteBuf payload = frame.payload.readSlice(payloadSize);
         payload.retain();
 
-        CallRequest req = new CallRequest(
-                frame.id, flags, ttl, trace, service, headers, checksumType, checksum, payload
+        CallResponse req = new CallResponse(
+                frame.id, flags, code, trace, headers, checksumType, checksum, payload
         );
         out.add(req);
     }

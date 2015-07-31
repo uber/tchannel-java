@@ -23,48 +23,22 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.buffer.ByteBuf;
+import com.uber.tchannel.messages.CallResponseContinue;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public final class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorMessage> {
+public final    class CallResponseContinueCodec extends MessageToMessageCodec<TFrame, CallResponseContinue> {
+
     @Override
-    protected void encode(ChannelHandlerContext ctx, ErrorMessage msg, List<Object> out) throws Exception {
-        ByteBuf buffer = ctx.alloc().buffer();
+    protected void encode(ChannelHandlerContext ctx, CallResponseContinue msg, List<Object> out) throws Exception {
 
-        // code:1
-        buffer.writeByte(msg.getType().byteValue());
-
-        // tracing:25
-        CodecUtils.encodeTrace(msg.getTracing(), buffer);
-
-        // message~2
-        CodecUtils.encodeString(msg.getMessage(), buffer);
-
-        TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
-        out.add(frame);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        // code:1
-        ErrorMessage.ErrorType type = ErrorMessage.ErrorType.fromByte(frame.payload.readByte()).get();
 
-        // tracing:25
-        Trace tracing = CodecUtils.decodeTrace(frame.payload);
-
-        // message~2
-        String message = CodecUtils.decodeString(frame.payload);
-
-        out.add(new ErrorMessage(
-                frame.id,
-                type,
-                new Trace(0, 0, 0, (byte) 0),
-                message
-        ));
     }
+
 }
