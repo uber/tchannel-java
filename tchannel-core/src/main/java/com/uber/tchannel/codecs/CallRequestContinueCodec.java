@@ -50,7 +50,7 @@ public final class CallRequestContinueCodec extends MessageToMessageCodec<TFrame
         // csumtype:1
         buffer.writeByte(msg.getChecksumType().byteValue());
 
-        // (csum:4){0,1}
+        // checksum -> (csum:4){0,1}
         CodecUtils.encodeChecksum(msg.getChecksum(), msg.getChecksumType(), buffer);
 
         // {continuation}
