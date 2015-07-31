@@ -19,10 +19,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.messages;
 
-public abstract class AbstractPingMessage extends AbstractMessage {
-    public AbstractPingMessage(long id, MessageType messageType) {
-        super(id, messageType);
+import org.junit.Test;
+
+
+public class CallMessageTest {
+
+    @Test
+    public void testMoreFragmentsFollow() throws Exception {
+
+    }
+
+    @Test
+    public void testGetFlags() throws Exception {
+
+    }
+
+    @Test
+    public void testGetChecksumType() throws Exception {
+
+    }
+
+    @Test
+    public void testGetChecksum() throws Exception {
+
+    }
+
+    @Test
+    public void testGetPayload() throws Exception {
+
+    }
+
+    @Test
+    public void testGetPayloadSize() throws Exception {
+
+    }
+
+    @Test
+    public void testSetPayloadSize() throws Exception {
+
     }
 }

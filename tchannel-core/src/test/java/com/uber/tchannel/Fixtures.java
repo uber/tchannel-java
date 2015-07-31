@@ -21,68 +21,37 @@
  */
 package com.uber.tchannel;
 
-import com.uber.tchannel.messages.AbstractCallMessage;
+import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBuf;
 
 public class Fixtures {
 
-    public static CallRequest callRequestWithId(long id) {
+    public static CallRequest callRequest(long id, boolean moreFragments, ByteBuf payload) {
         return new CallRequest(
                 id,
-                (byte) 0x00,
+                moreFragments ? (byte) 1 : (byte) 0,
                 0L,
                 null,
                 null,
                 null,
-                (byte) 0x00,
+                ChecksumType.NoChecksum,
                 0,
-                Unpooled.wrappedBuffer("arg1".getBytes()),
-                Unpooled.wrappedBuffer("arg2".getBytes()),
-                Unpooled.wrappedBuffer("arg3".getBytes())
-        );
-    }
-
-    public static CallRequest callRequestWithIdAndMoreFragments(long id) {
-        return new CallRequest(
-                id,
-                AbstractCallMessage.MORE_FRAGMENTS_TO_FOLLOW_MASK,
-                0L,
-                null,
-                null,
-                null,
-                (byte) 0x00,
-                0,
-                Unpooled.wrappedBuffer("arg1".getBytes()),
-                Unpooled.wrappedBuffer("arg2".getBytes()),
-                Unpooled.wrappedBuffer("arg3".getBytes())
+                payload
         );
     }
 
 
-    public static CallRequestContinue callRequestContinueWithId(long id) {
+    public static CallRequestContinue callRequestContinue(long id, boolean moreFragments, ByteBuf payload) {
         return new CallRequestContinue(
                 id,
-                (byte) 0x00,
-                (byte) 0x00,
+                moreFragments ? (byte) 1 : (byte) 0,
+                ChecksumType.NoChecksum,
                 0,
-                Unpooled.wrappedBuffer("arg1".getBytes()),
-                Unpooled.wrappedBuffer("arg2".getBytes()),
-                Unpooled.wrappedBuffer("arg3".getBytes())
+                payload
         );
     }
 
-    public static CallRequestContinue callRequestContinueWithIdAndMoreFragments(long id) {
-        return new CallRequestContinue(
-                id,
-                AbstractCallMessage.MORE_FRAGMENTS_TO_FOLLOW_MASK,
-                (byte) 0x00,
-                0,
-                Unpooled.wrappedBuffer("arg1".getBytes()),
-                Unpooled.wrappedBuffer("arg2".getBytes()),
-                Unpooled.wrappedBuffer("arg3".getBytes())
-        );
-    }
 
 }

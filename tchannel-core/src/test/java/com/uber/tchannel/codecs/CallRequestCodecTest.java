@@ -28,8 +28,34 @@ import org.junit.Test;
 public class CallRequestCodecTest {
 
     @Test
-    public void testDecode() throws Exception {
+    public void testEncode() throws Exception {
 
 
     }
+
+    @Test
+    public void testDecode() throws Exception {
+
+    }
+
+    @Test
+    public void testBytesRemaining() throws Exception {
+    }
+
+
+    @Test
+    public void testEncodeCallRequest() throws Exception {
+
+    }
+
+    @Test
+    public void testWriteEmptyArg() throws Exception {
+    }
+
+    @Test
+    public void testWriteArg() throws Exception {
+
+    }
+
+
 }

@@ -23,6 +23,7 @@ package com.uber.tchannel.handlers;
 
 
 import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.fragmentation.DefragmentationState;
 import com.uber.tchannel.messages.FullMessage;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -46,39 +47,124 @@ public class TestMessageMultiplexer {
         MessageMultiplexer mux = new MessageMultiplexer();
         Map<Long, FullMessage> map = mux.getMessageMap();
         EmbeddedChannel channel = new EmbeddedChannel(mux);
+        long id = 42;
 
-        channel.writeInbound(Fixtures.callRequestWithIdAndMoreFragments(0));
+        channel.writeInbound(Fixtures.callRequest(id, true, Unpooled.wrappedBuffer(
+                // arg1 size
+                new byte[]{0x00, 0x04},
+                "arg1".getBytes()
+        )));
         assertEquals(map.size(), 1);
-        assertNotNull(map.get(0L));
+        assertNotNull(map.get(id));
 
-        channel.writeInbound(Fixtures.callRequestContinueWithIdAndMoreFragments(0));
+        channel.writeInbound(Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
+                // arg2 size
+                new byte[]{0x00, 0x04},
+                "arg2".getBytes()
+        )));
         assertEquals(map.size(), 1);
-        assertNotNull(map.get(0L));
+        assertNotNull(map.get(id));
 
-        channel.writeInbound(Fixtures.callRequestContinueWithId(0));
+        channel.writeInbound(Fixtures.callRequestContinue(id, false, Unpooled.wrappedBuffer(
+                // arg1 size
+                new byte[]{0x00, 0x00},
+                new byte[]{0x00, 0x04},
+                "arg3".getBytes()
+        )));
         assertEquals(map.size(), 0);
-        assertNull(map.get(0L));
+        assertNull(map.get(id));
 
         FullMessage fullMessage = channel.readInbound();
         assertNotNull(fullMessage);
 
         assertEquals(
                 ByteBufUtil.hexDump(fullMessage.getArg1()),
-                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg1arg1arg1".getBytes()))
+                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg1".getBytes()))
         );
 
         assertEquals(
                 ByteBufUtil.hexDump(fullMessage.getArg2()),
-                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg2arg2arg2".getBytes()))
+                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg2".getBytes()))
         );
 
         assertEquals(
                 ByteBufUtil.hexDump(fullMessage.getArg3()),
-                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg3arg3arg3".getBytes()))
+                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg3".getBytes()))
         );
 
 
         assertNull(channel.readInbound());
+
+    }
+
+    @Test
+    public void testReadArgWithAllArgs() throws Exception {
+        MessageMultiplexer codec = new MessageMultiplexer();
+        Map<Long, DefragmentationState> defragmentationState = codec.getDefragmentationState();
+
+        long id = 42;
+        assertEquals(defragmentationState.get(id), null);
+
+        codec.readArg(Fixtures.callRequest(id, true, Unpooled.wrappedBuffer(
+                new byte[]{
+                        0x00,
+                        0x06,
+                        // this arg has length '6'
+                        0x00,
+                        0x01,
+                        0x02,
+                        0x03,
+                        0x04,
+                        0x05
+                }
+        )));
+
+        assertEquals(defragmentationState.get(id), DefragmentationState.PROCESSING_ARG_2);
+
+        codec.readArg(Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
+                new byte[]{
+                        0x00,
+                        0x02,
+                        // this arg has length '2'
+                        0x00,
+                        0x01,
+                }
+        )));
+
+        assertEquals(defragmentationState.get(id), DefragmentationState.PROCESSING_ARG_2);
+
+        codec.readArg(Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
+                new byte[]{
+                        0x00,
+                        0x00
+                        // this arg has length '0'
+                }
+        )));
+
+        assertEquals(defragmentationState.get(id), DefragmentationState.PROCESSING_ARG_3);
+
+        codec.readArg(Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
+                new byte[]{
+                        0x00,
+                        0x02,
+                        // this arg has length '2'
+                        0x0e,
+                        0x0f
+                }
+        )));
+
+        assertEquals(defragmentationState.get(id), DefragmentationState.PROCESSING_ARG_3);
+
+        codec.readArg(Fixtures.callRequestContinue(id, false, Unpooled.wrappedBuffer(
+                new byte[]{
+                        0x00,
+                        0x00
+                        // this arg has length '0'
+                }
+        )));
+
+        assertEquals(defragmentationState.get(id), null);
+
 
     }
 

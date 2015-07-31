@@ -21,11 +21,55 @@
  */
 package com.uber.tchannel.messages;
 
+import com.uber.tchannel.checksum.ChecksumType;
 import io.netty.buffer.ByteBuf;
 
-public class CallResponseContinue extends AbstractCallMessage {
-    public CallResponseContinue(long id, MessageType messageType, byte flags, byte checksumType, int checksum,
-                                ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-        super(id, messageType, flags, checksumType, checksum, arg1, arg2, arg3);
+public final class CallResponseContinue implements Message, CallMessage {
+
+    private final long id;
+    private final byte flags;
+    private final ChecksumType checksumType;
+    private final int checksum;
+    private final ByteBuf payload;
+
+    public CallResponseContinue(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
+        this.id = id;
+        this.flags = flags;
+        this.checksumType = checksumType;
+        this.checksum = checksum;
+        this.payload = payload;
     }
+
+    public int getPayloadSize() {
+        return this.payload.writerIndex() - this.payload.readerIndex();
+    }
+
+    public byte getFlags() {
+        return this.flags;
+    }
+
+    public ChecksumType getChecksumType() {
+        return this.checksumType;
+    }
+
+    public int getChecksum() {
+        return this.checksum;
+    }
+
+    public ByteBuf getPayload() {
+        return this.payload;
+    }
+
+    public boolean moreFragmentsFollow() {
+        return ((this.flags & CallMessage.MORE_FRAGMENTS_REMAIN_MASK) == 1);
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.CallResponseContinue;
+    }
+
 }

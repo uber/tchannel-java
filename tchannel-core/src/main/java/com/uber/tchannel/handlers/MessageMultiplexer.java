@@ -21,25 +21,36 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.messages.AbstractCallMessage;
+import com.uber.tchannel.fragmentation.DefragmentationState;
+import com.uber.tchannel.messages.CallMessage;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
+import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.FullMessage;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.util.ReferenceCountUtil;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessage, FullMessage> {
+public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullMessage> {
 
-    /* Maintains a mapping of MessageId -> Incomplete CallRequest */
+    // Maintains a mapping of MessageId -> Partial FullMessage
     private final Map<Long, FullMessage> messageMap = new HashMap<Long, FullMessage>();
 
-    public Map<Long, FullMessage> getMessageMap() {
+    // Maintains a mapping of MessageId -> Message Defragmentation State */
+    private final Map<Long, DefragmentationState> defragmentationState = new HashMap<Long, DefragmentationState>();
+
+    protected Map<Long, FullMessage> getMessageMap() {
         return this.messageMap;
+    }
+
+    protected Map<Long, DefragmentationState> getDefragmentationState() {
+        return defragmentationState;
     }
 
     @Override
@@ -47,36 +58,45 @@ public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessag
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, AbstractCallMessage msg, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, CallMessage msg, List<Object> out) throws Exception {
 
         long messageId = msg.getId();
 
         if (msg instanceof CallRequest) {
 
             CallRequest callRequest = (CallRequest) msg;
-
             assert this.messageMap.get(messageId) == null;
+            assert this.defragmentationState.get(messageId) == null;
+
+            ByteBuf arg1 = this.readArg(callRequest);
+            ByteBuf arg2 = this.readArg(callRequest);
+            ByteBuf arg3 = this.readArg(callRequest);
+
             this.messageMap.put(messageId, new FullMessage(
                     callRequest.getId(),
                     callRequest.getHeaders(),
-                    callRequest.getArg1(),
-                    callRequest.getArg2(),
-                    callRequest.getArg3()
+                    arg1,
+                    arg2,
+                    arg3
             ));
 
         } else if (msg instanceof CallRequestContinue) {
 
             CallRequestContinue callRequestContinue = (CallRequestContinue) msg;
             assert this.messageMap.get(messageId) != null;
+            assert this.defragmentationState.get(messageId) != null;
+
+            ByteBuf arg2 = this.readArg(callRequestContinue);
+            ByteBuf arg3 = this.readArg(callRequestContinue);
 
             FullMessage partialFullMessage = this.messageMap.get(messageId);
 
             FullMessage updatedFullMessage = new FullMessage(
                     partialFullMessage.getId(),
                     partialFullMessage.getHeaders(),
-                    Unpooled.wrappedBuffer(partialFullMessage.getArg1(), callRequestContinue.getArg1()),
-                    Unpooled.wrappedBuffer(partialFullMessage.getArg2(), callRequestContinue.getArg2()),
-                    Unpooled.wrappedBuffer(partialFullMessage.getArg3(), callRequestContinue.getArg3())
+                    partialFullMessage.getArg1(),
+                    Unpooled.wrappedBuffer(partialFullMessage.getArg2(), arg2),
+                    Unpooled.wrappedBuffer(partialFullMessage.getArg3(), arg3)
 
             );
 
@@ -84,9 +104,129 @@ public class MessageMultiplexer extends MessageToMessageCodec<AbstractCallMessag
 
         }
 
-        if (!msg.moreFragmentsRemain()) {
+        if (!msg.moreFragmentsFollow()) {
             FullMessage completeFullMessage = this.messageMap.remove(messageId);
             out.add(completeFullMessage);
+        }
+
+    }
+
+    /**
+     * @param arg    the arg to write to the buffer
+     * @param buffer the out buffer
+     * @return the number of bytes read from the arg and written to the buffer, not including the `argSize` header
+     */
+    protected int writeArg(ByteBuf arg, ByteBuf buffer) {
+
+        // Mark where we *should* write the `argSize` header
+        int index = buffer.writerIndex();
+
+        // zero-fill the `argSize` header bytes
+        buffer.writeZero(2);
+
+        // Actually write the contents of `arg`
+        buffer.writeBytes(arg);
+
+        // Read how many bytes were written after the `argSize` header
+        int argSize = buffer.writerIndex() - (index + 2);
+
+        if (argSize == 0) {
+            // Backtrack and reset the index because we didn't write anything.
+            buffer.writerIndex(index);
+        } else {
+            // Go back and write the size of `arg`
+            buffer.setShort(index, argSize);
+        }
+
+        // Release the arg back to the pool
+        ReferenceCountUtil.release(arg);
+
+        return argSize;
+    }
+
+    protected ByteBuf readArg(CallMessage msg) {
+
+        /**
+         * Get De-fragmentation State for this MessageID.
+         *
+         * Initialize it to PROCESSING_ARG_1 or PROCESSING_ARG_2 depending on if this is a Call{Request,Response} or a
+         * Call{Request,Response}Continue message. Call{R,R}Continue messages don't carry arg1 payloads, so we skip
+         * ahead to the arg2 processing state.
+         */
+        if (msg instanceof CallRequest || msg instanceof CallResponse) {
+            this.defragmentationState.putIfAbsent(msg.getId(), DefragmentationState.PROCESSING_ARG_1);
+        } else {
+            this.defragmentationState.putIfAbsent(msg.getId(), DefragmentationState.PROCESSING_ARG_2);
+        }
+
+        DefragmentationState currentState = this.defragmentationState.get(msg.getId());
+
+        int argLength;
+        switch (currentState) {
+
+            case PROCESSING_ARG_1:
+
+                /* arg1~2. CANNOT be fragmented. MUST be < 16k */
+                argLength = msg.getPayload().readUnsignedShort();
+                assert argLength <= CallMessage.MAX_ARG1_LENGTH;
+                assert msg.getPayload().readerIndex() == 2;
+
+                /* Read a slice, retain a copy */
+                ByteBuf arg1 = msg.getPayload().readSlice(argLength);
+                arg1.retain();
+
+                /* Move to the next state... */
+                this.defragmentationState.put(msg.getId(), DefragmentationState.nextState(currentState));
+                return arg1;
+
+            case PROCESSING_ARG_2:
+
+                if (msg.getPayloadSize() == 0) {
+                    return Unpooled.EMPTY_BUFFER;
+                }
+
+                /* arg2~2. MAY be fragmented. No size limit */
+                argLength = msg.getPayload().readUnsignedShort();
+
+                if (argLength == 0) {
+                    /* arg2 is done when it's 0 bytes */
+                    this.defragmentationState.put(msg.getId(), DefragmentationState.nextState(currentState));
+                    return Unpooled.EMPTY_BUFFER;
+                }
+
+                /* Read a slice, retain a copy */
+                ByteBuf arg2 = msg.getPayload().readSlice(argLength);
+                arg2.retain();
+
+                return arg2;
+
+            case PROCESSING_ARG_3:
+
+                if (msg.getPayloadSize() == 0) {
+                    return Unpooled.EMPTY_BUFFER;
+                }
+
+                /* arg3~2. MAY be fragmented. No size limit */
+                argLength = msg.getPayload().readUnsignedShort();
+
+                if (argLength == 0) {
+                    /* arg3 is done when 'No Frames Remaining' flag is set, or 0 bytes remain */
+                    this.defragmentationState.remove(msg.getId());
+                    return Unpooled.EMPTY_BUFFER;
+                }
+
+                /* Read a slice, retain a copy */
+                ByteBuf arg3 = msg.getPayload().readSlice(argLength);
+                arg3.retain();
+
+                /* If 'No Frames Remaining', we're done with this MessageId */
+                if (!msg.moreFragmentsFollow()) {
+                    this.defragmentationState.remove(msg.getId());
+                }
+                return arg3;
+
+            default:
+                throw new RuntimeException(String.format("Unexpected 'DefragmentationState': %s", currentState));
         }
 
     }

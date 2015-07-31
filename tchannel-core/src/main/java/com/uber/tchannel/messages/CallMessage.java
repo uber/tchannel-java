@@ -21,48 +21,23 @@
  */
 package com.uber.tchannel.messages;
 
-import com.uber.tchannel.tracing.Trace;
+import com.uber.tchannel.checksum.ChecksumType;
+import io.netty.buffer.ByteBuf;
 
-public final class Cancel implements Message {
+public interface CallMessage extends Message {
 
-    private final long id;
-    private final long ttl;
-    private final Trace tracing;
-    private final String why;
+    byte MORE_FRAGMENTS_REMAIN_MASK = (byte) 0x01;
+    short MAX_ARG1_LENGTH = 16384;
 
-    /**
-     * Designated Constructor
-     *
-     * @param id      unique id of the message
-     * @param ttl     ttl on the wire
-     * @param tracing tracing information
-     * @param why     why the message was canceled
-     */
-    public Cancel(long id, long ttl, Trace tracing, String why) {
-        this.id = id;
-        this.ttl = ttl;
-        this.tracing = tracing;
-        this.why = why;
-    }
+    boolean moreFragmentsFollow();
 
-    public long getTtl() {
-        return ttl;
-    }
+    byte getFlags();
 
-    public Trace getTracing() {
-        return tracing;
-    }
+    ChecksumType getChecksumType();
 
-    public long getId() {
-        return this.id;
-    }
+    int getChecksum();
 
-    public MessageType getMessageType() {
-        return MessageType.Cancel;
-    }
+    ByteBuf getPayload();
 
-    public String getWhy() {
-        return why;
-    }
-
+    int getPayloadSize();
 }

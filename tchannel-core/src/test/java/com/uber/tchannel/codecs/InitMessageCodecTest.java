@@ -23,7 +23,7 @@ package com.uber.tchannel.codecs;
  */
 
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.AbstractInitMessage;
+import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -49,8 +49,8 @@ public class InitMessageCodecTest {
                 42,
                 InitRequest.DEFAULT_VERSION,
                 new HashMap<String, String>() {{
-                    put(AbstractInitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(AbstractInitMessage.PROCESS_NAME_KEY, "test-process");
+                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
                 }}
         );
 
@@ -79,8 +79,8 @@ public class InitMessageCodecTest {
                 42,
                 InitRequest.DEFAULT_VERSION,
                 new HashMap<String, String>() {{
-                    put(AbstractInitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(AbstractInitMessage.PROCESS_NAME_KEY, "test-process");
+                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
                 }}
         );
 

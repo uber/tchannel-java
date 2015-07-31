@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.messages;
 
+import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 
@@ -40,36 +41,77 @@ import java.util.Map;
  * <p>
  * The size of arg1 is at most 16KiB.
  */
-public class CallRequest extends AbstractCallMessage {
+public final class CallRequest implements Message, CallMessage {
 
+    private final long id;
+    private final byte flags;
     private final long ttl;
     private final Trace tracing;
     private final String service;
     private final Map<String, String> headers;
+    private final ChecksumType checksumType;
+    private final int checksum;
+    private final ByteBuf payload;
 
     public CallRequest(long id, byte flags, long ttl, Trace tracing, String service, Map<String, String> headers,
-                       byte checksumType, int checksum, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-
-        super(id, MessageType.CallRequest, flags, checksumType, checksum, arg1, arg2, arg3);
+                       ChecksumType checksumType, int checksum, ByteBuf payload) {
+        this.id = id;
+        this.flags = flags;
         this.ttl = ttl;
-        this.service = service;
         this.tracing = tracing;
+        this.service = service;
         this.headers = headers;
+        this.checksumType = checksumType;
+        this.checksum = checksum;
+        this.payload = payload;
+    }
+
+    public byte getFlags() {
+        return flags;
+    }
+
+    public boolean moreFragmentsFollow() {
+        return ((this.flags & CallMessage.MORE_FRAGMENTS_REMAIN_MASK) == 1);
+    }
+
+    public ChecksumType getChecksumType() {
+        return this.checksumType;
+    }
+
+    public int getChecksum() {
+        return this.checksum;
+    }
+
+    public ByteBuf getPayload() {
+        return payload;
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public int getPayloadSize() {
+        return this.payload.writerIndex() - this.payload.readerIndex();
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.CallRequest;
     }
 
     public long getTtl() {
-        return ttl;
+        return this.ttl;
     }
 
     public Trace getTracing() {
-        return tracing;
+        return this.tracing;
     }
 
     public String getService() {
-        return service;
+        return this.service;
     }
 
     public Map<String, String> getHeaders() {
-        return headers;
+        return this.headers;
     }
+
 }

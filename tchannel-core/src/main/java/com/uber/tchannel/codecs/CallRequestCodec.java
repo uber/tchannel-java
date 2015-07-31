@@ -22,220 +22,115 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.fragmentation.DefragmentationState;
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.AbstractCallMessage;
+import com.uber.tchannel.messages.CallMessage;
 import com.uber.tchannel.messages.CallRequest;
-import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.MessageType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CallRequestCodec extends MessageToMessageCodec<TFrame, AbstractCallMessage> {
-
-    private final Map<Long, DefragmentationState> defragmentationState = new HashMap<Long, DefragmentationState>();
+public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRequest> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, AbstractCallMessage msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CallRequest msg, List<Object> out) throws Exception {
+        /**
+         * Allocate a buffer for the rest of the pipeline
+         *
+         * TODO: Figure out sane initial buffer size allocation
+         */
+        ByteBuf buffer = ctx.alloc().buffer(CallMessage.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
 
+        // flags:1
+        buffer.writeByte(msg.getFlags());
+
+        // ttl:4
+        buffer.writeInt((int) msg.getTtl());
+
+        // tracing:25
+        CodecUtils.encodeTrace(msg.getTracing(), buffer);
+
+        // service~1
+        CodecUtils.encodeSmallString(msg.getService(), buffer);
+
+        // nh:1 (hk~1, hv~1){nh}
+        CodecUtils.encodeSmallHeaders(msg.getHeaders(), buffer);
+
+        // csumtype:1
+        buffer.writeByte(msg.getChecksumType().byteValue());
+
+        // (csum:4){0,1}
+        switch (msg.getChecksumType()) {
+            case Adler32:
+            case FarmhashFingerPrint32:
+            case CRC32C:
+                buffer.writeInt(msg.getChecksum());
+                break;
+            case NoChecksum:
+            default:
+                break;
+        }
+
+        /**
+         * Payload
+         *
+         * TODO: hmm we've already written these bytes, why are we writing them again? we should build a composite
+         * buffer via {@link io.netty.buffer.Unpooled.wrappedBuffer}. The only trick there is that we need to
+         * combine the length of both buffers, which is non-trivial other than just recording it and passing it
+         * through the whole pipeline along with the Msg.
+         */
+        buffer.writeBytes(msg.getPayload());
+
+        TFrame frame = new TFrame(buffer.writerIndex(), MessageType.CallRequest, msg.getId(), buffer);
+        out.add(frame);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) {
-        MessageType type = MessageType.fromByte(frame.type).get();
-        switch (type) {
-            case CallRequest:
-                this.decodeCallRequest(ctx, frame, out);
-                break;
-            case CallRequestContinue:
-                this.decodeCallRequestContinue(ctx, frame, out);
-                break;
-        }
-    }
-
-    @Override
-    public boolean acceptInboundMessage(Object msg) throws Exception {
-        TFrame frame = (TFrame) msg;
-        MessageType type = MessageType.fromByte(frame.type).get();
-        switch (type) {
-            case CallRequest:
-            case CallRequestContinue:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private void decodeCallRequest(ChannelHandlerContext ctx, TFrame frame, List<Object> out) {
-        ByteBuf buffer = frame.payload.readSlice(frame.size);
-        buffer.retain();
-
         // flags:1
-        byte flags = buffer.readByte();
+        byte flags = frame.payload.readByte();
 
         // ttl:4
-        long ttl = buffer.readUnsignedInt();
+        long ttl = frame.payload.readUnsignedInt();
 
         // tracing:25
-        Trace trace = CodecUtils.decodeTrace(buffer);
+        Trace trace = CodecUtils.decodeTrace(frame.payload);
 
         // service~1
-        String service = CodecUtils.decodeSmallString(buffer);
+        String service = CodecUtils.decodeSmallString(frame.payload);
 
         // nh:1 (hk~1, hv~1){nh}
-        Map<String, String> headers = CodecUtils.decodeSmallHeaders(buffer);
+        Map<String, String> headers = CodecUtils.decodeSmallHeaders(frame.payload);
 
         // csumtype:1
-        byte checksumType = buffer.readByte();
-        ChecksumType type = ChecksumType.fromByte(checksumType).get();
+        ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte()).get();
 
         // (csum:4){0,1}
         int checksum = 0;
-        switch (type) {
-            case NoChecksum:
-                break;
+        switch (checksumType) {
             case Adler32:
             case FarmhashFingerPrint32:
             case CRC32C:
-                checksum = buffer.readInt();
+                checksum = frame.payload.readInt();
+                break;
+            case NoChecksum:
+            default:
                 break;
         }
 
         // arg1~2 arg2~2 arg3~2
-        ByteBuf arg1 = this.processBuffer(buffer, frame);
-        ByteBuf arg2 = this.processBuffer(buffer, frame);
-        ByteBuf arg3 = this.processBuffer(buffer, frame);
+        int payloadSize = frame.size - frame.payload.readerIndex();
+        ByteBuf payload = frame.payload.readSlice(payloadSize);
+        payload.retain();
 
-        CallRequest req = new CallRequest(frame.id, flags, ttl, trace, service, headers, checksumType, checksum,
-                arg1,
-                arg2,
-                arg3
+        CallRequest req = new CallRequest(
+                frame.id, flags, ttl, trace, service, headers, checksumType, checksum, payload
         );
-
         out.add(req);
-        buffer.release();
-    }
-
-    private void decodeCallRequestContinue(ChannelHandlerContext ctx, TFrame frame, List<Object> out) {
-        ByteBuf buffer = frame.payload.readSlice(frame.size);
-        buffer.retain();
-
-        // flags:1
-        byte flags = buffer.readByte();
-
-        // csumtype:1
-        byte checksumType = buffer.readByte();
-        ChecksumType type = ChecksumType.fromByte(checksumType).get();
-
-        // (csum:4){0,1}
-        int checksum = 0;
-        switch (type) {
-            case NoChecksum:
-                break;
-            case Adler32:
-            case FarmhashFingerPrint32:
-            case CRC32C:
-                checksum = buffer.readInt();
-                break;
-        }
-
-        // {continuation}
-        ByteBuf arg1 = this.processBuffer(buffer, frame);
-        ByteBuf arg2 = this.processBuffer(buffer, frame);
-        ByteBuf arg3 = this.processBuffer(buffer, frame);
-
-        CallRequestContinue req = new CallRequestContinue(frame.id, flags, checksumType, checksum,
-                arg1,
-                arg2,
-                arg3
-        );
-
-        out.add(req);
-        buffer.release();
-
-    }
-
-    private int bytesRemaining(ByteBuf buffer, TFrame frame) {
-        return frame.size - buffer.readerIndex();
-    }
-
-    private ByteBuf processBuffer(ByteBuf buffer, TFrame frame) {
-
-        /* Get Defragmentation State for this MessageID, or initialize it to PROCESSING_ARG_1 */
-        DefragmentationState currentState = this.defragmentationState.getOrDefault(
-                frame.id,
-                DefragmentationState.PROCESSING_ARG_1
-        );
-
-        /* Return early if there are no bytes remaining in the frame */
-        if (this.bytesRemaining(buffer, frame) <= 0) {
-            return Unpooled.EMPTY_BUFFER;
-        }
-
-        int argLength;
-        switch (currentState) {
-
-            case PROCESSING_ARG_1:
-
-                /* arg1~2. CANNOT be fragmented. MUST be < 16k */
-                argLength = buffer.readUnsignedShort();
-                assert argLength <= AbstractCallMessage.MAX_ARG1_LENGTH;
-
-                /* Read a slice, retain a copy */
-                ByteBuf arg1 = buffer.readSlice(argLength);
-                arg1.retain();
-
-                /* Move to the next state... */
-                this.defragmentationState.put(frame.id, DefragmentationState.nextState(currentState));
-                return arg1;
-
-            case PROCESSING_ARG_2:
-
-                /* arg2~2. MAY be fragmented. No size limit */
-                argLength = buffer.readUnsignedShort();
-
-                if (argLength == 0) {
-                    /* arg2 is done when it's 0 bytes */
-                    this.defragmentationState.put(frame.id, DefragmentationState.nextState(currentState));
-                    return Unpooled.EMPTY_BUFFER;
-                }
-
-                /* Read a slice, retain a copy */
-                ByteBuf arg2 = buffer.readSlice(argLength);
-                arg2.retain();
-
-                return arg2;
-
-            case PROCESSING_ARG_3:
-
-                /* arg3~2. MAY be fragmented. No size limit */
-                argLength = buffer.readUnsignedShort();
-
-                if (argLength == 0) {
-                    /* arg3 is done when 'No Frames Remaining' flag is set, or 0 bytes remain */
-                    this.defragmentationState.remove(frame.id);
-                    return Unpooled.EMPTY_BUFFER;
-                }
-
-                /* Read a slice, retain a copy */
-                ByteBuf arg3 = buffer.readSlice(argLength);
-                arg3.retain();
-
-                /* If 'No Frames Remaining', we're done with this MessageId */
-                this.defragmentationState.remove(frame.id);
-                return arg3;
-
-            default:
-                throw new RuntimeException(String.format("Unexpected 'DefragmentationState': %s", currentState));
-        }
-
     }
 
 }

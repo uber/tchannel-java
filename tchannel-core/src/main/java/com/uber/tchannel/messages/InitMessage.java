@@ -23,32 +23,11 @@ package com.uber.tchannel.messages;
 
 import java.util.Map;
 
-public abstract class AbstractInitMessage extends AbstractMessage {
-    public static final int DEFAULT_VERSION = 2;
-    public static final String DEFAULT_HOST_PORT = "0.0.0.0:0";
-    public static final String HOST_PORT_KEY = "host_port";
-    public static final String PROCESS_NAME_KEY = "process_name";
+public interface InitMessage extends Message {
 
-    protected final int version;
-    protected final Map<String, String> headers;
-
-    public AbstractInitMessage(long id, MessageType messageType, int version, Map<String, String> headers) {
-        super(id, messageType);
-        this.version = version;
-        this.headers = headers;
-    }
-
-    @Override
-    public String toString() {
-        return String.format(
-                "<%s id=%d version=%d hostPort=%s processName=%s>",
-                this.getClass().getCanonicalName(),
-                this.id,
-                this.version,
-                this.getHostPort(),
-                this.getProcessName()
-        );
-    }
+    int DEFAULT_VERSION = 2;
+    String HOST_PORT_KEY = "host_port";
+    String PROCESS_NAME_KEY = "process_name";
 
     /**
      * version is a 16 bit number. The currently specified protocol version is 2.
@@ -56,9 +35,7 @@ public abstract class AbstractInitMessage extends AbstractMessage {
      *
      * @return 16-bit unsigned integer representing the specified protocol version.
      */
-    public int getVersion() {
-        return version;
-    }
+    int getVersion();
 
     /**
      * There are a variable number of key/value pairs. For version 2, the following are required:
@@ -68,9 +45,7 @@ public abstract class AbstractInitMessage extends AbstractMessage {
      *
      * @return Map of headers
      */
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
+    Map<String, String> getHeaders();
 
     /**
      * Where the sending process can be reached.
@@ -81,9 +56,7 @@ public abstract class AbstractInitMessage extends AbstractMessage {
      *
      * @return the `host_port` key for the `headers` member.
      */
-    public String getHostPort() {
-        return this.headers.get(HOST_PORT_KEY);
-    }
+    String getHostPort();
 
     /**
      * An additional process identifier for the sending process, used for logging.
@@ -94,7 +67,6 @@ public abstract class AbstractInitMessage extends AbstractMessage {
      *
      * @return the `process_name` key for the `headers` member.
      */
-    public String getProcessName() {
-        return this.headers.get(PROCESS_NAME_KEY);
-    }
+    String getProcessName();
+
 }

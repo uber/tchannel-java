@@ -28,10 +28,50 @@ import java.util.Map;
  * and describe the service names on both ends. In the future, we will likely use this to negotiate authentication
  * and authorization between services.
  */
-public class InitRequest extends AbstractInitMessage {
+public final class InitRequest implements Message, InitMessage {
+
+    private final long id;
+    private final int version;
+    private final Map<String, String> headers;
 
     public InitRequest(long id, int version, Map<String, String> headers) {
-        super(id, MessageType.InitRequest, version, headers);
+        this.id = id;
+        this.version = version;
+        this.headers = headers;
+    }
+
+    public int getVersion() {
+        return this.version;
+    }
+
+    public Map<String, String> getHeaders() {
+        return this.headers;
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.InitRequest;
+    }
+
+    public String getHostPort() {
+        return this.headers.get(HOST_PORT_KEY);
+    }
+
+    public String getProcessName() {
+        return this.headers.get(PROCESS_NAME_KEY);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<%s id=%d version=%d headers=%s>",
+                this.getClass().getSimpleName(),
+                this.id,
+                this.version,
+                this.headers
+        );
     }
 
 }

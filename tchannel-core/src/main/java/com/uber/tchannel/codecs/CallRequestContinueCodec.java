@@ -19,55 +19,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
-import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.messages.CallRequestContinue;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
-import java.util.Map;
 
-public class InitMessageCodec extends MessageToMessageCodec<TFrame, InitMessage> {
+public class CallRequestContinueCodec extends MessageToMessageCodec<TFrame, CallRequestContinue> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, InitMessage msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CallRequestContinue msg, List<Object> out) throws Exception {
 
-        // Allocate new ByteBuf
-        ByteBuf buffer = ctx.alloc().buffer();
-
-        // version:2
-        buffer.writeShort(msg.getVersion());
-
-        // nh:2 (key~2 value~2){nh}
-        CodecUtils.encodeHeaders(msg.getHeaders(), buffer);
-
-        TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
-        out.add(frame);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
+        // flags:1
+        byte flags = frame.payload.readByte();
 
-        int version = frame.payload.readUnsignedShort();
+        // csumtype:1
+        ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte()).get();
 
-        Map<String, String> headers = CodecUtils.decodeHeaders(frame.payload);
-        MessageType type = MessageType.fromByte(frame.type).get();
-
-        switch (type) {
-            case InitRequest:
-                out.add(new InitRequest(frame.id, version, headers));
+        // (csum:4){0,1}
+        int checksum = 0;
+        switch (checksumType) {
+            case NoChecksum:
                 break;
-            case InitResponse:
-                out.add(new InitResponse(frame.id, version, headers));
+            case Adler32:
+            case FarmhashFingerPrint32:
+            case CRC32C:
+                checksum = frame.payload.readInt();
                 break;
         }
 
+        // {continuation}
+        int payloadSize = frame.size - frame.payload.readerIndex();
+        ByteBuf payload = frame.payload.readSlice(payloadSize);
+        payload.retain();
+
+        CallRequestContinue req = new CallRequestContinue(frame.id, flags, checksumType, checksum, payload);
+        out.add(req);
     }
 
 }

@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.messages;
 
+import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 
@@ -36,28 +37,71 @@ import java.util.Optional;
  * <p>
  * The size of arg1 is at most 16KiB.
  */
-public class CallResponse extends AbstractCallMessage {
+public final class CallResponse implements Message, CallMessage {
 
+    private final long id;
+    private final byte flags;
     private final CallResponseCode code;
     private final Trace tracing;
     private final Map<String, String> headers;
-
-    public CallResponse(long id, byte flags, byte code, Trace tracing, Map<String, String> headers, byte checksumType,
-                        int checksum, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-
-        super(id, MessageType.CallRequest, flags, checksumType, checksum, arg1, arg2, arg3);
-        this.code = CallResponseCode.fromByte(code).get();
-        this.tracing = tracing;
-        this.headers = headers;
-    }
+    private final ChecksumType checksumType;
+    private final int checksum;
+    private final ByteBuf payload;
 
     public CallResponse(long id, byte flags, CallResponseCode code, Trace tracing, Map<String, String> headers,
-                        byte checksumType, int checksum, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-
-        super(id, MessageType.CallRequest, flags, checksumType, checksum, arg1, arg2, arg3);
+                        ChecksumType checksumType, int checksum, ByteBuf payload) {
+        this.id = id;
+        this.flags = flags;
         this.code = code;
         this.tracing = tracing;
         this.headers = headers;
+        this.checksumType = checksumType;
+        this.checksum = checksum;
+        this.payload = payload;
+    }
+
+    public byte getFlags() {
+        return this.flags;
+    }
+
+    public int getPayloadSize() {
+        return this.payload.writerIndex() - this.payload.readerIndex();
+    }
+
+    public boolean ok() {
+        return (this.code == CallResponseCode.OK);
+    }
+
+    public boolean moreFragmentsFollow() {
+        return ((this.flags & CallMessage.MORE_FRAGMENTS_REMAIN_MASK) == 1);
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.CallResponse;
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public Trace getTracing() {
+        return this.tracing;
+    }
+
+    public Map<String, String> getHeaders() {
+        return this.headers;
+    }
+
+    public ChecksumType getChecksumType() {
+        return this.checksumType;
+    }
+
+    public int getChecksum() {
+        return this.checksum;
+    }
+
+    public ByteBuf getPayload() {
+        return this.payload;
     }
 
     public CallResponseCode getCode() {
@@ -84,5 +128,10 @@ public class CallResponse extends AbstractCallMessage {
                     return Optional.empty();
             }
         }
+
+        byte byteValue() {
+            return this.code;
+        }
     }
+
 }

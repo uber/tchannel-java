@@ -25,16 +25,37 @@ import java.util.Optional;
 
 public enum MessageType {
 
+    // First message on every connection must be init
     InitRequest((byte) 0x01),
+
+    // Remote response to init req
     InitResponse((byte) 0x02),
+
+    // RPC method request
     CallRequest((byte) 0x03),
+
+    // RPC method response
     CallResponse((byte) 0x04),
+
+    // RPC request continuation fragment
     CallRequestContinue((byte) 0x13),
+
+    // RPC response continuation fragment
     CallResponseContinue((byte) 0x14),
+
+    // Cancel an outstanding call req / forward req (no body)
     Cancel((byte) 0xc0),
+
+    // Claim / cancel a redundant request
     Claim((byte) 0xc1),
+
+    // Protocol level ping req (no body)
     PingRequest((byte) 0xd0),
+
+    // Ping res (no body)
     PingResponse((byte) 0xd1),
+
+    // Protocol level error.
     Error((byte) 0xff);
 
     private final byte type;

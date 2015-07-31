@@ -23,15 +23,32 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.tracing.Trace;
 
-public class Claim extends AbstractMessage {
+public final class Claim implements Message {
 
+    private final long id;
     private final long ttl;
     private final Trace tracing;
 
+    /**
+     * Designated Constructor
+     *
+     * @param id      unique id of the message
+     * @param ttl     ttl on the wire
+     * @param tracing tracing information
+     */
     public Claim(long id, long ttl, Trace tracing) {
-        super(id, MessageType.Claim);
+        this.id = id;
         this.ttl = ttl;
         this.tracing = tracing;
+
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public MessageType getMessageType() {
+        return MessageType.Claim;
     }
 
     public long getTtl() {
@@ -41,4 +58,5 @@ public class Claim extends AbstractMessage {
     public Trace getTracing() {
         return tracing;
     }
+
 }
