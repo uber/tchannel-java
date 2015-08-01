@@ -23,23 +23,31 @@
 package com.uber.tchannel.messages;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.CharsetUtil;
 
 import java.util.Map;
 
 public final class FullMessage {
 
     private final long id;
+    private final FullMessageType fullMessageType;
     private final Map<String, String> headers;
     private final ByteBuf arg1;
     private final ByteBuf arg2;
     private final ByteBuf arg3;
 
-    public FullMessage(long id, Map<String, String> headers, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    public FullMessage(long id, FullMessageType fullMessageType, Map<String, String> headers, ByteBuf arg1,
+                       ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
+        this.fullMessageType = fullMessageType;
         this.headers = headers;
         this.arg1 = arg1;
         this.arg2 = arg2;
         this.arg3 = arg3;
+    }
+
+    public FullMessageType getFullMessageType() {
+        return fullMessageType;
     }
 
     public long getId() {
@@ -60,6 +68,20 @@ public final class FullMessage {
 
     public ByteBuf getArg3() {
         return arg3;
+    }
+
+    @Override
+    public String toString() {
+
+        return String.format("<%s id=%d type=%s headers=%s arg1=%s arg3=%s arg2=%s>",
+                this.getClass().getSimpleName(),
+                this.id,
+                this.fullMessageType,
+                this.headers,
+                this.arg1.toString(CharsetUtil.UTF_8),
+                this.arg2.toString(CharsetUtil.UTF_8),
+                this.arg3.toString(CharsetUtil.UTF_8)
+        );
     }
 
 }

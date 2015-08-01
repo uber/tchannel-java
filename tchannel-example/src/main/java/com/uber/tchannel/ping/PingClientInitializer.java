@@ -24,6 +24,7 @@ package com.uber.tchannel.ping;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.framing.TFrame;
+import com.uber.tchannel.handlers.MessageMultiplexer;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -41,7 +42,10 @@ public class PingClientInitializer extends ChannelInitializer<SocketChannel> {
         // Translates TFrames into Messages
         ch.pipeline().addLast(new MessageCodec());
 
-        // Fires off a series of messages to test the Server
+        // Multiplexes messages
+        ch.pipeline().addLast(new MessageMultiplexer());
+
+        // Fires off a series of FullMessage Requests to test the Server
         ch.pipeline().addLast(new PingClientHandler());
     }
 

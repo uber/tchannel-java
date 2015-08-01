@@ -23,8 +23,9 @@ package com.uber.tchannel.framing;
 
 import com.uber.tchannel.messages.MessageType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufHolder;
 
-public class TFrame {
+public class TFrame implements ByteBufHolder {
 
     public static final int MAX_FRAME_LENGTH = 65536;
     public static final int FRAME_HEADER_LENGTH = 16;
@@ -66,5 +67,49 @@ public class TFrame {
                 this.id,
                 this.payload
         );
+    }
+
+    public ByteBuf content() {
+        return this.payload;
+    }
+
+    public ByteBufHolder copy() {
+        return new TFrame(this.size, this.type, this.id, this.payload.copy());
+    }
+
+    public ByteBufHolder duplicate() {
+        return new TFrame(this.size, this.type, this.id, this.payload.duplicate());
+    }
+
+    public ByteBufHolder retain() {
+        this.payload.retain();
+        return this;
+    }
+
+    public ByteBufHolder retain(int i) {
+        this.payload.retain(i);
+        return this;
+    }
+
+    public ByteBufHolder touch() {
+        this.payload.touch();
+        return this;
+    }
+
+    public ByteBufHolder touch(Object o) {
+        this.payload.touch(o);
+        return this;
+    }
+
+    public int refCnt() {
+        return this.payload.refCnt();
+    }
+
+    public boolean release() {
+        return this.payload.release();
+    }
+
+    public boolean release(int i) {
+        return this.payload.release(i);
     }
 }

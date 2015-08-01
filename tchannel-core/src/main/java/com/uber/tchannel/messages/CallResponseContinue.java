@@ -23,6 +23,7 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufHolder;
 
 public final class CallResponseContinue implements Message, CallMessage {
 
@@ -70,6 +71,62 @@ public final class CallResponseContinue implements Message, CallMessage {
 
     public MessageType getMessageType() {
         return MessageType.CallResponseContinue;
+    }
+
+    public ByteBuf content() {
+        return this.payload;
+    }
+
+    public ByteBufHolder copy() {
+        return new CallResponseContinue(
+                this.id,
+                this.flags,
+                this.checksumType,
+                this.checksum,
+                this.payload.copy()
+        );
+    }
+
+    public ByteBufHolder duplicate() {
+        return new CallResponseContinue(
+                this.id,
+                this.flags,
+                this.checksumType,
+                this.checksum,
+                this.payload.copy()
+        );
+    }
+
+    public ByteBufHolder retain() {
+        this.payload.retain();
+        return this;
+    }
+
+    public ByteBufHolder retain(int i) {
+        this.payload.retain(i);
+        return this;
+    }
+
+    public ByteBufHolder touch() {
+        this.payload.touch();
+        return this;
+    }
+
+    public ByteBufHolder touch(Object o) {
+        this.payload.touch(o);
+        return this;
+    }
+
+    public int refCnt() {
+        return this.payload.refCnt();
+    }
+
+    public boolean release() {
+        return this.payload.release();
+    }
+
+    public boolean release(int i) {
+        return this.payload.release(i);
     }
 
 }

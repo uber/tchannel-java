@@ -21,26 +21,34 @@
  */
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.messages.PingRequest;
-import com.uber.tchannel.messages.PingResponse;
+import com.uber.tchannel.messages.FullMessage;
+import com.uber.tchannel.messages.FullMessageType;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-
-import java.util.concurrent.atomic.AtomicLong;
+import io.netty.util.ReferenceCountUtil;
 
 public class PingServerHandler extends ChannelHandlerAdapter {
 
-    private final AtomicLong counter = new AtomicLong(0);
-
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        PingRequest pingRequest = (PingRequest) msg;
-        System.out.println(pingRequest);
-        PingResponse pingResponse = new PingResponse(pingRequest.getId() + this.counter.incrementAndGet());
-        ChannelFuture f = ctx.writeAndFlush(pingResponse);
-        f.addListener(ChannelFutureListener.CLOSE);
+
+        FullMessage request = (FullMessage) msg;
+
+        FullMessage response = new FullMessage(
+                request.getId(),
+                FullMessageType.Response,
+                request.getHeaders(),
+                request.getArg1(),
+                request.getArg2(),
+                Unpooled.wrappedBuffer("This is a response!".getBytes())
+        );
+
+        ReferenceCountUtil.release(msg);
+        ChannelFuture f = ctx.writeAndFlush(response);
+        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 
     @Override

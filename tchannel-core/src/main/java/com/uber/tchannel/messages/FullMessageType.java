@@ -19,38 +19,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.MessageType;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+package com.uber.tchannel.messages;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.util.Optional;
 
-public class TestPingResponse {
+public enum FullMessageType {
+    Request((byte) 0x00),
+    Response((byte) 0x01);
 
-    @Test
-    public void shouldInterceptPing() {
+    private final byte type;
 
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new MessageCodec(),
-                new PingHandler()
-        );
+    FullMessageType(byte type) {
+        this.type = type;
+    }
 
-        TFrame frame = new TFrame(0, MessageType.PingRequest.byteValue(), Integer.MAX_VALUE, Unpooled.EMPTY_BUFFER);
+    public Optional<FullMessageType> fromByte(byte type) {
+        switch (type) {
+            case 0x00:
+                return Optional.of(Request);
+            case 0x01:
+                return Optional.of(Response);
+            default:
+                return Optional.empty();
+        }
+    }
 
-        channel.writeInbound(frame);
-        TFrame newFrame = channel.readOutbound();
-
-        assertNotNull(newFrame);
-        assertEquals(frame.size, newFrame.size);
-        assertEquals(MessageType.PingResponse.byteValue(), newFrame.type);
-        assertEquals(frame.id, newFrame.id);
-
+    public byte byteValue() {
+        return this.type;
     }
 
 }
