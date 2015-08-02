@@ -19,37 +19,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.MessageType;
-import com.uber.tchannel.messages.PingMessage;
 import com.uber.tchannel.messages.PingRequest;
-import com.uber.tchannel.messages.PingResponse;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Test;
 
-import java.util.List;
+import static org.junit.Assert.assertEquals;
 
-public class PingMessageCodec extends MessageToMessageCodec<TFrame, PingMessage> {
-    @Override
-    protected void encode(ChannelHandlerContext ctx, PingMessage msg, List<Object> out) throws Exception {
-        out.add(new TFrame(0, msg.getMessageType(), msg.getId(), Unpooled.EMPTY_BUFFER));
-    }
+public class PingRequestCodecTest {
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        MessageType type = MessageType.fromByte(frame.type).get();
+    @Test
+    public void testEncodeDecodePingRequest() throws Exception {
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new PingRequestCodec()
+        );
 
-        switch (type) {
-            case PingRequest:
-                out.add(new PingRequest(frame.id));
-                break;
-            case PingResponse:
-                out.add(new PingResponse(frame.id));
-                break;
-        }
+        PingRequest pingRequest = new PingRequest(42);
+
+        channel.writeOutbound(pingRequest);
+        channel.writeInbound(channel.readOutbound());
+
+        PingRequest newPingRequest = channel.readInbound();
+        assertEquals(newPingRequest.getId(), pingRequest.getId());
 
     }
+
 }

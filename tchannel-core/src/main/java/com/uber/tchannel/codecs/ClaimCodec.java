@@ -30,7 +30,7 @@ import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public class ClaimCodec extends MessageToMessageCodec<TFrame, Claim> {
+public final class ClaimCodec extends MessageToMessageCodec<TFrame, Claim> {
     @Override
     protected void encode(ChannelHandlerContext ctx, Claim msg, List<Object> out) throws Exception {
 

@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 
@@ -29,40 +30,65 @@ import java.util.Map;
 
 public final class CodecUtils {
 
-    public static String decodeString(ByteBuf inBuf) {
-        int valueLength = inBuf.readUnsignedShort();
+    public static int decodeChecksum(ChecksumType checksumType, ByteBuf buffer) {
+        switch (checksumType) {
+            case Adler32:
+            case FarmhashFingerPrint32:
+            case CRC32C:
+                return buffer.readInt();
+            case NoChecksum:
+            default:
+                return 0;
+        }
+    }
+
+    public static void encodeChecksum(int checksum, ChecksumType checksumType, ByteBuf buffer) {
+        switch (checksumType) {
+            case Adler32:
+            case FarmhashFingerPrint32:
+            case CRC32C:
+                buffer.writeInt(checksum);
+                break;
+            case NoChecksum:
+            default:
+                break;
+        }
+    }
+
+    public static String decodeString(ByteBuf buffer) {
+        int valueLength = buffer.readUnsignedShort();
         byte[] valueBytes = new byte[valueLength];
-        inBuf.readBytes(valueBytes);
+        buffer.readBytes(valueBytes);
         return new String(valueBytes);
     }
 
-    public static void encodeString(String value, ByteBuf outBuf) {
+    public static void encodeString(String value, ByteBuf buffer) {
         byte[] raw = value.getBytes();
-        outBuf.writeShort(raw.length);
-        outBuf.writeBytes(raw);
+        buffer.writeShort(raw.length);
+        buffer.writeBytes(raw);
     }
 
-    public static String decodeSmallString(ByteBuf inBuf) {
-        int valueLength = inBuf.readUnsignedByte();
+    public static String decodeSmallString(ByteBuf buffer) {
+        int valueLength = buffer.readUnsignedByte();
         byte[] valueBytes = new byte[valueLength];
-        inBuf.readBytes(valueBytes);
+        buffer.readBytes(valueBytes);
         return new String(valueBytes);
     }
 
-    public static void encodeSmallString(String value, ByteBuf outBuf) {
+    public static void encodeSmallString(String value, ByteBuf buffer) {
         byte[] raw = value.getBytes();
-        outBuf.writeByte(raw.length);
-        outBuf.writeBytes(raw);
+        buffer.writeByte(raw.length);
+        buffer.writeBytes(raw);
     }
 
-    public static Map<String, String> decodeHeaders(ByteBuf inBuf) {
+    public static Map<String, String> decodeHeaders(ByteBuf buffer) {
 
-        int numHeaders = inBuf.readUnsignedShort();
+        int numHeaders = buffer.readUnsignedShort();
         Map<String, String> headers = new HashMap<String, String>(numHeaders);
 
         for (int i = 0; i < numHeaders; i++) {
-            String key = CodecUtils.decodeString(inBuf);
-            String value = CodecUtils.decodeString(inBuf);
+            String key = CodecUtils.decodeString(buffer);
+            String value = CodecUtils.decodeString(buffer);
             headers.put(key, value);
 
         }
@@ -71,25 +97,25 @@ public final class CodecUtils {
 
     }
 
-    public static void encodeHeaders(Map<String, String> headers, ByteBuf outBuf) {
+    public static void encodeHeaders(Map<String, String> headers, ByteBuf buffer) {
 
-        outBuf.writeShort(headers.size());
+        buffer.writeShort(headers.size());
 
         for (Map.Entry<String, String> header : headers.entrySet()) {
-            CodecUtils.encodeString(header.getKey(), outBuf);
-            CodecUtils.encodeString(header.getValue(), outBuf);
+            CodecUtils.encodeString(header.getKey(), buffer);
+            CodecUtils.encodeString(header.getValue(), buffer);
         }
 
     }
 
-    public static Map<String, String> decodeSmallHeaders(ByteBuf inBuf) {
+    public static Map<String, String> decodeSmallHeaders(ByteBuf buffer) {
 
-        short numHeaders = inBuf.readUnsignedByte();
+        short numHeaders = buffer.readUnsignedByte();
         Map<String, String> headers = new HashMap<String, String>(numHeaders);
 
         for (int i = 0; i < numHeaders; i++) {
-            String key = CodecUtils.decodeSmallString(inBuf);
-            String value = CodecUtils.decodeSmallString(inBuf);
+            String key = CodecUtils.decodeSmallString(buffer);
+            String value = CodecUtils.decodeSmallString(buffer);
             headers.put(key, value);
         }
 
@@ -97,43 +123,31 @@ public final class CodecUtils {
 
     }
 
-    public static void encodeSmallHeaders(Map<String, String> headers, ByteBuf outBuf) {
+    public static void encodeSmallHeaders(Map<String, String> headers, ByteBuf buffer) {
 
-        outBuf.writeByte(headers.size());
+        buffer.writeByte(headers.size());
 
         for (Map.Entry<String, String> header : headers.entrySet()) {
-            CodecUtils.encodeSmallString(header.getKey(), outBuf);
-            CodecUtils.encodeSmallString(header.getValue(), outBuf);
+            CodecUtils.encodeSmallString(header.getKey(), buffer);
+            CodecUtils.encodeSmallString(header.getValue(), buffer);
         }
 
     }
 
-    public static Trace decodeTrace(ByteBuf inBuf) {
-        long spanId = inBuf.readLong();
-        long parentId = inBuf.readLong();
-        long traceId = inBuf.readLong();
-        byte traceFlags = inBuf.readByte();
+    public static Trace decodeTrace(ByteBuf buffer) {
+        long spanId = buffer.readLong();
+        long parentId = buffer.readLong();
+        long traceId = buffer.readLong();
+        byte traceFlags = buffer.readByte();
 
         return new Trace(spanId, parentId, traceId, traceFlags);
     }
 
-    public static void encodeTrace(Trace trace, ByteBuf outBuf) {
-        outBuf.writeLong(trace.spanId)
+    public static void encodeTrace(Trace trace, ByteBuf buffer) {
+        buffer.writeLong(trace.spanId)
                 .writeLong(trace.parentId)
                 .writeLong(trace.traceId)
                 .writeByte(trace.traceFlags);
-    }
-
-    public static byte[] decodeArg(ByteBuf inBuf) {
-        int argLength = inBuf.readUnsignedShort();
-        byte[] outBytes = new byte[argLength];
-        inBuf.readBytes(outBytes);
-        return outBytes;
-    }
-
-    public static void encodeArg(byte[] arg, ByteBuf outBuf) {
-        outBuf.writeShort((short) arg.length);
-        outBuf.writeBytes(arg);
     }
 
 }

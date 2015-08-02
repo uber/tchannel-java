@@ -19,31 +19,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
+import com.uber.tchannel.messages.InitResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
+import java.util.Map;
 
-public final class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorMessage> {
+public final class InitResponseCodec extends MessageToMessageCodec<TFrame, InitResponse> {
+
     @Override
-    protected void encode(ChannelHandlerContext ctx, ErrorMessage msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, InitResponse msg, List<Object> out) throws Exception {
+        // Allocate new ByteBuf
         ByteBuf buffer = ctx.alloc().buffer();
 
-        // code:1
-        buffer.writeByte(msg.getType().byteValue());
+        // version:2
+        buffer.writeShort(msg.getVersion());
 
-        // tracing:25
-        CodecUtils.encodeTrace(msg.getTracing(), buffer);
-
-        // message~2
-        CodecUtils.encodeString(msg.getMessage(), buffer);
+        // headers -> nh:2 (key~2 value~2){nh}
+        CodecUtils.encodeHeaders(msg.getHeaders(), buffer);
 
         TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
         out.add(frame);
@@ -51,20 +49,14 @@ public final class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorMessage
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        // code:1
-        ErrorMessage.ErrorType type = ErrorMessage.ErrorType.fromByte(frame.payload.readByte()).get();
+        // version:2
+        int version = frame.payload.readUnsignedShort();
 
-        // tracing:25
-        Trace tracing = CodecUtils.decodeTrace(frame.payload);
+        // headers -> nh:2 (key~2 value~2){nh}
+        Map<String, String> headers = CodecUtils.decodeHeaders(frame.payload);
 
-        // message~2
-        String message = CodecUtils.decodeString(frame.payload);
-
-        out.add(new ErrorMessage(
-                frame.id,
-                type,
-                new Trace(0, 0, 0, (byte) 0),
-                message
-        ));
+        InitResponse initResponse = new InitResponse(frame.id, version, headers);
+        out.add(initResponse);
     }
+
 }
