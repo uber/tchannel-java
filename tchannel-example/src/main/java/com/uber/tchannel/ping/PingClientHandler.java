@@ -58,8 +58,12 @@ public class PingClientHandler extends ChannelHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
 
         if (this.counter.getAndIncrement() < 100000) {
+            if (this.counter.get() % 1000 == 0) {
+                System.out.println(msg);
+            }
+
             FullMessage request = new FullMessage(
-                    1,
+                    this.counter.get(),
                     FullMessageType.Request,
                     new HashMap<String, String>() {
                         {
@@ -74,6 +78,11 @@ public class PingClientHandler extends ChannelHandlerAdapter {
             f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
         } else {
             ctx.close();
+        }
+        if (msg instanceof FullMessage) {
+            ((FullMessage) msg).getArg1().release();
+            ((FullMessage) msg).getArg2().release();
+            ((FullMessage) msg).getArg3().release();
         }
         ReferenceCountUtil.release(msg);
 

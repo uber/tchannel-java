@@ -42,7 +42,6 @@ public final class TFrameCodec extends ByteToMessageCodec<TFrame> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
-
         // size:2
         int size = msg.readUnsignedShort() - TFrame.FRAME_HEADER_LENGTH;
 
@@ -63,6 +62,5 @@ public final class TFrameCodec extends ByteToMessageCodec<TFrame> {
         payload.retain();
 
         out.add(new TFrame(size, type, id, payload));
-
     }
 }

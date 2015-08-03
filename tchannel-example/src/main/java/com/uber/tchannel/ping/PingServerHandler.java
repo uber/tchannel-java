@@ -36,6 +36,9 @@ public class PingServerHandler extends ChannelHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
         FullMessage request = (FullMessage) msg;
+        if (request.getId() % 1000 == 0) {
+            System.out.println(request);
+        }
 
         FullMessage response = new FullMessage(
                 request.getId(),
@@ -47,6 +50,7 @@ public class PingServerHandler extends ChannelHandlerAdapter {
         );
 
         ReferenceCountUtil.release(msg);
+        request.getArg3().release();
         ChannelFuture f = ctx.writeAndFlush(response);
         f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }

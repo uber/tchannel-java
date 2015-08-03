@@ -34,23 +34,33 @@ import java.util.List;
 public class CancelCodec extends MessageToMessageCodec<TFrame, Cancel> {
     @Override
     protected void encode(ChannelHandlerContext ctx, Cancel msg, List<Object> out) throws Exception {
-
         ByteBuf buffer = ctx.alloc().buffer();
+
+        // ttl:4
         buffer.writeInt((int) msg.getTtl());
+
+        // tracing:25
         CodecUtils.encodeTrace(msg.getTracing(), buffer);
+
+        // why~2
         CodecUtils.encodeString(msg.getWhy(), buffer);
+
         TFrame frame = new TFrame(buffer.writerIndex(), MessageType.Cancel, msg.getId(), buffer);
         out.add(frame);
-
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-
+        // ttl:4
         long ttl = frame.payload.readUnsignedInt();
-        Trace tracing = CodecUtils.decodeTrace(frame.payload);
-        String why = CodecUtils.decodeString(frame.payload);
-        Cancel cancel = new Cancel(frame.id, ttl, tracing, why);
 
+        // tracing:25
+        Trace tracing = CodecUtils.decodeTrace(frame.payload);
+
+        // why~2
+        String why = CodecUtils.decodeString(frame.payload);
+
+        Cancel cancel = new Cancel(frame.id, ttl, tracing, why);
+        out.add(cancel);
     }
 }
