@@ -25,6 +25,7 @@ import com.uber.tchannel.api.RawRequest;
 import com.uber.tchannel.api.RawResponse;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.fragmentation.DefragmentationState;
+import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.CallMessage;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
@@ -36,13 +37,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import io.netty.util.ReferenceCountUtil;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullMessage> {
+
+    private static final int DEFAULT_BUFFER_SIZE = 1024;
+    private static final int MAX_BUFFER_SIZE = TFrame.MAX_FRAME_LENGTH - TFrame.FRAME_HEADER_LENGTH;
 
     // Maintains a mapping of MessageId -> Partial FullMessage
     private final Map<Long, FullMessage> messageMap = new HashMap<Long, FullMessage>();
@@ -55,41 +58,52 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
     }
 
     protected Map<Long, DefragmentationState> getDefragmentationState() {
-        return defragmentationState;
+        return this.defragmentationState;
     }
 
     @Override
     protected void encode(ChannelHandlerContext ctx, FullMessage msg, List<Object> out) throws Exception {
 
-        ByteBuf buffer = ctx.alloc().buffer();
+        ByteBuf buffer = ctx.alloc().buffer(DEFAULT_BUFFER_SIZE, MAX_BUFFER_SIZE);
+        // arg1~2
         this.writeArg(msg.getArg1(), buffer);
+
+        // arg2~2
         this.writeArg(msg.getArg2(), buffer);
+
+        // arg3~2
         this.writeArg(msg.getArg3(), buffer);
 
         if (msg instanceof RawRequest) {
+            RawRequest rawRequest = (RawRequest) msg;
+
             CallRequest callRequest = new CallRequest(
-                    msg.getId(),
+                    rawRequest.getId(),
                     (byte) 0x00,
                     0,
                     new Trace(0, 0, 0, (byte) 0x00),
-                    ((RawRequest) msg).getService(),
-                    msg.getHeaders(),
+                    rawRequest.getService(),
+                    rawRequest.getHeaders(),
                     ChecksumType.NoChecksum,
                     0,
                     buffer
             );
+
             out.add(callRequest);
         } else if (msg instanceof RawResponse) {
+            RawResponse rawResponse = (RawResponse) msg;
+
             CallResponse callResponse = new CallResponse(
-                    msg.getId(),
+                    rawResponse.getId(),
                     (byte) 0x00,
                     CallResponse.CallResponseCode.OK,
                     new Trace(0, 0, 0, (byte) 0x00),
-                    msg.getHeaders(),
+                    rawResponse.getHeaders(),
                     ChecksumType.NoChecksum,
                     0,
                     buffer
             );
+
             out.add(callResponse);
         }
 
@@ -98,96 +112,103 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
     @Override
     protected void decode(ChannelHandlerContext ctx, CallMessage msg, List<Object> out) throws Exception {
 
-        long messageId = msg.getId();
-
         if (msg instanceof CallRequest) {
-
-            CallRequest callRequest = (CallRequest) msg;
-            assert this.messageMap.get(messageId) == null;
-            assert this.defragmentationState.get(messageId) == null;
-
-            ByteBuf arg1 = this.readArg(callRequest);
-            ByteBuf arg2 = this.readArg(callRequest);
-            ByteBuf arg3 = this.readArg(callRequest);
-
-            this.messageMap.put(messageId, new RawRequest(
-                    callRequest.getId(),
-                    ((CallRequest) msg).getService(),
-                    callRequest.getHeaders(),
-                    arg1,
-                    arg2,
-                    arg3
-            ));
-
+            this.decodeCallRequest(ctx, (CallRequest) msg, out);
         } else if (msg instanceof CallResponse) {
-
-            CallResponse callResponse = (CallResponse) msg;
-            assert this.messageMap.get(messageId) == null;
-            assert this.defragmentationState.get(messageId) == null;
-
-            ByteBuf arg1 = this.readArg(callResponse);
-            ByteBuf arg2 = this.readArg(callResponse);
-            ByteBuf arg3 = this.readArg(callResponse);
-
-            this.messageMap.put(messageId, new RawResponse(
-                    callResponse.getId(),
-                    callResponse.getHeaders(),
-                    arg1,
-                    arg2,
-                    arg3
-            ));
-
+            this.decodeCallResponse(ctx, (CallResponse) msg, out);
         } else if (msg instanceof CallRequestContinue) {
-
-            CallRequestContinue callRequestContinue = (CallRequestContinue) msg;
-            assert this.messageMap.get(messageId) != null;
-            assert this.defragmentationState.get(messageId) != null;
-
-            ByteBuf arg2 = this.readArg(callRequestContinue);
-            ByteBuf arg3 = this.readArg(callRequestContinue);
-
-            RawRequest partialRequest = (RawRequest) this.messageMap.get(messageId);
-
-            RawRequest updatedRequest = new RawRequest(
-                    partialRequest.getId(),
-                    partialRequest.getService(),
-                    partialRequest.getHeaders(),
-                    partialRequest.getArg1(),
-                    Unpooled.wrappedBuffer(partialRequest.getArg2(), arg2),
-                    Unpooled.wrappedBuffer(partialRequest.getArg3(), arg3)
-            );
-
-            this.messageMap.replace(messageId, updatedRequest);
-
+            this.decodeCallRequestContinue(ctx, (CallRequestContinue) msg, out);
         } else if (msg instanceof CallResponseContinue) {
-
-            CallResponseContinue callResponseContinue = (CallResponseContinue) msg;
-            assert this.messageMap.get(messageId) != null;
-            assert this.defragmentationState.get(messageId) != null;
-
-            ByteBuf arg2 = this.readArg(callResponseContinue);
-            ByteBuf arg3 = this.readArg(callResponseContinue);
-
-            RawResponse partialResponse = (RawResponse) this.messageMap.get(messageId);
-
-            RawResponse updatedResponse = new RawResponse(
-                    partialResponse.getId(),
-                    partialResponse.getHeaders(),
-                    partialResponse.getArg1(),
-                    Unpooled.wrappedBuffer(partialResponse.getArg2(), arg2),
-                    Unpooled.wrappedBuffer(partialResponse.getArg3(), arg3)
-
-            );
-
-            this.messageMap.replace(messageId, updatedResponse);
-
+            this.decodeCallResponseContinue(ctx, (CallResponseContinue) msg, out);
         }
 
         if (!msg.moreFragmentsFollow()) {
-            FullMessage completeResponse = this.messageMap.remove(messageId);
+            FullMessage completeResponse = this.messageMap.remove(msg.getId());
             out.add(completeResponse);
         }
 
+    }
+
+    private void decodeCallRequest(ChannelHandlerContext ctx, CallRequest msg, List<Object> out) {
+
+        assert this.messageMap.get(msg.getId()) == null;
+        assert this.defragmentationState.get(msg.getId()) == null;
+
+        ByteBuf arg1 = this.readArg(msg);
+        ByteBuf arg2 = this.readArg(msg);
+        ByteBuf arg3 = this.readArg(msg);
+
+        this.messageMap.put(msg.getId(), new RawRequest(
+                msg.getId(),
+                msg.getService(),
+                msg.getHeaders(),
+                arg1,
+                arg2,
+                arg3
+        ));
+
+    }
+
+    private void decodeCallResponse(ChannelHandlerContext ctx, CallResponse msg, List<Object> out) {
+
+        assert this.messageMap.get(msg.getId()) == null;
+        assert this.defragmentationState.get(msg.getId()) == null;
+
+        ByteBuf arg1 = this.readArg(msg);
+        ByteBuf arg2 = this.readArg(msg);
+        ByteBuf arg3 = this.readArg(msg);
+
+        this.messageMap.put(msg.getId(), new RawResponse(
+                msg.getId(),
+                msg.getHeaders(),
+                arg1,
+                arg2,
+                arg3
+        ));
+    }
+
+    private void decodeCallRequestContinue(ChannelHandlerContext ctx, CallRequestContinue msg, List<Object> out) {
+
+        assert this.messageMap.get(msg.getId()) != null;
+        assert this.defragmentationState.get(msg.getId()) != null;
+
+        ByteBuf arg2 = this.readArg(msg);
+        ByteBuf arg3 = this.readArg(msg);
+
+        RawRequest partialRequest = (RawRequest) this.messageMap.get(msg.getId());
+
+        RawRequest updatedRequest = new RawRequest(
+                partialRequest.getId(),
+                partialRequest.getService(),
+                partialRequest.getHeaders(),
+                partialRequest.getArg1(),
+                Unpooled.wrappedBuffer(partialRequest.getArg2(), arg2),
+                Unpooled.wrappedBuffer(partialRequest.getArg3(), arg3)
+        );
+
+        this.messageMap.replace(msg.getId(), updatedRequest);
+    }
+
+    private void decodeCallResponseContinue(ChannelHandlerContext ctx, CallResponseContinue msg, List<Object> out) {
+
+        assert this.messageMap.get(msg.getId()) != null;
+        assert this.defragmentationState.get(msg.getId()) != null;
+
+        ByteBuf arg2 = this.readArg(msg);
+        ByteBuf arg3 = this.readArg(msg);
+
+        RawResponse partialResponse = (RawResponse) this.messageMap.get(msg.getId());
+
+        RawResponse updatedResponse = new RawResponse(
+                partialResponse.getId(),
+                partialResponse.getHeaders(),
+                partialResponse.getArg1(),
+                Unpooled.wrappedBuffer(partialResponse.getArg2(), arg2),
+                Unpooled.wrappedBuffer(partialResponse.getArg3(), arg3)
+
+        );
+
+        this.messageMap.replace(msg.getId(), updatedResponse);
     }
 
     /**
@@ -218,7 +239,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
         }
 
         // Release the arg back to the pool
-        ReferenceCountUtil.release(arg);
+        arg.release();
 
         return argSize;
     }

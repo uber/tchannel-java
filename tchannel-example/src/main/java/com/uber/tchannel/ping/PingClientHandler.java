@@ -30,7 +30,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.ReferenceCountUtil;
 
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -72,7 +71,7 @@ public class PingClientHandler extends ChannelHandlerAdapter {
                     },
                     Unpooled.wrappedBuffer("endpoint".getBytes()),
                     Unpooled.wrappedBuffer("headers".getBytes()),
-                    Unpooled.wrappedBuffer(String.format("payload #%d", this.counter.get()).getBytes())
+                    Unpooled.wrappedBuffer("payload".getBytes())
             );
             ChannelFuture f = ctx.writeAndFlush(request);
             f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
@@ -84,7 +83,6 @@ public class PingClientHandler extends ChannelHandlerAdapter {
             ((FullMessage) msg).getArg2().release();
             ((FullMessage) msg).getArg3().release();
         }
-        ReferenceCountUtil.release(msg);
 
     }
 

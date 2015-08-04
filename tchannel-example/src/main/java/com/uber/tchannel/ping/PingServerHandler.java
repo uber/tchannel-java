@@ -28,7 +28,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.ReferenceCountUtil;
 
 public class PingServerHandler extends ChannelHandlerAdapter {
 
@@ -36,9 +35,6 @@ public class PingServerHandler extends ChannelHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
         RawRequest request = (RawRequest) msg;
-        if (request.getId() % 1000 == 0) {
-            System.out.println(request);
-        }
 
         RawResponse response = new RawResponse(
                 request.getId(),
@@ -48,7 +44,6 @@ public class PingServerHandler extends ChannelHandlerAdapter {
                 Unpooled.wrappedBuffer("This is a response!".getBytes())
         );
 
-        ReferenceCountUtil.release(msg);
         request.getArg3().release();
         ChannelFuture f = ctx.writeAndFlush(response);
         f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
