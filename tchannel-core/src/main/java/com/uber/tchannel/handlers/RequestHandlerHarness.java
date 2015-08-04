@@ -19,40 +19,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.RawRequest;
-import com.uber.tchannel.api.RawResponse;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerAdapter;
+package com.uber.tchannel.handlers;
+
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.Response;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
-public class PingServerHandler extends ChannelHandlerAdapter {
+public class RequestHandlerHarness extends SimpleChannelInboundHandler<Request> {
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    private final String service;
+    private final RequestHandler requestHandler;
 
-        RawRequest request = (RawRequest) msg;
-
-        RawResponse response = new RawResponse(
-                request.getId(),
-                request.getHeaders(),
-                request.getArg1(),
-                request.getArg2(),
-                Unpooled.wrappedBuffer("This is a response!".getBytes())
-        );
-
-        request.getArg3().release();
-        ChannelFuture f = ctx.writeAndFlush(response);
-        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+    public RequestHandlerHarness(String service, RequestHandler requestHandler) {
+        this.service = service;
+        this.requestHandler = requestHandler;
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-        ctx.close();
+    protected void messageReceived(ChannelHandlerContext ctx, Request rawRequest) throws Exception {
+        final Response response = this.requestHandler.handle(rawRequest);
+        ctx.writeAndFlush(response);
     }
 
+    @Override
+    public boolean acceptInboundMessage(Object msg) throws Exception {
+        return super.acceptInboundMessage(msg) && ((Request) msg).getService().equals(this.service);
+    }
 }
