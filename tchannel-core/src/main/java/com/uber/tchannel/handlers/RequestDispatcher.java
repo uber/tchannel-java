@@ -22,30 +22,25 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.RawRequest;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.api.Response;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class RequestHandlerHarness extends SimpleChannelInboundHandler<Request> {
+import java.util.Map;
 
-    private final String service;
-    private final RequestHandler requestHandler;
+public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
 
-    public RequestHandlerHarness(String service, RequestHandler requestHandler) {
-        this.service = service;
-        this.requestHandler = requestHandler;
+    private final Map<String, RequestHandler> requestHandlers;
+
+    public RequestDispatcher(Map<String, RequestHandler> requestHandlers) {
+        this.requestHandlers = requestHandlers;
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Request rawRequest) throws Exception {
-        final Response response = this.requestHandler.handle(rawRequest);
-        ctx.writeAndFlush(response);
-    }
-
-    @Override
-    public boolean acceptInboundMessage(Object msg) throws Exception {
-        return super.acceptInboundMessage(msg) && ((Request) msg).getService().equals(this.service);
+    protected void messageReceived(ChannelHandlerContext ctx, RawRequest request) throws Exception {
+        Response res = this.requestHandlers.get(request.getService()).handle(request);
+        ctx.writeAndFlush(res);
     }
 }

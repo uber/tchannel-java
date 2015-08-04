@@ -26,16 +26,15 @@ import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.MessageMultiplexer;
-import com.uber.tchannel.handlers.RequestHandlerHarness;
+import com.uber.tchannel.handlers.RequestDispatcher;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.DefaultEventLoopGroup;
-import io.netty.channel.ServerChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.logging.LogLevel;
@@ -55,10 +54,10 @@ public class TChannel {
         this.channelName = channelName;
     }
 
-    private ChannelInitializer<ServerChannel> channelInitializer(final Map<String, RequestHandler> requestHandlers) {
-        return new ChannelInitializer<ServerChannel>() {
+    private ChannelInitializer<SocketChannel> channelInitializer(final Map<String, RequestHandler> requestHandlers) {
+        return new ChannelInitializer<SocketChannel>() {
             @Override
-            protected void initChannel(ServerChannel ch) throws Exception {
+            protected void initChannel(SocketChannel ch) throws Exception {
                 // Translates TCP Streams to Raw Frames
                 ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true));
 
@@ -74,13 +73,8 @@ public class TChannel {
                 // Handles Call Request RPC
                 ch.pipeline().addLast(new MessageMultiplexer());
 
-                for (Map.Entry<String, RequestHandler> entry : requestHandlers.entrySet()) {
-                    ch.pipeline().addLast(
-                            new DefaultEventLoopGroup(),
-                            new RequestHandlerHarness(entry.getKey(), entry.getValue())
-                    );
-                }
-
+                // Pass RequestHandlers to the RequestDispatcher
+                ch.pipeline().addLast(new RequestDispatcher(requestHandlers));
             }
         };
     }
@@ -98,8 +92,8 @@ public class TChannel {
     }
 
     public Channel start(int port) throws InterruptedException {
-        ChannelFuture f = this.serverBootstrap().bind(port);
-        f.await();
+        ChannelFuture f = this.serverBootstrap().bind(port).sync();
+        f.channel().closeFuture().sync();
         return f.channel();
     }
 
@@ -118,10 +112,9 @@ public class TChannel {
         });
     }
 
-    public TChannel register(String endpoint, RequestHandler requestHandler) {
-        this.requestHandlers.put(endpoint, requestHandler);
+    public TChannel register(String service, RequestHandler requestHandler) {
+        this.requestHandlers.put(service, requestHandler);
         return this;
     }
 
 }
-

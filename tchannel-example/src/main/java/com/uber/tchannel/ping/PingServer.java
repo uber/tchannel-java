@@ -50,16 +50,18 @@ public class PingServer {
     }
 
     public void run() throws Exception {
-        TChannel tchannel = new TChannel("server").register("endpoint", new RawRequestHandler() {
+        TChannel tchannel = new TChannel("server").register("service", new RawRequestHandler() {
             public Response<ByteBuf> handle(Request<ByteBuf> request) {
                 RawResponse response = new RawResponse(
                         request.getId(),
                         request.getHeaders(),
-                        request.getArg1(),
-                        request.getArg2(),
+                        request.getArg1().retain(),
+                        request.getArg2().retain(),
                         Unpooled.wrappedBuffer("This is a response!".getBytes())
                 );
 
+                request.getArg1().release();
+                request.getArg2().release();
                 request.getArg3().release();
                 return response;
             }
