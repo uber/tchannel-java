@@ -21,7 +21,9 @@
  */
 package com.uber.tchannel.api;
 
-import java.util.Map;
+import io.netty.buffer.Unpooled;
+
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
@@ -37,27 +39,13 @@ public class TChannel {
         return new FutureTask<Response>(new Callable<Response>() {
             public Response call() throws Exception {
                 System.out.println(request);
-                return new Response<byte[]>() {
-                    public long getId() {
-                        return 42;
-                    }
-
-                    public Map<String, String> getHeaders() {
-                        return null;
-                    }
-
-                    public byte[] getArg1() {
-                        return null;
-                    }
-
-                    public byte[] getArg2() {
-                        return null;
-                    }
-
-                    public byte[] getArg3() {
-                        return null;
-                    }
-                };
+                return new RawResponse(
+                        42,
+                        new HashMap<String, String>(),
+                        Unpooled.wrappedBuffer(Unpooled.EMPTY_BUFFER),
+                        Unpooled.wrappedBuffer("headers".getBytes()),
+                        Unpooled.wrappedBuffer("payload".getBytes())
+                );
             }
         });
     }
