@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.handlers;
 
-
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.fragmentation.DefragmentationState;
 import com.uber.tchannel.messages.CallRequest;
@@ -114,7 +113,6 @@ public class TestMessageMultiplexer {
         assertEquals(0, firstCallRequestContinue.refCnt());
         assertEquals(0, secondCallRequestContinue.refCnt());
 
-
         assertNull(channel.readInbound());
 
     }
@@ -186,7 +184,6 @@ public class TestMessageMultiplexer {
         )));
 
         assertEquals(defragmentationState.get(id), null);
-
 
     }
 

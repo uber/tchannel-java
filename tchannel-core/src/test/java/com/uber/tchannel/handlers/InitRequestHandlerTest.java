@@ -96,7 +96,6 @@ public class InitRequestHandlerTest {
                 new InitRequestHandler()
         );
 
-
         InitRequest initRequest = new InitRequest(42,
                 InitMessage.DEFAULT_VERSION,
                 new HashMap<String, String>() {{
@@ -126,7 +125,6 @@ public class InitRequestHandlerTest {
                 new InitRequestHandler()
         );
 
-
         CallRequest callRequest = Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER);
         channel.writeInbound(callRequest);
         ErrorMessage error = channel.readOutbound();
@@ -134,7 +132,6 @@ public class InitRequestHandlerTest {
 
         this.expectedClosedChannelException.expect(ClosedChannelException.class);
         channel.writeOutbound();
-
 
     }
 }

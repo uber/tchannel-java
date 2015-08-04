@@ -21,5 +21,16 @@
  */
 package com.uber.tchannel.api;
 
-public class Response {
+import java.util.Map;
+
+public interface Response<T> {
+    long getId();
+
+    Map<String, String> getHeaders();
+
+    T getArg1();
+
+    T getArg2();
+
+    T getArg3();
 }

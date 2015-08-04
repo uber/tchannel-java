@@ -21,8 +21,8 @@
  */
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.messages.FullMessage;
-import com.uber.tchannel.messages.FullMessageType;
+import com.uber.tchannel.api.RawRequest;
+import com.uber.tchannel.api.RawResponse;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -35,14 +35,13 @@ public class PingServerHandler extends ChannelHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-        FullMessage request = (FullMessage) msg;
+        RawRequest request = (RawRequest) msg;
         if (request.getId() % 1000 == 0) {
             System.out.println(request);
         }
 
-        FullMessage response = new FullMessage(
+        RawResponse response = new RawResponse(
                 request.getId(),
-                FullMessageType.Response,
                 request.getHeaders(),
                 request.getArg1(),
                 request.getArg2(),

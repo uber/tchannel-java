@@ -21,6 +21,8 @@
  */
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.api.RawRequest;
+import com.uber.tchannel.api.RawResponse;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.fragmentation.DefragmentationState;
 import com.uber.tchannel.messages.CallMessage;
@@ -29,7 +31,6 @@ import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.CallResponseContinue;
 import com.uber.tchannel.messages.FullMessage;
-import com.uber.tchannel.messages.FullMessageType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -65,35 +66,33 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
         this.writeArg(msg.getArg2(), buffer);
         this.writeArg(msg.getArg3(), buffer);
 
-        switch (msg.getFullMessageType()) {
-            case Request:
-                CallRequest callRequest = new CallRequest(
-                        msg.getId(),
-                        (byte) 0x00,
-                        0,
-                        new Trace(0, 0, 0, (byte) 0x00),
-                        "tchannel",
-                        msg.getHeaders(),
-                        ChecksumType.NoChecksum,
-                        0,
-                        buffer
-                );
-                out.add(callRequest);
-                break;
-            case Response:
-                CallResponse callResponse = new CallResponse(
-                        msg.getId(),
-                        (byte) 0x00,
-                        CallResponse.CallResponseCode.OK,
-                        new Trace(0, 0, 0, (byte) 0x00),
-                        msg.getHeaders(),
-                        ChecksumType.NoChecksum,
-                        0,
-                        buffer
-                );
-                out.add(callResponse);
-                break;
+        if (msg instanceof RawRequest) {
+            CallRequest callRequest = new CallRequest(
+                    msg.getId(),
+                    (byte) 0x00,
+                    0,
+                    new Trace(0, 0, 0, (byte) 0x00),
+                    ((RawRequest) msg).getService(),
+                    msg.getHeaders(),
+                    ChecksumType.NoChecksum,
+                    0,
+                    buffer
+            );
+            out.add(callRequest);
+        } else if (msg instanceof RawResponse) {
+            CallResponse callResponse = new CallResponse(
+                    msg.getId(),
+                    (byte) 0x00,
+                    CallResponse.CallResponseCode.OK,
+                    new Trace(0, 0, 0, (byte) 0x00),
+                    msg.getHeaders(),
+                    ChecksumType.NoChecksum,
+                    0,
+                    buffer
+            );
+            out.add(callResponse);
         }
+
     }
 
     @Override
@@ -111,9 +110,9 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
             ByteBuf arg2 = this.readArg(callRequest);
             ByteBuf arg3 = this.readArg(callRequest);
 
-            this.messageMap.put(messageId, new FullMessage(
+            this.messageMap.put(messageId, new RawRequest(
                     callRequest.getId(),
-                    FullMessageType.Request,
+                    ((CallRequest) msg).getService(),
                     callRequest.getHeaders(),
                     arg1,
                     arg2,
@@ -130,9 +129,8 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
             ByteBuf arg2 = this.readArg(callResponse);
             ByteBuf arg3 = this.readArg(callResponse);
 
-            this.messageMap.put(messageId, new FullMessage(
+            this.messageMap.put(messageId, new RawResponse(
                     callResponse.getId(),
-                    FullMessageType.Response,
                     callResponse.getHeaders(),
                     arg1,
                     arg2,
@@ -148,19 +146,18 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
             ByteBuf arg2 = this.readArg(callRequestContinue);
             ByteBuf arg3 = this.readArg(callRequestContinue);
 
-            FullMessage partialFullMessage = this.messageMap.get(messageId);
+            RawRequest partialRequest = (RawRequest) this.messageMap.get(messageId);
 
-            FullMessage updatedFullMessage = new FullMessage(
-                    partialFullMessage.getId(),
-                    partialFullMessage.getFullMessageType(),
-                    partialFullMessage.getHeaders(),
-                    partialFullMessage.getArg1(),
-                    Unpooled.wrappedBuffer(partialFullMessage.getArg2(), arg2),
-                    Unpooled.wrappedBuffer(partialFullMessage.getArg3(), arg3)
-
+            RawRequest updatedRequest = new RawRequest(
+                    partialRequest.getId(),
+                    partialRequest.getService(),
+                    partialRequest.getHeaders(),
+                    partialRequest.getArg1(),
+                    Unpooled.wrappedBuffer(partialRequest.getArg2(), arg2),
+                    Unpooled.wrappedBuffer(partialRequest.getArg3(), arg3)
             );
 
-            this.messageMap.replace(messageId, updatedFullMessage);
+            this.messageMap.replace(messageId, updatedRequest);
 
         } else if (msg instanceof CallResponseContinue) {
 
@@ -171,25 +168,24 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
             ByteBuf arg2 = this.readArg(callResponseContinue);
             ByteBuf arg3 = this.readArg(callResponseContinue);
 
-            FullMessage partialFullMessage = this.messageMap.get(messageId);
+            RawResponse partialResponse = (RawResponse) this.messageMap.get(messageId);
 
-            FullMessage updatedFullMessage = new FullMessage(
-                    partialFullMessage.getId(),
-                    partialFullMessage.getFullMessageType(),
-                    partialFullMessage.getHeaders(),
-                    partialFullMessage.getArg1(),
-                    Unpooled.wrappedBuffer(partialFullMessage.getArg2(), arg2),
-                    Unpooled.wrappedBuffer(partialFullMessage.getArg3(), arg3)
+            RawResponse updatedResponse = new RawResponse(
+                    partialResponse.getId(),
+                    partialResponse.getHeaders(),
+                    partialResponse.getArg1(),
+                    Unpooled.wrappedBuffer(partialResponse.getArg2(), arg2),
+                    Unpooled.wrappedBuffer(partialResponse.getArg3(), arg3)
 
             );
 
-            this.messageMap.replace(messageId, updatedFullMessage);
+            this.messageMap.replace(messageId, updatedResponse);
 
         }
 
         if (!msg.moreFragmentsFollow()) {
-            FullMessage completeFullMessage = this.messageMap.remove(messageId);
-            out.add(completeFullMessage);
+            FullMessage completeResponse = this.messageMap.remove(messageId);
+            out.add(completeResponse);
         }
 
     }

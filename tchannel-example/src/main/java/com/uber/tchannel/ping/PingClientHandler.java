@@ -21,8 +21,8 @@
  */
 package com.uber.tchannel.ping;
 
+import com.uber.tchannel.api.RawRequest;
 import com.uber.tchannel.messages.FullMessage;
-import com.uber.tchannel.messages.FullMessageType;
 import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import io.netty.buffer.Unpooled;
@@ -62,9 +62,9 @@ public class PingClientHandler extends ChannelHandlerAdapter {
                 System.out.println(msg);
             }
 
-            FullMessage request = new FullMessage(
+            RawRequest request = new RawRequest(
                     this.counter.get(),
-                    FullMessageType.Request,
+                    "service",
                     new HashMap<String, String>() {
                         {
                             put("as", "raw");
