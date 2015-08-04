@@ -23,6 +23,11 @@ package com.uber.tchannel.api;
 
 import java.util.Map;
 
+/**
+ * {@link Response<T>} defines a common interface that all TChannel RPC responses should follow.
+ *
+ * @param <T> represents the type of payload this response holds.
+ */
 public interface Response<T> {
     long getId();
 

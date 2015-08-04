@@ -39,7 +39,8 @@ public final class CallResponseContinueCodec extends MessageToMessageCodec<TFram
         /**
          * Allocate a buffer for the rest of the pipeline
          *
-         * TODO: Figure out sane initial buffer size allocation
+         * TODO: Figure out sane initial buffer size allocation. We could calculate this dynamically based off of the
+         * average payload size of the current connection.
          */
         ByteBuf buffer = ctx.alloc().buffer();
 

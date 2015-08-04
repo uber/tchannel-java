@@ -25,6 +25,17 @@ import com.uber.tchannel.messages.MessageType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
+/**
+ * {@link TFrame} represents a common TChannel frame that is a primitive carrier for all messages in the TChannel
+ * protocol. The {@linkplain TFrame} has a simple 16-byte header that contains information on the `size` of the payload,
+ * the TChannel message `type` and the `id` of the message.
+ * <h3>From the Docs</h3>
+ * Each message is encapsulated in a frame with some additional information that is common across all message types.
+ * Part of that framing information is an id. This id is chosen by the requestor when sending a request message.
+ * When responding to a request, the responding node uses the message id in the request frame for the response.
+ * Each frame has a type which describes the format of the frame's body. Depending on the frame type, some bodies
+ * are 0 bytes.
+ */
 public class TFrame implements ByteBufHolder {
 
     public static final int MAX_FRAME_LENGTH = 65536;
