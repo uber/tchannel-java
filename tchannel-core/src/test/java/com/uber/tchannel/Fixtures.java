@@ -42,7 +42,6 @@ public class Fixtures {
         );
     }
 
-
     public static CallRequestContinue callRequestContinue(long id, boolean moreFragments, ByteBuf payload) {
         return new CallRequestContinue(
                 id,
@@ -52,6 +51,5 @@ public class Fixtures {
                 payload
         );
     }
-
 
 }

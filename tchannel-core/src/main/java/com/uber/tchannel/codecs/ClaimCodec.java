@@ -33,7 +33,6 @@ import java.util.List;
 public final class ClaimCodec extends MessageToMessageCodec<TFrame, Claim> {
     @Override
     protected void encode(ChannelHandlerContext ctx, Claim msg, List<Object> out) throws Exception {
-
         ByteBuf buffer = ctx.alloc().buffer(Trace.TRACING_HEADER_LENGTH + Integer.BYTES);
 
         // ttl: 4
@@ -42,7 +41,8 @@ public final class ClaimCodec extends MessageToMessageCodec<TFrame, Claim> {
         // tracing: 25
         CodecUtils.encodeTrace(msg.getTracing(), buffer);
 
-        out.add(new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer));
+        TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
+        out.add(frame);
     }
 
     @Override
@@ -53,6 +53,7 @@ public final class ClaimCodec extends MessageToMessageCodec<TFrame, Claim> {
         // tracing: 25
         Trace tracing = CodecUtils.decodeTrace(frame.payload);
 
-        out.add(new Claim(frame.id, ttl, tracing));
+        Claim claim = new Claim(frame.id, ttl, tracing);
+        out.add(claim);
     }
 }

@@ -21,26 +21,32 @@
  */
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.messages.PingRequest;
-import com.uber.tchannel.messages.PingResponse;
+import com.uber.tchannel.api.RawRequest;
+import com.uber.tchannel.api.RawResponse;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 public class PingServerHandler extends ChannelHandlerAdapter {
-
-    private final AtomicLong counter = new AtomicLong(0);
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        PingRequest pingRequest = (PingRequest) msg;
-        System.out.println(pingRequest);
-        PingResponse pingResponse = new PingResponse(pingRequest.getId() + this.counter.incrementAndGet());
-        ChannelFuture f = ctx.writeAndFlush(pingResponse);
-        f.addListener(ChannelFutureListener.CLOSE);
+
+        RawRequest request = (RawRequest) msg;
+
+        RawResponse response = new RawResponse(
+                request.getId(),
+                request.getHeaders(),
+                request.getArg1(),
+                request.getArg2(),
+                Unpooled.wrappedBuffer("This is a response!".getBytes())
+        );
+
+        request.getArg3().release();
+        ChannelFuture f = ctx.writeAndFlush(response);
+        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 
     @Override

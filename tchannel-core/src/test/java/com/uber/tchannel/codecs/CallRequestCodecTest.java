@@ -24,12 +24,10 @@ package com.uber.tchannel.codecs;
 
 import org.junit.Test;
 
-
 public class CallRequestCodecTest {
 
     @Test
     public void testEncode() throws Exception {
-
 
     }
 
@@ -41,7 +39,6 @@ public class CallRequestCodecTest {
     @Test
     public void testBytesRemaining() throws Exception {
     }
-
 
     @Test
     public void testEncodeCallRequest() throws Exception {
@@ -56,6 +53,5 @@ public class CallRequestCodecTest {
     public void testWriteArg() throws Exception {
 
     }
-
 
 }

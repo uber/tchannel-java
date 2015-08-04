@@ -78,7 +78,6 @@ public class CodecUtilsTest {
         assertEquals(str, newStr);
     }
 
-
     @Test
     public void testEncodeDecodeHeaders() throws Exception {
         Map<String, String> headers = new HashMap<String, String>();

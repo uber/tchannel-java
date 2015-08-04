@@ -23,8 +23,9 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufHolder;
 
-public interface CallMessage extends Message {
+public interface CallMessage extends Message, ByteBufHolder {
 
     byte MORE_FRAGMENTS_REMAIN_MASK = (byte) 0x01;
     short MAX_ARG1_LENGTH = 16384;

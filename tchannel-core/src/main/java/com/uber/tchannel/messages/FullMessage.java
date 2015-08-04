@@ -26,40 +26,15 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.Map;
 
-public final class FullMessage {
+public interface FullMessage {
 
-    private final long id;
-    private final Map<String, String> headers;
-    private final ByteBuf arg1;
-    private final ByteBuf arg2;
-    private final ByteBuf arg3;
+    long getId();
 
-    public FullMessage(long id, Map<String, String> headers, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-        this.id = id;
-        this.headers = headers;
-        this.arg1 = arg1;
-        this.arg2 = arg2;
-        this.arg3 = arg3;
-    }
+    Map<String, String> getHeaders();
 
-    public long getId() {
-        return this.id;
-    }
+    ByteBuf getArg1();
 
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
+    ByteBuf getArg2();
 
-    public ByteBuf getArg1() {
-        return arg1;
-    }
-
-    public ByteBuf getArg2() {
-        return arg2;
-    }
-
-    public ByteBuf getArg3() {
-        return arg3;
-    }
-
+    ByteBuf getArg3();
 }

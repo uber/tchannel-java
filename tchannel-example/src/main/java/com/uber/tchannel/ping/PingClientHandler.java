@@ -21,25 +21,26 @@
  */
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.api.RawRequest;
+import com.uber.tchannel.messages.FullMessage;
 import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
-import com.uber.tchannel.messages.Message;
-import com.uber.tchannel.messages.PingRequest;
-import com.uber.tchannel.messages.PingResponse;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class PingClientHandler extends ChannelHandlerAdapter {
 
+    private final AtomicLong counter = new AtomicLong(0);
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        InitRequest initRequest = new InitRequest(42,
+        InitRequest initRequest = new InitRequest(0,
                 InitMessage.DEFAULT_VERSION,
                 new HashMap<String, String>() {
                     {
@@ -55,35 +56,32 @@ public class PingClientHandler extends ChannelHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
 
-        Message message = (Message) msg;
+        if (this.counter.getAndIncrement() < 100000) {
+            if (this.counter.get() % 1000 == 0) {
+                System.out.println(msg);
+            }
 
-        switch (message.getMessageType()) {
-            case InitResponse:
-                // Ensure Handshake success
-                InitResponse initResponse = (InitResponse) message;
-                System.out.println(initResponse);
-
-                // Fire back a PingRequest
-                PingRequest pingRequest = new PingRequest(99);
-                ChannelFuture f = ctx.writeAndFlush(pingRequest);
-                f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-                break;
-            case PingResponse:
-                // Ensure we've received the PingResponse
-                PingResponse pingResponse = (PingResponse) message;
-                System.out.println(pingResponse);
-
-                // We're done, close the connection.
-                ctx.close();
-                break;
-            case Error:
-                ErrorMessage errorMessage = (ErrorMessage) message;
-                System.err.println(errorMessage);
-                break;
-            default:
-                System.err.println(String.format("Unexpected Message: %s", message));
-                ctx.close();
-                break;
+            RawRequest request = new RawRequest(
+                    this.counter.get(),
+                    "service",
+                    new HashMap<String, String>() {
+                        {
+                            put("as", "raw");
+                        }
+                    },
+                    Unpooled.wrappedBuffer("endpoint".getBytes()),
+                    Unpooled.wrappedBuffer("headers".getBytes()),
+                    Unpooled.wrappedBuffer("payload".getBytes())
+            );
+            ChannelFuture f = ctx.writeAndFlush(request);
+            f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        } else {
+            ctx.close();
+        }
+        if (msg instanceof FullMessage) {
+            ((FullMessage) msg).getArg1().release();
+            ((FullMessage) msg).getArg2().release();
+            ((FullMessage) msg).getArg3().release();
         }
 
     }

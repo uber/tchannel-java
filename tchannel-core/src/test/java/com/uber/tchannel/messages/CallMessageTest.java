@@ -24,7 +24,6 @@ package com.uber.tchannel.messages;
 
 import org.junit.Test;
 
-
 public class CallMessageTest {
 
     @Test

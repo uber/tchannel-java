@@ -24,6 +24,7 @@ package com.uber.tchannel.messages;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufHolder;
 
 import java.util.Map;
 import java.util.Optional;
@@ -106,6 +107,68 @@ public final class CallResponse implements Message, CallMessage {
 
     public CallResponseCode getCode() {
         return code;
+    }
+
+    public ByteBuf content() {
+        return this.payload;
+    }
+
+    public ByteBufHolder copy() {
+        return new CallResponse(
+                this.id,
+                this.flags,
+                this.code,
+                this.tracing,
+                this.headers,
+                this.checksumType,
+                this.checksum,
+                this.payload.copy()
+        );
+    }
+
+    public ByteBufHolder duplicate() {
+        return new CallResponse(
+                this.id,
+                this.flags,
+                this.code,
+                this.tracing,
+                this.headers,
+                this.checksumType,
+                this.checksum,
+                this.payload.duplicate()
+        );
+    }
+
+    public ByteBufHolder retain() {
+        this.payload.retain();
+        return this;
+    }
+
+    public ByteBufHolder retain(int i) {
+        this.payload.retain(i);
+        return this;
+    }
+
+    public ByteBufHolder touch() {
+        this.payload.touch();
+        return this;
+    }
+
+    public ByteBufHolder touch(Object o) {
+        this.payload.touch(o);
+        return this;
+    }
+
+    public int refCnt() {
+        return this.payload.refCnt();
+    }
+
+    public boolean release() {
+        return this.payload.release();
+    }
+
+    public boolean release(int i) {
+        return this.payload.release(i);
     }
 
     public enum CallResponseCode {

@@ -60,11 +60,7 @@ public final class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorMessage
         // message~2
         String message = CodecUtils.decodeString(frame.payload);
 
-        out.add(new ErrorMessage(
-                frame.id,
-                type,
-                new Trace(0, 0, 0, (byte) 0),
-                message
-        ));
+        ErrorMessage errorMessage = new ErrorMessage(frame.id, type, tracing, message);
+        out.add(errorMessage);
     }
 }

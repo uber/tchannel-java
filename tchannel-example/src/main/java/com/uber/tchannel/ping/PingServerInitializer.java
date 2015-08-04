@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.codecs.CallRequestCodec;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.framing.TFrame;
@@ -32,6 +31,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 public class PingServerInitializer extends ChannelInitializer<SocketChannel> {
+
     @Override
     public void initChannel(SocketChannel ch) throws Exception {
         // Translates TCP Streams to Raw Frames
@@ -47,12 +47,10 @@ public class PingServerInitializer extends ChannelInitializer<SocketChannel> {
         ch.pipeline().addLast(new InitRequestHandler());
 
         // Handles Call Request RPC
-        ch.pipeline().addLast(new CallRequestCodec());
-
-        // Handles large or streaming RPC message aggregation
         ch.pipeline().addLast(new MessageMultiplexer());
 
-        // Responds to PingRequests with PingResponses
+        // Responds to FullMessage Requests with FullMessage Responses
         ch.pipeline().addLast(new PingServerHandler());
     }
+
 }
