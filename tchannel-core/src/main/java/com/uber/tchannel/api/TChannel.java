@@ -21,18 +21,86 @@
  */
 package com.uber.tchannel.api;
 
+import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrameCodec;
+import com.uber.tchannel.framing.TFrame;
+import com.uber.tchannel.handlers.InitRequestHandler;
+import com.uber.tchannel.handlers.MessageMultiplexer;
+import com.uber.tchannel.handlers.RequestHandlerHarness;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.ServerChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 public class TChannel {
 
     public final String channelName;
+    private Map<String, RequestHandler> requestHandlers = new HashMap<String, RequestHandler>();
 
     public TChannel(String channelName) {
         this.channelName = channelName;
+    }
+
+    private ChannelInitializer<ServerChannel> channelInitializer(final Map<String, RequestHandler> requestHandlers) {
+        return new ChannelInitializer<ServerChannel>() {
+            @Override
+            protected void initChannel(ServerChannel ch) throws Exception {
+                // Translates TCP Streams to Raw Frames
+                ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true));
+
+                // Translates Raw Frames into TFrames
+                ch.pipeline().addLast(new TFrameCodec());
+
+                // Translates TFrames into Messages
+                ch.pipeline().addLast(new MessageCodec());
+
+                // Handles Protocol Handshake
+                ch.pipeline().addLast(new InitRequestHandler());
+
+                // Handles Call Request RPC
+                ch.pipeline().addLast(new MessageMultiplexer());
+
+                for (Map.Entry<String, RequestHandler> entry : requestHandlers.entrySet()) {
+                    ch.pipeline().addLast(
+                            new DefaultEventLoopGroup(),
+                            new RequestHandlerHarness(entry.getKey(), entry.getValue())
+                    );
+                }
+
+            }
+        };
+    }
+
+    private ServerBootstrap serverBootstrap() {
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap.group(new NioEventLoopGroup(), new NioEventLoopGroup())
+                .channel(NioServerSocketChannel.class)
+                .handler(new LoggingHandler(LogLevel.INFO))
+                .childHandler(this.channelInitializer(this.requestHandlers))
+                .option(ChannelOption.SO_BACKLOG, 128)
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+                .validate();
+        return bootstrap;
+    }
+
+    public Channel start(int port) throws InterruptedException {
+        ChannelFuture f = this.serverBootstrap().bind(port);
+        f.await();
+        return f.channel();
     }
 
     public FutureTask<Response> request(final Request request) {
@@ -50,4 +118,10 @@ public class TChannel {
         });
     }
 
+    public TChannel register(String endpoint, RequestHandler requestHandler) {
+        this.requestHandlers.put(endpoint, requestHandler);
+        return this;
+    }
+
 }
+

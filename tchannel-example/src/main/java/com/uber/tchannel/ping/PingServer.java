@@ -22,14 +22,13 @@
 
 package com.uber.tchannel.ping;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
+import com.uber.tchannel.api.RawRequestHandler;
+import com.uber.tchannel.api.RawResponse;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.TChannel;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class PingServer {
 
@@ -51,25 +50,21 @@ public class PingServer {
     }
 
     public void run() throws Exception {
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        TChannel tchannel = new TChannel("server").register("endpoint", new RawRequestHandler() {
+            public Response<ByteBuf> handle(Request<ByteBuf> request) {
+                RawResponse response = new RawResponse(
+                        request.getId(),
+                        request.getHeaders(),
+                        request.getArg1(),
+                        request.getArg2(),
+                        Unpooled.wrappedBuffer("This is a response!".getBytes())
+                );
 
-        try {
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new PingServerInitializer())
-                    .option(ChannelOption.SO_BACKLOG, 128)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true);
-
-            ChannelFuture f = b.bind(port).sync();
-
-            f.channel().closeFuture().sync();
-        } finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
-        }
+                request.getArg3().release();
+                return response;
+            }
+        });
+        tchannel.start(this.port);
     }
 
 }
