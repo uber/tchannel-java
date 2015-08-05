@@ -67,7 +67,7 @@ public final class RawRequest implements Request, FullMessage {
         return this.service;
     }
 
-    public Map<String, String> getHeaders() {
+    public Map<String, String> getTransportHeaders() {
         return this.headers;
     }
 

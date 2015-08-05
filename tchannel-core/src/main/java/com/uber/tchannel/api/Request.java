@@ -32,6 +32,6 @@ public interface Request {
 
     String getService();
 
-    Map<String, String> getHeaders();
+    Map<String, String> getTransportHeaders();
 
 }

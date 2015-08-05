@@ -61,7 +61,7 @@ public final class RawResponse implements Response, FullMessage {
         return this.id;
     }
 
-    public Map<String, String> getHeaders() {
+    public Map<String, String> getTransportHeaders() {
         return this.headers;
     }
 
