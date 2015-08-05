@@ -22,6 +22,12 @@
 
 package com.uber.tchannel.api;
 
-public interface RawRequestHandler extends RequestHandler<RawRequest, RawResponse> {
+import java.util.Map;
 
+public interface JSONRequest<T> extends Request {
+    String getMethod();
+
+    Map<String, String> getHeaders();
+
+    T getBody();
 }

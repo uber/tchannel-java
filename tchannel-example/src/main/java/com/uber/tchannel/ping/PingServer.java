@@ -22,12 +22,10 @@
 
 package com.uber.tchannel.ping;
 
+import com.uber.tchannel.api.RawRequest;
 import com.uber.tchannel.api.RawRequestHandler;
 import com.uber.tchannel.api.RawResponse;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class PingServer {
@@ -51,7 +49,7 @@ public class PingServer {
 
     public void run() throws Exception {
         TChannel tchannel = new TChannel("server").register("service", new RawRequestHandler() {
-            public Response<ByteBuf> handle(Request<ByteBuf> request) {
+            public RawResponse handle(RawRequest request) {
                 RawResponse response = new RawResponse(
                         request.getId(),
                         request.getHeaders(),

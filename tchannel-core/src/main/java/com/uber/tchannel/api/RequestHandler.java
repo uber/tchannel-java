@@ -22,6 +22,6 @@
 
 package com.uber.tchannel.api;
 
-public interface RequestHandler<T> {
-    Response<T> handle(Request<T> request);
+public interface RequestHandler<REQUEST_TYPE, RESPONSE_TYPE> {
+    RESPONSE_TYPE handle(REQUEST_TYPE request);
 }

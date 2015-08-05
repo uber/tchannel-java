@@ -40,7 +40,10 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
 
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, RawRequest request) throws Exception {
-        Response res = this.requestHandlers.get(request.getService()).handle(request);
+        Response res = (Response) this.requestHandlers
+                .get(request.getHeaders())
+                .handle(request);
+
         ctx.writeAndFlush(res);
     }
 }

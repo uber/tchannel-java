@@ -22,6 +22,5 @@
 
 package com.uber.tchannel.api;
 
-public interface RawRequestHandler extends RequestHandler<RawRequest, RawResponse> {
-
+public interface JSONRequestHandler extends RequestHandler<JSONRequest, JSONResponse> {
 }

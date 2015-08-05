@@ -22,6 +22,14 @@
 
 package com.uber.tchannel.api;
 
-public interface RawRequestHandler extends RequestHandler<RawRequest, RawResponse> {
+public final class JSONError {
 
+    private final String message;
+
+    private final String type;
+
+    public JSONError(String message, String type) {
+        this.message = message;
+        this.type = type;
+    }
 }
