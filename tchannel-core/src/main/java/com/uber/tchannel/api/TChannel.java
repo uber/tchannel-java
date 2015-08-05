@@ -59,7 +59,14 @@ public class TChannel {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 // Translates TCP Streams to Raw Frames
-                ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true));
+                ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(
+                        TFrame.MAX_FRAME_LENGTH,
+                        TFrame.LENGTH_FIELD_OFFSET,
+                        TFrame.LENGTH_FIELD_LENGTH,
+                        TFrame.LENGTH_ADJUSTMENT,
+                        TFrame.INITIAL_BYTES_TO_STRIP,
+                        TFrame.FAIL_FAST
+                ));
 
                 // Translates Raw Frames into TFrames
                 ch.pipeline().addLast(new TFrameCodec());
