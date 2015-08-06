@@ -22,5 +22,8 @@
 
 package com.uber.tchannel.schemes;
 
-public interface JSONRequestHandler<T, U> extends TypedRequestHandler<T, U> {
+import com.uber.tchannel.api.RequestHandler;
+
+public interface JSONRequestHandler<T, U>
+        extends TypedRequestHandler<T, U>, RequestHandler<JSONRequest<T>, JSONResponse<U>> {
 }
