@@ -19,33 +19,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.ping;
 
-import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
-import com.uber.tchannel.codecs.TFrameCodec;
-import com.uber.tchannel.handlers.MessageMultiplexer;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+package com.uber.tchannel.codecs;
 
-public class PingClientInitializer extends ChannelInitializer<SocketChannel> {
+import com.uber.tchannel.framing.TFrame;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-    @Override
-    public void initChannel(SocketChannel ch) throws Exception {
-        // Translates TCP Streams to Raw Frames
-        ch.pipeline().addLast(new TChannelLengthFieldBasedFrameDecoder());
-
-        // Translates Raw Frames into TFrames
-        ch.pipeline().addLast(new TFrameCodec());
-
-        // Translates TFrames into Messages
-        ch.pipeline().addLast(new MessageCodec());
-
-        // Multiplexes messages
-        ch.pipeline().addLast(new MessageMultiplexer());
-
-        // Fires off a series of FullMessage Requests to test the Server
-        ch.pipeline().addLast(new PingClientHandler());
+public final class TChannelLengthFieldBasedFrameDecoder extends LengthFieldBasedFrameDecoder {
+    public TChannelLengthFieldBasedFrameDecoder() {
+        super(
+                TFrame.MAX_FRAME_LENGTH,
+                TFrame.LENGTH_FIELD_OFFSET,
+                TFrame.LENGTH_FIELD_LENGTH,
+                TFrame.LENGTH_ADJUSTMENT,
+                TFrame.INITIAL_BYTES_TO_STRIP,
+                TFrame.FAIL_FAST
+        );
     }
-
 }

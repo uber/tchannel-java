@@ -1,5 +1,3 @@
-package com.uber.tchannel.codecs;
-
 /*
  * Copyright (c) 2015 Uber Technologies, Inc.
  *
@@ -22,48 +20,39 @@ package com.uber.tchannel.codecs;
  * THE SOFTWARE.
  */
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import org.junit.Test;
+package com.uber.tchannel.codecs;
 
-import java.util.HashMap;
+import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.tracing.Trace;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class InitResponseCodecTest {
+public class ErrorCodecTest {
 
     @Test
-    public void shouldEncodeAndDecodeInitResponse() {
-
+    public void testEncodeDecode() throws Exception {
         EmbeddedChannel channel = new EmbeddedChannel(
                 new TChannelLengthFieldBasedFrameDecoder(),
                 new TFrameCodec(),
-                new InitResponseCodec()
+                new ErrorCodec()
         );
 
-        InitResponse initResponse = new InitResponse(
+        ErrorMessage errorMessage = new ErrorMessage(
                 42,
-                InitRequest.DEFAULT_VERSION,
-                new HashMap<String, String>() {{
-                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
-                }}
+                ErrorMessage.ErrorType.FatalProtocolError,
+                new Trace(0, 0, 0, (byte) 0),
+                "I'm sorry Dave, I can't do that."
         );
 
-        channel.writeOutbound(initResponse);
+        channel.writeOutbound(errorMessage);
         channel.writeInbound(channel.readOutbound());
 
-        InitResponse newInitResponse = channel.readInbound();
-        assertEquals(newInitResponse.getMessageType(), initResponse.getMessageType());
-        assertEquals(newInitResponse.getId(), initResponse.getId());
-        assertEquals(newInitResponse.getVersion(), initResponse.getVersion());
-        assertEquals(newInitResponse.getHostPort(), initResponse.getHostPort());
-        assertEquals(newInitResponse.getProcessName(), initResponse.getProcessName());
+        ErrorMessage newErrorMessage = channel.readInbound();
+
+        assertEquals(errorMessage.getId(), newErrorMessage.getId());
+        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
 
     }
-
 }

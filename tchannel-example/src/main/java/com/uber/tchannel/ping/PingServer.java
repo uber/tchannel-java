@@ -23,7 +23,6 @@
 package com.uber.tchannel.ping;
 
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.TChannelServerBuilder;
 
 public class PingServer {
 
@@ -45,9 +44,10 @@ public class PingServer {
     }
 
     public void run() throws Exception {
-        TChannel server = new TChannelServerBuilder("ping-server")
+        TChannel server = new TChannel.TChannelServerBuilder("ping-server")
                 .register("ping", new PingRequestHandler())
-                .port(this.port)
+                .register("also-ping", new PingRequestHandler())
+                .setPort(this.port)
                 .build();
 
         server.start().channel().closeFuture().sync();

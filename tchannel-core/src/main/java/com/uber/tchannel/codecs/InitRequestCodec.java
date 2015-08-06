@@ -31,7 +31,7 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import java.util.List;
 import java.util.Map;
 
-public class InitRequestCodec extends MessageToMessageCodec<TFrame, InitRequest> {
+public final class InitRequestCodec extends MessageToMessageCodec<TFrame, InitRequest> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, InitRequest msg, List<Object> out) throws Exception {

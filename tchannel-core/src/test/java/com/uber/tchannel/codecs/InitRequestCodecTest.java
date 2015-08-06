@@ -39,7 +39,7 @@ public class InitRequestCodecTest {
     public void shouldEncodeAndDecodeInitRequest() {
 
         EmbeddedChannel channel = new EmbeddedChannel(
-                new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true),
+                new TChannelLengthFieldBasedFrameDecoder(),
                 new TFrameCodec(),
                 new InitRequestCodec()
         );

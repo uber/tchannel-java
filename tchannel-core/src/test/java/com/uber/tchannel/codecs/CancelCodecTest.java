@@ -21,11 +21,9 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.Cancel;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -37,15 +35,18 @@ public class CancelCodecTest {
     public void testEncodeDecode() throws Exception {
 
         EmbeddedChannel channel = new EmbeddedChannel(
-                new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true),
+                new TChannelLengthFieldBasedFrameDecoder(),
                 new TFrameCodec(),
                 new CancelCodec()
         );
 
-        Cancel cancel = new Cancel(Long.MAX_VALUE, Long.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03), "Whoopsies");
+        Cancel cancel = new Cancel(Integer.MAX_VALUE, Integer.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03), "Whoopsies");
 
-        channel.writeInbound(cancel);
+        channel.writeOutbound(cancel);
+        channel.writeInbound(channel.readOutbound());
+
         Cancel newCancel = channel.readInbound();
+
         assertEquals(cancel.getId(), newCancel.getId());
         assertEquals(cancel.getTtl(), newCancel.getTtl());
         assertTrue(newCancel.getTtl() > 0);
@@ -54,4 +55,8 @@ public class CancelCodecTest {
 
     }
 
+    @Test
+    public void testEncode() throws Exception {
+
+    }
 }

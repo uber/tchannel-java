@@ -1,5 +1,3 @@
-package com.uber.tchannel.codecs;
-
 /*
  * Copyright (c) 2015 Uber Technologies, Inc.
  *
@@ -22,48 +20,37 @@ package com.uber.tchannel.codecs;
  * THE SOFTWARE.
  */
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import org.junit.Test;
+package com.uber.tchannel.codecs;
 
-import java.util.HashMap;
+import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.messages.CallResponse;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.CharsetUtil;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class InitResponseCodecTest {
+public class CallResponseCodecTest {
 
     @Test
-    public void shouldEncodeAndDecodeInitResponse() {
-
+    public void testEncodeDecode() throws Exception {
         EmbeddedChannel channel = new EmbeddedChannel(
                 new TChannelLengthFieldBasedFrameDecoder(),
                 new TFrameCodec(),
-                new InitResponseCodec()
+                new CallResponseCodec()
         );
 
-        InitResponse initResponse = new InitResponse(
+        CallResponse callRequestContinue = Fixtures.callResponse(
                 42,
-                InitRequest.DEFAULT_VERSION,
-                new HashMap<String, String>() {{
-                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
-                }}
+                false,
+                Unpooled.wrappedBuffer("Hello, World!".getBytes())
         );
 
-        channel.writeOutbound(initResponse);
+        channel.writeOutbound(callRequestContinue);
         channel.writeInbound(channel.readOutbound());
 
-        InitResponse newInitResponse = channel.readInbound();
-        assertEquals(newInitResponse.getMessageType(), initResponse.getMessageType());
-        assertEquals(newInitResponse.getId(), initResponse.getId());
-        assertEquals(newInitResponse.getVersion(), initResponse.getVersion());
-        assertEquals(newInitResponse.getHostPort(), initResponse.getHostPort());
-        assertEquals(newInitResponse.getProcessName(), initResponse.getProcessName());
-
+        CallResponse inboundCallResponse = channel.readInbound();
+        assertEquals("Hello, World!", inboundCallResponse.getPayload().toString(CharsetUtil.UTF_8));
     }
-
 }

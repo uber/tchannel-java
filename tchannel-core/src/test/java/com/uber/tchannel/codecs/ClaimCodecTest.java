@@ -21,11 +21,9 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.Claim;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -36,7 +34,7 @@ public class ClaimCodecTest {
     public void testEncodeDecodeClaim() throws Exception {
 
         EmbeddedChannel channel = new EmbeddedChannel(
-                new LengthFieldBasedFrameDecoder(TFrame.MAX_FRAME_LENGTH, 0, 2, -2, 0, true),
+                new TChannelLengthFieldBasedFrameDecoder(),
                 new TFrameCodec(),
                 new ClaimCodec()
         );
