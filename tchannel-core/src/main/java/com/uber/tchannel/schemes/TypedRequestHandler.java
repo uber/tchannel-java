@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.schemes;
 
-public interface TypedRequestHandler<T, U> {
-    Class<T> getRequestType();
+public interface TypedRequestHandler<REQUEST_TYPE, RESPONSE_TYPE> {
+    Class<REQUEST_TYPE> getRequestType();
 
-    Class<U> getResponseType();
+    Class<RESPONSE_TYPE> getResponseType();
 }
