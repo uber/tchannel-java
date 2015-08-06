@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.schemes;
 
 public final class JSONError {
 

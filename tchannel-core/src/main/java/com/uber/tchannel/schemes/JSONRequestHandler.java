@@ -20,33 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.schemes;
 
-import java.util.Map;
-
-public interface JSONResponse<T> extends Response {
-
-    /**
-     * The method name must be a UTF-8 string. It's recommended that you use alphanumeric characters and _.
-     *
-     * @return The method / endpoint of the TChannel service.
-     */
-    String getMethod();
-
-    /**
-     * The application headers encoded as JSON.
-     *
-     * @return application headers
-     */
-    Map<String, String> getHeaders();
-
-    /**
-     * JSON encoded Body.
-     * <p/>
-     * In the case of success the response is an arbitrary JSON payload.
-     *
-     * @return a JSON encoded response.
-     */
-    T getBody();
-
+public interface JSONRequestHandler<T, U> extends TypedRequestHandler<T, U> {
 }

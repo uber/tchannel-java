@@ -20,7 +20,40 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.headers;
 
-public interface JSONRequestHandler extends RequestHandler<JSONRequest, JSONResponse> {
+public enum ArgScheme {
+    RAW("raw"),
+    JSON("json"),
+    HTTP("http"),
+    THRIFT("thrift"),
+    STREAMING_THRIFT("sthrift");
+
+    private final String scheme;
+
+    ArgScheme(String scheme) {
+
+        this.scheme = scheme;
+    }
+
+    public static ArgScheme fromString(String argScheme) {
+        switch (argScheme) {
+            case "raw":
+                return RAW;
+            case "json":
+                return JSON;
+            case "http":
+                return HTTP;
+            case "thrift":
+                return THRIFT;
+            case "sthrift":
+                return STREAMING_THRIFT;
+            default:
+                return null;
+        }
+    }
+
+    public String getScheme() {
+        return scheme;
+    }
 }

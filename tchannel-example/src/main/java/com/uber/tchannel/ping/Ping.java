@@ -20,8 +20,12 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.ping;
 
-public interface RawRequestHandler extends RequestHandler<RawRequest, RawResponse> {
+public class Ping {
+    private final String request;
 
+    public Ping(String request) {
+        this.request = request;
+    }
 }

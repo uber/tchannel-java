@@ -22,35 +22,10 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.TChannelServerBuilder;
+public class Pong {
+    private final String response;
 
-public class PingServer {
-
-    private int port;
-
-    public PingServer(int port) {
-        this.port = port;
+    public Pong(String response) {
+        this.response = response;
     }
-
-    public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        }
-
-        System.out.println(String.format("Starting server on port: %d", port));
-        new PingServer(port).run();
-        System.out.println("Stopping server...");
-    }
-
-    public void run() throws Exception {
-        TChannel server = new TChannelServerBuilder("ping-server")
-                .register("ping", new PingRequestHandler())
-                .port(this.port)
-                .build();
-
-        server.start().channel().closeFuture().sync();
-    }
-
 }

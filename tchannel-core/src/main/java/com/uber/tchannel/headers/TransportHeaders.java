@@ -20,37 +20,15 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.headers;
 
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.TChannelServerBuilder;
-
-public class PingServer {
-
-    private int port;
-
-    public PingServer(int port) {
-        this.port = port;
-    }
-
-    public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        }
-
-        System.out.println(String.format("Starting server on port: %d", port));
-        new PingServer(port).run();
-        System.out.println("Stopping server...");
-    }
-
-    public void run() throws Exception {
-        TChannel server = new TChannelServerBuilder("ping-server")
-                .register("ping", new PingRequestHandler())
-                .port(this.port)
-                .build();
-
-        server.start().channel().closeFuture().sync();
-    }
-
+public final class TransportHeaders {
+    public static final String ARG_SCHEME_KEY = "as";
+    public static final String CLAIM_AT_START_KEY = "cas";
+    public static final String CLAIM_AT_FINISH_KEY = "caf";
+    public static final String CALLER_NAME_KEY = "cn";
+    public static final String RETRY_FLAGS_KEY = "re";
+    public static final String SPECULATIVE_EXECUTION_KEY = "se";
+    public static final String FAILURE_DOMAIN_KEY = "fd";
+    public static final String SHARD_KEY_KEY = "sk";
 }

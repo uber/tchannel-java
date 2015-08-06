@@ -20,37 +20,49 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.schemes;
 
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.TChannelServerBuilder;
+import com.uber.tchannel.api.Response;
 
-public class PingServer {
+import java.util.Map;
 
-    private int port;
+public class JSONResponse<T> implements Response {
 
-    public PingServer(int port) {
-        this.port = port;
+    private final long id;
+    private final String service;
+    private final Map<String, String> transportHeaders;
+    private final String method;
+    private final Map<String, String> applicationHeaders;
+    private final T body;
+
+    public JSONResponse(long id, String service, Map<String, String> transportHeaders, String method,
+                        Map<String, String> applicationHeaders, T body) {
+        this.id = id;
+        this.service = service;
+        this.transportHeaders = transportHeaders;
+        this.method = method;
+        this.applicationHeaders = applicationHeaders;
+        this.body = body;
     }
 
-    public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        }
-
-        System.out.println(String.format("Starting server on port: %d", port));
-        new PingServer(port).run();
-        System.out.println("Stopping server...");
+    public long getId() {
+        return this.id;
     }
 
-    public void run() throws Exception {
-        TChannel server = new TChannelServerBuilder("ping-server")
-                .register("ping", new PingRequestHandler())
-                .port(this.port)
-                .build();
+    public Map<String, String> getTransportHeaders() {
+        return this.transportHeaders;
+    }
 
-        server.start().channel().closeFuture().sync();
+    public String getMethod() {
+        return this.method;
+    }
+
+    public Map<String, String> getApplicationHeaders() {
+        return this.applicationHeaders;
+    }
+
+    public T getBody() {
+        return this.body;
     }
 
 }

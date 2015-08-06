@@ -20,37 +20,25 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.schemes;
 
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.TChannelServerBuilder;
+import io.netty.buffer.Unpooled;
 
-public class PingServer {
+public class DefaultRawRequestHandler implements RawRequestHandler {
+    @Override
+    public RawResponse handle(RawRequest request) {
 
-    private int port;
+        RawResponse response = new RawResponse(
+                request.getId(),
+                request.getTransportHeaders(),
+                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00}),
+                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00}),
+                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00})
+        );
 
-    public PingServer(int port) {
-        this.port = port;
+        request.getArg1().release();
+        request.getArg2().release();
+        request.getArg3().release();
+        return response;
     }
-
-    public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        }
-
-        System.out.println(String.format("Starting server on port: %d", port));
-        new PingServer(port).run();
-        System.out.println("Stopping server...");
-    }
-
-    public void run() throws Exception {
-        TChannel server = new TChannelServerBuilder("ping-server")
-                .register("ping", new PingRequestHandler())
-                .port(this.port)
-                .build();
-
-        server.start().channel().closeFuture().sync();
-    }
-
 }

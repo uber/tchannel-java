@@ -22,35 +22,31 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.TChannelServerBuilder;
+import com.uber.tchannel.schemes.JSONRequest;
+import com.uber.tchannel.schemes.JSONRequestHandler;
+import com.uber.tchannel.schemes.JSONResponse;
 
-public class PingServer {
+public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
 
-    private int port;
-
-    public PingServer(int port) {
-        this.port = port;
+    @Override
+    public Class<Ping> getRequestType() {
+        return Ping.class;
     }
 
-    public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        }
-
-        System.out.println(String.format("Starting server on port: %d", port));
-        new PingServer(port).run();
-        System.out.println("Stopping server...");
+    @Override
+    public Class<Pong> getResponseType() {
+        return Pong.class;
     }
 
-    public void run() throws Exception {
-        TChannel server = new TChannelServerBuilder("ping-server")
-                .register("ping", new PingRequestHandler())
-                .port(this.port)
-                .build();
-
-        server.start().channel().closeFuture().sync();
+    @Override
+    public JSONResponse<Pong> handle(JSONRequest<Ping> request) {
+        return new JSONResponse<>(
+                request.getId(),
+                request.getService(),
+                request.getTransportHeaders(),
+                request.getMethod(),
+                request.getApplicationHeaders(),
+                new Pong("pong!")
+        );
     }
-
 }

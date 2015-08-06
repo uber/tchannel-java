@@ -25,7 +25,6 @@ import java.util.Map;
 
 /**
  * {@link Request} defines a common interface that all TChannel RPC requests should follow.
-
  */
 public interface Request {
     long getId();

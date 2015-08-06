@@ -20,37 +20,10 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.schemes;
 
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.TChannelServerBuilder;
+import com.uber.tchannel.api.RequestHandler;
 
-public class PingServer {
-
-    private int port;
-
-    public PingServer(int port) {
-        this.port = port;
-    }
-
-    public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        }
-
-        System.out.println(String.format("Starting server on port: %d", port));
-        new PingServer(port).run();
-        System.out.println("Stopping server...");
-    }
-
-    public void run() throws Exception {
-        TChannel server = new TChannelServerBuilder("ping-server")
-                .register("ping", new PingRequestHandler())
-                .port(this.port)
-                .build();
-
-        server.start().channel().closeFuture().sync();
-    }
+public interface RawRequestHandler extends RequestHandler<RawRequest, RawResponse> {
 
 }

@@ -20,8 +20,9 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.schemes;
 
+import com.uber.tchannel.api.Request;
 import com.uber.tchannel.messages.FullMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -29,7 +30,7 @@ import io.netty.util.CharsetUtil;
 import java.util.Map;
 
 /**
- * Represents a TChannel response message with `raw` arg scheme encoding.
+ * Represents a TChannel request message with `raw` arg scheme encoding.
  * <p/>
  * All RPC messages over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
  * about the contents of these messages. In order to make sense of these arg payloads, TChannel has the notion of
@@ -41,16 +42,18 @@ import java.util.Map;
  * The `raw` encoding is intended for any custom encodings you want to do that
  * are not part of TChannel but are application specific.
  */
-public final class RawResponse implements Response, FullMessage {
+public final class RawRequest implements Request, FullMessage {
 
     private final long id;
+    private final String service;
     private final Map<String, String> headers;
     private final ByteBuf arg1;
     private final ByteBuf arg2;
     private final ByteBuf arg3;
 
-    public RawResponse(long id, Map<String, String> headers, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    public RawRequest(long id, String service, Map<String, String> headers, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
+        this.service = service;
         this.headers = headers;
         this.arg1 = arg1;
         this.arg2 = arg2;
@@ -59,6 +62,10 @@ public final class RawResponse implements Response, FullMessage {
 
     public long getId() {
         return this.id;
+    }
+
+    public String getService() {
+        return this.service;
     }
 
     public Map<String, String> getTransportHeaders() {
@@ -80,9 +87,10 @@ public final class RawResponse implements Response, FullMessage {
     @Override
     public String toString() {
         return String.format(
-                "<%s id=%d headers=%s arg1=%s arg2=%s arg3=%s>",
+                "<%s id=%d service=%s headers=%s arg1=%s arg2=%s arg3=%s>",
                 this.getClass().getSimpleName(),
                 this.id,
+                this.service,
                 this.headers,
                 this.arg1.toString(CharsetUtil.UTF_8),
                 this.arg2.toString(CharsetUtil.UTF_8),

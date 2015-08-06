@@ -20,14 +20,12 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.schemes;
 
-import java.util.Map;
+import com.uber.tchannel.api.RequestHandler;
 
-public interface JSONRequest<T> extends Request {
-    String getMethod();
+public interface TypedRequestHandler<T, U> extends RequestHandler<JSONRequest<T>, JSONResponse<U>> {
+    Class<T> getRequestType();
 
-    Map<String, String> getHeaders();
-
-    T getBody();
+    Class<U> getResponseType();
 }

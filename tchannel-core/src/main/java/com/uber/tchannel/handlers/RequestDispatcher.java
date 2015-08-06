@@ -22,13 +22,23 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.RawRequest;
 import com.uber.tchannel.api.RequestHandler;
-import com.uber.tchannel.api.Response;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.schemes.DefaultRawRequestHandler;
+import com.uber.tchannel.schemes.JSONArgScheme;
+import com.uber.tchannel.schemes.JSONRequest;
+import com.uber.tchannel.schemes.JSONRequestHandler;
+import com.uber.tchannel.schemes.JSONResponse;
+import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.RawResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
 
@@ -39,11 +49,74 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, RawRequest request) throws Exception {
-        Response res = (Response) this.requestHandlers
-                .get(request.getHeaders())
-                .handle(request);
+    protected void messageReceived(final ChannelHandlerContext ctx, RawRequest request) throws Exception {
 
-        ctx.writeAndFlush(res);
+        ArgScheme argScheme = ArgScheme.fromString(
+                request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
+        );
+
+        if (argScheme == null) {
+            throw new RuntimeException("Missing `Arg Scheme` header");
+        }
+
+        RawResponse rawResponse = null;
+        switch (argScheme) {
+            case RAW:
+                rawResponse = new DefaultRawRequestHandler().handle(request);
+                ctx.writeAndFlush(rawResponse);
+                break;
+            case JSON:
+                // arg1
+                String method = JSONArgScheme.decodeMethod(request);
+
+                // arg2
+                Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(request);
+
+                // arg3
+                final JSONRequestHandler handler = (JSONRequestHandler) this.requestHandlers.get(method);
+
+                // deserialize object
+                Object body = JSONArgScheme.decodeBody(request, handler.getRequestType());
+
+                // transform request into form the handler expects
+                final JSONRequest jsonRequest = new JSONRequest(
+                        request.getId(),
+                        request.getService(),
+                        request.getTransportHeaders(),
+                        method,
+                        applicationHeaders,
+                        body
+                );
+
+                // Handle the request
+                Future<JSONResponse> f = ctx.executor().submit(new Callable<JSONResponse>() {
+                    @Override
+                    public JSONResponse call() throws Exception {
+                        return (JSONResponse) handler.handle(jsonRequest);
+                    }
+                });
+
+                // Write the response back when done
+                f.addListener(new GenericFutureListener<Future<? super JSONResponse>>() {
+                    @Override
+                    public void operationComplete(Future<? super JSONResponse> future) throws Exception {
+                        // serialize the object
+                        RawResponse rawResponse = JSONArgScheme.encodeResponse(
+                                (JSONResponse) future.get(),
+                                handler.getResponseType()
+                        );
+
+                        // write and flush
+                        ctx.writeAndFlush(rawResponse);
+                    }
+                });
+
+                break;
+            case THRIFT:
+            case HTTP:
+            case STREAMING_THRIFT:
+            default:
+                break;
+        }
     }
 }
