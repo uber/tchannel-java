@@ -55,6 +55,7 @@ public class TChannel {
 
     public TChannel(String service, int port, ServerBootstrap serverBootstrap) {
         this.service = service;
+        this.port = port;
         this.serverBootstrap = serverBootstrap;
     }
 
@@ -83,7 +84,7 @@ public class TChannel {
         });
     }
 
-    public static class TChannelServerBuilder {
+    public static class Builder {
 
         private final String service;
         private int port;
@@ -93,39 +94,39 @@ public class TChannel {
         private EventLoopGroup workerGroup;
         private LogLevel logLevel;
 
-        public TChannelServerBuilder(String service) {
+        public Builder(String service) {
             if (service == null) {
                 throw new NullPointerException("`service` cannot be null");
             }
             this.service = service;
         }
 
-        public TChannelServerBuilder setPort(int port) {
+        public Builder setPort(int port) {
             this.port = port;
             return this;
         }
 
-        public TChannelServerBuilder register(String service, RequestHandler requestHandler) {
+        public Builder register(String service, RequestHandler requestHandler) {
             this.requestHandlers.put(service, requestHandler);
             return this;
         }
 
-        public TChannelServerBuilder setBossGroup(EventLoopGroup bossGroup) {
+        public Builder setBossGroup(EventLoopGroup bossGroup) {
             this.bossGroup = bossGroup;
             return this;
         }
 
-        public TChannelServerBuilder setChildGroup(EventLoopGroup childGroup) {
+        public Builder setChildGroup(EventLoopGroup childGroup) {
             this.childGroup = childGroup;
             return this;
         }
 
-        public TChannelServerBuilder setWorkerGroup(EventLoopGroup childGroup) {
+        public Builder setWorkerGroup(EventLoopGroup childGroup) {
             this.workerGroup = workerGroup;
             return this;
         }
 
-        public TChannelServerBuilder setLogLevel(LogLevel logLevel) {
+        public Builder setLogLevel(LogLevel logLevel) {
             this.logLevel = logLevel;
             return this;
         }

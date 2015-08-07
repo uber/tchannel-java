@@ -44,7 +44,7 @@ public class PingServer {
     }
 
     public void run() throws Exception {
-        TChannel server = new TChannel.TChannelServerBuilder("ping-server")
+        TChannel server = new TChannel.Builder("ping-server")
                 .register("ping", new PingRequestHandler())
                 .register("also-ping", new PingRequestHandler())
                 .setPort(this.port)
