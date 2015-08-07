@@ -24,7 +24,12 @@ package com.uber.tchannel;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
+import com.uber.tchannel.messages.CallResponse;
+import com.uber.tchannel.messages.CallResponseContinue;
+import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
+
+import java.util.HashMap;
 
 public class Fixtures {
 
@@ -33,9 +38,9 @@ public class Fixtures {
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
                 0L,
-                null,
-                null,
-                null,
+                new Trace(0, 0, 0, (byte) 0x00),
+                "service",
+                new HashMap<String, String>(),
                 ChecksumType.NoChecksum,
                 0,
                 payload
@@ -44,6 +49,29 @@ public class Fixtures {
 
     public static CallRequestContinue callRequestContinue(long id, boolean moreFragments, ByteBuf payload) {
         return new CallRequestContinue(
+                id,
+                moreFragments ? (byte) 1 : (byte) 0,
+                ChecksumType.NoChecksum,
+                0,
+                payload
+        );
+    }
+
+    public static CallResponse callResponse(long id, boolean moreFragments, ByteBuf payload) {
+        return new CallResponse(
+                id,
+                moreFragments ? (byte) 1 : (byte) 0,
+                CallResponse.CallResponseCode.OK,
+                new Trace(0, 0, 0, (byte) 0x00),
+                new HashMap<String, String>(),
+                ChecksumType.NoChecksum,
+                0,
+                payload
+        );
+    }
+
+    public static CallResponseContinue callResponseContinue(long id, boolean moreFragments, ByteBuf payload) {
+        return new CallResponseContinue(
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
                 ChecksumType.NoChecksum,

@@ -19,15 +19,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.api;
+
+package com.uber.tchannel.schemes;
+
+import com.uber.tchannel.api.Response;
 
 import java.util.Map;
 
-/**
- * {@link Response} defines a common interface that all TChannel RPC responses should follow.
- */
-public interface Response {
-    long getId();
+public class JSONResponse<T> implements Response {
 
-    Map<String, String> getTransportHeaders();
+    private final long id;
+    private final String service;
+    private final Map<String, String> transportHeaders;
+    private final String method;
+    private final Map<String, String> applicationHeaders;
+    private final T body;
+
+    public JSONResponse(long id, String service, Map<String, String> transportHeaders, String method,
+                        Map<String, String> applicationHeaders, T body) {
+        this.id = id;
+        this.service = service;
+        this.transportHeaders = transportHeaders;
+        this.method = method;
+        this.applicationHeaders = applicationHeaders;
+        this.body = body;
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public Map<String, String> getTransportHeaders() {
+        return this.transportHeaders;
+    }
+
+    public String getMethod() {
+        return this.method;
+    }
+
+    public Map<String, String> getApplicationHeaders() {
+        return this.applicationHeaders;
+    }
+
+    public T getBody() {
+        return this.body;
+    }
+
 }

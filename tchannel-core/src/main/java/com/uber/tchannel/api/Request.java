@@ -24,20 +24,13 @@ package com.uber.tchannel.api;
 import java.util.Map;
 
 /**
- * {@link Request<T>} defines a common interface that all TChannel RPC requests should follow.
- *
- * @param <T> represents the type of payload this request holds.
+ * {@link Request} defines a common interface that all TChannel RPC requests should follow.
  */
-public interface Request<T> {
+public interface Request {
     long getId();
 
     String getService();
 
-    Map<String, String> getHeaders();
+    Map<String, String> getTransportHeaders();
 
-    T getArg1();
-
-    T getArg2();
-
-    T getArg3();
 }

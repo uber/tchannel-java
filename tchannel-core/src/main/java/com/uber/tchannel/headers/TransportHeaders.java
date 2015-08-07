@@ -19,33 +19,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.ping;
 
-import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
-import com.uber.tchannel.codecs.TFrameCodec;
-import com.uber.tchannel.handlers.MessageMultiplexer;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+package com.uber.tchannel.headers;
 
-public class PingClientInitializer extends ChannelInitializer<SocketChannel> {
-
-    @Override
-    public void initChannel(SocketChannel ch) throws Exception {
-        // Translates TCP Streams to Raw Frames
-        ch.pipeline().addLast(new TChannelLengthFieldBasedFrameDecoder());
-
-        // Translates Raw Frames into TFrames
-        ch.pipeline().addLast(new TFrameCodec());
-
-        // Translates TFrames into Messages
-        ch.pipeline().addLast(new MessageCodec());
-
-        // Multiplexes messages
-        ch.pipeline().addLast(new MessageMultiplexer());
-
-        // Fires off a series of FullMessage Requests to test the Server
-        ch.pipeline().addLast(new PingClientHandler());
-    }
-
+public final class TransportHeaders {
+    public static final String ARG_SCHEME_KEY = "as";
+    public static final String CLAIM_AT_START_KEY = "cas";
+    public static final String CLAIM_AT_FINISH_KEY = "caf";
+    public static final String CALLER_NAME_KEY = "cn";
+    public static final String RETRY_FLAGS_KEY = "re";
+    public static final String SPECULATIVE_EXECUTION_KEY = "se";
+    public static final String FAILURE_DOMAIN_KEY = "fd";
+    public static final String SHARD_KEY_KEY = "sk";
 }

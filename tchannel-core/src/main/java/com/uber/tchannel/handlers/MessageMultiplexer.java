@@ -21,8 +21,6 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.RawRequest;
-import com.uber.tchannel.api.RawResponse;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.fragmentation.DefragmentationState;
 import com.uber.tchannel.framing.TFrame;
@@ -32,6 +30,8 @@ import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.CallResponseContinue;
 import com.uber.tchannel.messages.FullMessage;
+import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -83,7 +83,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
                     0,
                     new Trace(0, 0, 0, (byte) 0x00),
                     rawRequest.getService(),
-                    rawRequest.getHeaders(),
+                    rawRequest.getTransportHeaders(),
                     ChecksumType.NoChecksum,
                     0,
                     buffer
@@ -98,7 +98,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
                     (byte) 0x00,
                     CallResponse.CallResponseCode.OK,
                     new Trace(0, 0, 0, (byte) 0x00),
-                    rawResponse.getHeaders(),
+                    rawResponse.getTransportHeaders(),
                     ChecksumType.NoChecksum,
                     0,
                     buffer
@@ -180,7 +180,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
         RawRequest updatedRequest = new RawRequest(
                 partialRequest.getId(),
                 partialRequest.getService(),
-                partialRequest.getHeaders(),
+                partialRequest.getTransportHeaders(),
                 partialRequest.getArg1(),
                 Unpooled.wrappedBuffer(partialRequest.getArg2(), arg2),
                 Unpooled.wrappedBuffer(partialRequest.getArg3(), arg3)
@@ -201,7 +201,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
 
         RawResponse updatedResponse = new RawResponse(
                 partialResponse.getId(),
-                partialResponse.getHeaders(),
+                partialResponse.getTransportHeaders(),
                 partialResponse.getArg1(),
                 Unpooled.wrappedBuffer(partialResponse.getArg2(), arg2),
                 Unpooled.wrappedBuffer(partialResponse.getArg3(), arg3)

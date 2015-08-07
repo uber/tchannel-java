@@ -19,40 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.RawRequest;
-import com.uber.tchannel.api.RawResponse;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerAdapter;
-import io.netty.channel.ChannelHandlerContext;
+public class Ping {
+    private final String request;
 
-public class PingServerHandler extends ChannelHandlerAdapter {
-
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-
-        RawRequest request = (RawRequest) msg;
-
-        RawResponse response = new RawResponse(
-                request.getId(),
-                request.getHeaders(),
-                request.getArg1(),
-                request.getArg2(),
-                Unpooled.wrappedBuffer("This is a response!".getBytes())
-        );
-
-        request.getArg3().release();
-        ChannelFuture f = ctx.writeAndFlush(response);
-        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+    public Ping(String request) {
+        this.request = request;
     }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-        ctx.close();
-    }
-
 }

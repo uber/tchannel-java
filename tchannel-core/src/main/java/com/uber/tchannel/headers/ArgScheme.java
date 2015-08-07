@@ -19,33 +19,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.ping;
 
-import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
-import com.uber.tchannel.codecs.TFrameCodec;
-import com.uber.tchannel.handlers.MessageMultiplexer;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+package com.uber.tchannel.headers;
 
-public class PingClientInitializer extends ChannelInitializer<SocketChannel> {
+public enum ArgScheme {
+    RAW("raw"),
+    JSON("json"),
+    HTTP("http"),
+    THRIFT("thrift"),
+    STREAMING_THRIFT("sthrift");
 
-    @Override
-    public void initChannel(SocketChannel ch) throws Exception {
-        // Translates TCP Streams to Raw Frames
-        ch.pipeline().addLast(new TChannelLengthFieldBasedFrameDecoder());
+    private final String scheme;
 
-        // Translates Raw Frames into TFrames
-        ch.pipeline().addLast(new TFrameCodec());
+    ArgScheme(String scheme) {
 
-        // Translates TFrames into Messages
-        ch.pipeline().addLast(new MessageCodec());
-
-        // Multiplexes messages
-        ch.pipeline().addLast(new MessageMultiplexer());
-
-        // Fires off a series of FullMessage Requests to test the Server
-        ch.pipeline().addLast(new PingClientHandler());
+        this.scheme = scheme;
     }
 
+    public static ArgScheme fromString(String argScheme) {
+        switch (argScheme) {
+            case "raw":
+                return RAW;
+            case "json":
+                return JSON;
+            case "http":
+                return HTTP;
+            case "thrift":
+                return THRIFT;
+            case "sthrift":
+                return STREAMING_THRIFT;
+            default:
+                return null;
+        }
+    }
+
+    public String getScheme() {
+        return scheme;
+    }
 }

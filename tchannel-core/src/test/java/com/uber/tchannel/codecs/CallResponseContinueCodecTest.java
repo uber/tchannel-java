@@ -20,44 +20,37 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.messages;
+package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.messages.CallResponseContinue;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
-public class CallMessageTest {
+import static org.junit.Assert.assertEquals;
+
+public class CallResponseContinueCodecTest {
 
     @Test
-    public void testMoreFragmentsFollow() throws Exception {
+    public void testEncode() throws Exception {
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new TChannelLengthFieldBasedFrameDecoder(),
+                new TFrameCodec(),
+                new CallResponseContinueCodec()
+        );
 
-    }
+        CallResponseContinue callRequestContinue = Fixtures.callResponseContinue(
+                42,
+                false,
+                Unpooled.wrappedBuffer("Hello, World!".getBytes())
+        );
 
-    @Test
-    public void testGetFlags() throws Exception {
+        channel.writeOutbound(callRequestContinue);
+        channel.writeInbound(channel.readOutbound());
 
-    }
-
-    @Test
-    public void testGetChecksumType() throws Exception {
-
-    }
-
-    @Test
-    public void testGetChecksum() throws Exception {
-
-    }
-
-    @Test
-    public void testGetPayload() throws Exception {
-
-    }
-
-    @Test
-    public void testGetPayloadSize() throws Exception {
-
-    }
-
-    @Test
-    public void testSetPayloadSize() throws Exception {
-
+        CallResponseContinue inboundCallResponseContinue = channel.readInbound();
+        assertEquals("Hello, World!", inboundCallResponseContinue.getPayload().toString(CharsetUtil.UTF_8));
     }
 }

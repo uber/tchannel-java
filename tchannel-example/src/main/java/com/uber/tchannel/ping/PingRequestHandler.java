@@ -19,33 +19,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
-import com.uber.tchannel.codecs.TFrameCodec;
-import com.uber.tchannel.handlers.MessageMultiplexer;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+import com.uber.tchannel.schemes.JSONRequest;
+import com.uber.tchannel.schemes.JSONRequestHandler;
+import com.uber.tchannel.schemes.JSONResponse;
 
-public class PingClientInitializer extends ChannelInitializer<SocketChannel> {
+public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
 
     @Override
-    public void initChannel(SocketChannel ch) throws Exception {
-        // Translates TCP Streams to Raw Frames
-        ch.pipeline().addLast(new TChannelLengthFieldBasedFrameDecoder());
-
-        // Translates Raw Frames into TFrames
-        ch.pipeline().addLast(new TFrameCodec());
-
-        // Translates TFrames into Messages
-        ch.pipeline().addLast(new MessageCodec());
-
-        // Multiplexes messages
-        ch.pipeline().addLast(new MessageMultiplexer());
-
-        // Fires off a series of FullMessage Requests to test the Server
-        ch.pipeline().addLast(new PingClientHandler());
+    public Class<Ping> getRequestType() {
+        return Ping.class;
     }
 
+    @Override
+    public Class<Pong> getResponseType() {
+        return Pong.class;
+    }
+
+    @Override
+    public JSONResponse<Pong> handle(JSONRequest<Ping> request) {
+        return new JSONResponse<>(
+                request.getId(),
+                request.getService(),
+                request.getTransportHeaders(),
+                request.getMethod(),
+                request.getApplicationHeaders(),
+                new Pong("pong!")
+        );
+    }
 }

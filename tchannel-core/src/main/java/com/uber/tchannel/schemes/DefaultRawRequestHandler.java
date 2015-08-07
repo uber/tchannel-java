@@ -19,33 +19,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.ping;
 
-import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
-import com.uber.tchannel.codecs.TFrameCodec;
-import com.uber.tchannel.handlers.MessageMultiplexer;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+package com.uber.tchannel.schemes;
 
-public class PingClientInitializer extends ChannelInitializer<SocketChannel> {
+import io.netty.buffer.Unpooled;
 
+public class DefaultRawRequestHandler implements RawRequestHandler {
     @Override
-    public void initChannel(SocketChannel ch) throws Exception {
-        // Translates TCP Streams to Raw Frames
-        ch.pipeline().addLast(new TChannelLengthFieldBasedFrameDecoder());
+    public RawResponse handle(RawRequest request) {
 
-        // Translates Raw Frames into TFrames
-        ch.pipeline().addLast(new TFrameCodec());
+        RawResponse response = new RawResponse(
+                request.getId(),
+                request.getTransportHeaders(),
+                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00}),
+                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00}),
+                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00})
+        );
 
-        // Translates TFrames into Messages
-        ch.pipeline().addLast(new MessageCodec());
-
-        // Multiplexes messages
-        ch.pipeline().addLast(new MessageMultiplexer());
-
-        // Fires off a series of FullMessage Requests to test the Server
-        ch.pipeline().addLast(new PingClientHandler());
+        request.getArg1().release();
+        request.getArg2().release();
+        request.getArg3().release();
+        return response;
     }
-
 }

@@ -20,8 +20,9 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.schemes;
 
+import com.uber.tchannel.api.Response;
 import com.uber.tchannel.messages.FullMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -30,18 +31,18 @@ import java.util.Map;
 
 /**
  * Represents a TChannel response message with `raw` arg scheme encoding.
- * <p>
+ * <p/>
  * All RPC messages over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
  * about the contents of these messages. In order to make sense of these arg payloads, TChannel has the notion of
  * `arg schemes` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
  * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response messages will be built
  * on top of {@link RawRequest} and {@link RawResponse} messages.
- * <p>
+ * <p/>
  * <h3>From the Docs</h3>
  * The `raw` encoding is intended for any custom encodings you want to do that
  * are not part of TChannel but are application specific.
  */
-public class RawResponse implements Response<ByteBuf>, FullMessage {
+public final class RawResponse implements Response, FullMessage {
 
     private final long id;
     private final Map<String, String> headers;
@@ -61,7 +62,7 @@ public class RawResponse implements Response<ByteBuf>, FullMessage {
         return this.id;
     }
 
-    public Map<String, String> getHeaders() {
+    public Map<String, String> getTransportHeaders() {
         return this.headers;
     }
 

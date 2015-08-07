@@ -22,35 +22,33 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.messages.CallRequest;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.CharsetUtil;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class CallRequestCodecTest {
 
     @Test
-    public void testEncode() throws Exception {
+    public void testEncodeDecode() throws Exception {
 
-    }
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new TChannelLengthFieldBasedFrameDecoder(),
+                new TFrameCodec(),
+                new CallRequestCodec()
+        );
 
-    @Test
-    public void testDecode() throws Exception {
+        CallRequest callRequest = Fixtures.callRequest(42, false, Unpooled.wrappedBuffer("Hello, World!".getBytes()));
 
-    }
+        channel.writeOutbound(callRequest);
+        channel.writeInbound(channel.readOutbound());
 
-    @Test
-    public void testBytesRemaining() throws Exception {
-    }
-
-    @Test
-    public void testEncodeCallRequest() throws Exception {
-
-    }
-
-    @Test
-    public void testWriteEmptyArg() throws Exception {
-    }
-
-    @Test
-    public void testWriteArg() throws Exception {
+        CallRequest inboundCallRequest = channel.readInbound();
+        assertEquals("Hello, World!", inboundCallRequest.getPayload().toString(CharsetUtil.UTF_8));
 
     }
 

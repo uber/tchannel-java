@@ -30,7 +30,7 @@ public interface FullMessage {
 
     long getId();
 
-    Map<String, String> getHeaders();
+    Map<String, String> getTransportHeaders();
 
     ByteBuf getArg1();
 

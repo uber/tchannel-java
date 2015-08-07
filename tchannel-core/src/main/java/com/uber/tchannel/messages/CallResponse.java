@@ -31,11 +31,11 @@ import java.util.Optional;
 
 /**
  * Very similar to {@link CallRequest}, differing only in: adds a code field, no ttl field and no service field.
- * <p>
+ * <p/>
  * All common fields have identical definition to {@link CallRequest}. It is not necessary for arg1 to have the same
  * value between the {@link CallRequest} and the {@link CallResponse}; by convention, existing implementations leave
  * arg1 at zero length for {@link CallResponse} messages.
- * <p>
+ * <p/>
  * The size of arg1 is at most 16KiB.
  */
 public final class CallResponse implements Message, CallMessage {

@@ -21,10 +21,10 @@
  */
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.RawRequest;
 import com.uber.tchannel.messages.FullMessage;
 import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.schemes.RawRequest;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -66,12 +66,12 @@ public class PingClientHandler extends ChannelHandlerAdapter {
                     "service",
                     new HashMap<String, String>() {
                         {
-                            put("as", "raw");
+                            put("as", "json");
                         }
                     },
-                    Unpooled.wrappedBuffer("endpoint".getBytes()),
-                    Unpooled.wrappedBuffer("headers".getBytes()),
-                    Unpooled.wrappedBuffer("payload".getBytes())
+                    Unpooled.wrappedBuffer("ping".getBytes()),
+                    Unpooled.wrappedBuffer("{}".getBytes()),
+                    Unpooled.wrappedBuffer("{'request': 'ping?'}".getBytes())
             );
             ChannelFuture f = ctx.writeAndFlush(request);
             f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
