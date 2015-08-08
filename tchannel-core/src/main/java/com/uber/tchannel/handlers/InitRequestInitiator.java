@@ -19,33 +19,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.ping;
 
-import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
-import com.uber.tchannel.codecs.TFrameCodec;
-import com.uber.tchannel.handlers.MessageMultiplexer;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+package com.uber.tchannel.handlers;
 
-public class PingClientInitializer extends ChannelInitializer<SocketChannel> {
+import com.uber.tchannel.messages.InitMessage;
+import com.uber.tchannel.messages.InitRequest;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelHandlerContext;
 
+import java.util.HashMap;
+
+public class InitRequestInitiator extends ChannelHandlerAdapter {
     @Override
-    public void initChannel(SocketChannel ch) throws Exception {
-        // Translates TCP Streams to Raw Frames
-        ch.pipeline().addLast(new TChannelLengthFieldBasedFrameDecoder());
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        InitRequest initRequest = new InitRequest(0,
+                InitMessage.DEFAULT_VERSION,
+                new HashMap<String, String>() {
+                    {
+                        put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                        put(InitMessage.PROCESS_NAME_KEY, "test-process");
+                    }
+                }
+        );
+        ChannelFuture f = ctx.writeAndFlush(initRequest);
+        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 
-        // Translates Raw Frames into TFrames
-        ch.pipeline().addLast(new TFrameCodec());
-
-        // Translates TFrames into Messages
-        ch.pipeline().addLast(new MessageCodec());
-
-        // Multiplexes messages
-        ch.pipeline().addLast(new MessageMultiplexer());
-
-        // Fires off a series of FullMessage Requests to test the Server
-        ch.pipeline().addLast(new PingClientHandler());
     }
-
 }

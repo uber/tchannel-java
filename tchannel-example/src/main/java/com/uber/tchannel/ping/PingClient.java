@@ -22,12 +22,14 @@
 
 package com.uber.tchannel.ping;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.schemes.RawRequest;
+import io.netty.buffer.Unpooled;
+import io.netty.util.concurrent.Promise;
+
+import java.net.InetSocketAddress;
+import java.util.HashMap;
 
 public class PingClient {
 
@@ -57,21 +59,23 @@ public class PingClient {
     }
 
     public void run() throws Exception {
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        TChannel client = new TChannel.Builder("ping-client").build();
 
-        try {
-            Bootstrap b = new Bootstrap();
-            b.group(workerGroup);
-            b.channel(NioSocketChannel.class);
-            b.option(ChannelOption.SO_KEEPALIVE, true);
-            b.handler(new PingClientInitializer());
-
-            ChannelFuture f = b.connect(this.host, this.port).sync();
-
-            f.channel().closeFuture().sync();
-        } finally {
-            workerGroup.shutdownGracefully();
-        }
+        Promise<Response> p = client.request(new InetSocketAddress(this.host, this.port), new RawRequest(
+                42,
+                "service",
+                new HashMap<String, String>() {
+                    {
+                        put("as", "json");
+                    }
+                },
+                Unpooled.wrappedBuffer("ping".getBytes()),
+                Unpooled.wrappedBuffer("{}".getBytes()),
+                Unpooled.wrappedBuffer("{'request': 'ping?'}".getBytes())
+        ));
+        Response res = p.get();
+        System.out.println(res);
+        client.shutdown();
     }
 
 }

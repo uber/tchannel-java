@@ -21,15 +21,19 @@
  */
 package com.uber.tchannel.api;
 
+import com.uber.tchannel.channels.ChannelManager;
+import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
 import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.handlers.InitRequestHandler;
+import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
 import com.uber.tchannel.handlers.RequestDispatcher;
-import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.handlers.ResponseDispatcher;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -38,60 +42,75 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.Promise;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.FutureTask;
 
-public class TChannel {
+public final class TChannel {
 
     private final String service;
     private final ServerBootstrap serverBootstrap;
-    private int port;
-    private Channel channel;
+    private final Bootstrap clientBootstrap;
+    private final ChannelManager channelManager;
+    private final EventLoopGroup bossGroup;
+    private final EventLoopGroup childGroup;
+    private final InetSocketAddress address;
 
-    public TChannel(String service, int port, ServerBootstrap serverBootstrap) {
-        this.service = service;
-        this.port = port;
-        this.serverBootstrap = serverBootstrap;
+    private TChannel(Builder builder) {
+        this.service = builder.service;
+        this.serverBootstrap = builder.serverBootstrap();
+        this.clientBootstrap = builder.bootstrap();
+        this.channelManager = builder.channelManager;
+        this.bossGroup = builder.bossGroup;
+        this.childGroup = builder.childGroup;
+        this.address = builder.address;
     }
 
-    public ChannelFuture start() throws InterruptedException {
-        ChannelFuture f = this.serverBootstrap.bind(port).sync();
-        this.channel = f.channel();
-        return f;
+    public ChannelFuture listen() throws InterruptedException {
+        return this.serverBootstrap.bind(this.address).sync();
     }
 
-    public void stop() throws InterruptedException {
-        this.channel.closeFuture().sync();
+    public void shutdown() throws InterruptedException {
+        this.channelManager.close();
+        this.bossGroup.shutdownGracefully();
+        this.childGroup.shutdownGracefully();
     }
 
-    public FutureTask<Response> request(final Request request) {
-        return new FutureTask<Response>(new Callable<Response>() {
-            public Response call() throws Exception {
-                System.out.println(request);
-                return new RawResponse(
-                        42,
-                        new HashMap<String, String>(),
-                        Unpooled.wrappedBuffer(Unpooled.EMPTY_BUFFER),
-                        Unpooled.wrappedBuffer("headers".getBytes()),
-                        Unpooled.wrappedBuffer("payload".getBytes())
-                );
-            }
-        });
+    public Promise<Response> request(final InetSocketAddress address,
+                                     final Request request) throws InterruptedException {
+
+        // Get a channel for this request
+        Channel ch = this.channelManager.findOrNew(address, this.clientBootstrap);
+
+        // Write the request
+        ch.write(request);
+
+        // Prepare for a response
+        ResponseDispatcher responseDispatcher = ch.pipeline().get(ResponseDispatcher.class);
+        Promise<Response> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
+        responseDispatcher.put(request.getId(), responsePromise);
+
+        // Flush and return the response promise
+        ch.flush();
+        return responsePromise;
+
     }
 
     public static class Builder {
 
         private final String service;
-        private int port;
-        private Map<String, RequestHandler> requestHandlers = new HashMap<String, RequestHandler>();
+        private final ChannelManager channelManager = new ChannelManager();
+        private InetSocketAddress address;
+        private Map<String, RequestHandler> requestHandlers = new HashMap<>();
         private EventLoopGroup bossGroup;
         private EventLoopGroup childGroup;
-        private EventLoopGroup workerGroup;
         private LogLevel logLevel;
 
         public Builder(String service) {
@@ -102,7 +121,7 @@ public class TChannel {
         }
 
         public Builder setPort(int port) {
-            this.port = port;
+            this.address = new InetSocketAddress(port);
             return this;
         }
 
@@ -121,75 +140,81 @@ public class TChannel {
             return this;
         }
 
-        public Builder setWorkerGroup(EventLoopGroup childGroup) {
-            this.workerGroup = workerGroup;
-            return this;
-        }
-
         public Builder setLogLevel(LogLevel logLevel) {
             this.logLevel = logLevel;
             return this;
         }
 
         public TChannel build() {
+            if (address == null) {
+                address = new InetSocketAddress(0);
+            }
             if (bossGroup == null) {
                 bossGroup = new NioEventLoopGroup();
             }
             if (childGroup == null) {
                 childGroup = new NioEventLoopGroup();
             }
-            if (workerGroup == null) {
-                workerGroup = new NioEventLoopGroup();
-            }
             if (logLevel == null) {
                 logLevel = LogLevel.INFO;
             }
 
-            ServerBootstrap serverBootstrap = this.serverBootstrap();
+            return new TChannel(this);
 
-            return new TChannel(
-                    this.service,
-                    this.port,
-                    serverBootstrap
-            );
+        }
+
+        private Bootstrap bootstrap() {
+            return new Bootstrap()
+                    .group(this.childGroup)
+                    .channel(NioSocketChannel.class)
+                    .handler(this.channelInitializer(false))
+                    .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                    .validate();
         }
 
         private ServerBootstrap serverBootstrap() {
-            ServerBootstrap bootstrap = new ServerBootstrap();
-            bootstrap.group(this.bossGroup, this.childGroup)
+            return new ServerBootstrap()
+                    .group(this.bossGroup, this.childGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(logLevel))
-                    .childHandler(this.channelInitializer())
                     .option(ChannelOption.SO_BACKLOG, 128)
+                    .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                    .childHandler(this.channelInitializer(true))
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .validate();
-            return bootstrap;
         }
 
-        private ChannelInitializer<SocketChannel> channelInitializer() {
+        private ChannelInitializer<SocketChannel> channelInitializer(final boolean isServer) {
             return new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) throws Exception {
                     // Translates TCP Streams to Raw Frames
-                    ch.pipeline().addLast(new TChannelLengthFieldBasedFrameDecoder());
+                    ch.pipeline().addLast("FrameDecoder", new TChannelLengthFieldBasedFrameDecoder());
 
                     // Translates Raw Frames into TFrames
-                    ch.pipeline().addLast(new TFrameCodec());
+                    ch.pipeline().addLast("TFrameCodec", new TFrameCodec());
 
                     // Translates TFrames into Messages
-                    ch.pipeline().addLast(new MessageCodec());
+                    ch.pipeline().addLast("MessageCodec", new MessageCodec());
 
-                    // Handles Protocol Handshake
-                    ch.pipeline().addLast(new InitRequestHandler());
+                    if (isServer) {
+                        ch.pipeline().addLast("InitRequestHandler", new InitRequestHandler());
+                    } else {
+                        ch.pipeline().addLast("InitRequestInitiator", new InitRequestInitiator());
+                    }
 
                     // Handles Call Request RPC
-                    ch.pipeline().addLast(new MessageMultiplexer());
+                    ch.pipeline().addLast("MessageMultiplexer", new MessageMultiplexer());
 
                     // Pass RequestHandlers to the RequestDispatcher
-                    ch.pipeline().addLast(
-                            workerGroup,
-                            new RequestDispatcher(requestHandlers)
-                    );
+                    ch.pipeline().addLast("RequestDispatcher", new RequestDispatcher(requestHandlers));
+
+                    ch.pipeline().addLast("ResponseDispatcher", new ResponseDispatcher());
+
+                    // Register Channels as they are created.
+                    ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(channelManager));
+
                 }
             };
         }

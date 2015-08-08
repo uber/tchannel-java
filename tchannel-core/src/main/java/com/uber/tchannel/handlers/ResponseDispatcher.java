@@ -20,12 +20,33 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.handlers;
 
-public class Pong {
-    private final String response;
+import com.uber.tchannel.api.Response;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Promise;
 
-    public Pong(String response) {
-        this.response = response;
+import java.util.HashMap;
+import java.util.Map;
+
+public class ResponseDispatcher extends SimpleChannelInboundHandler<Response> {
+
+    private final Map<Long, Promise<Response>> messageMap = new HashMap<>();
+
+    public Promise<Response> put(long messageId, Promise<Response> promise) {
+        return this.messageMap.put(messageId, promise);
+    }
+
+    @Override
+    protected void messageReceived(ChannelHandlerContext ctx, Response response) throws Exception {
+
+        Promise<Response> promise = this.messageMap.remove(response.getId());
+        if (promise == null) {
+            System.err.println("Message received for unknown stream id " + response.getId());
+        } else {
+            promise.setSuccess(response);
+        }
+
     }
 }

@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
@@ -40,7 +41,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
+public class RequestDispatcher extends SimpleChannelInboundHandler<Request> {
 
     private final Map<String, RequestHandler> requestHandlers;
 
@@ -49,7 +50,7 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
     }
 
     @Override
-    protected void messageReceived(final ChannelHandlerContext ctx, RawRequest request) throws Exception {
+    protected void messageReceived(final ChannelHandlerContext ctx, Request request) throws Exception {
 
         ArgScheme argScheme = ArgScheme.fromString(
                 request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
@@ -59,24 +60,24 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
             throw new RuntimeException("Missing `Arg Scheme` header");
         }
 
-        RawResponse rawResponse = null;
+        RawRequest rawRequest = ((RawRequest) request);
         switch (argScheme) {
             case RAW:
-                rawResponse = new DefaultRawRequestHandler().handle(request);
+                RawResponse rawResponse = new DefaultRawRequestHandler().handle(rawRequest);
                 ctx.writeAndFlush(rawResponse);
                 break;
             case JSON:
                 // arg1
-                String method = JSONArgScheme.decodeMethod(request);
+                String method = JSONArgScheme.decodeMethod(rawRequest);
 
                 // arg2
-                Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(request);
+                Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(rawRequest);
 
                 // arg3
                 final JSONRequestHandler handler = (JSONRequestHandler) this.requestHandlers.get(method);
 
                 // deserialize object
-                Object body = JSONArgScheme.decodeBody(request, handler.getRequestType());
+                Object body = JSONArgScheme.decodeBody(rawRequest, handler.getRequestType());
 
                 // transform request into form the handler expects
                 final JSONRequest jsonRequest = new JSONRequest(

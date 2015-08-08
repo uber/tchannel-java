@@ -26,7 +26,7 @@ import com.uber.tchannel.schemes.JSONRequest;
 import com.uber.tchannel.schemes.JSONRequestHandler;
 import com.uber.tchannel.schemes.JSONResponse;
 
-public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
+public class PingRequestHandler implements JSONRequestHandler<PingRequestHandler.Ping, PingRequestHandler.Pong> {
 
     @Override
     public Class<Ping> getRequestType() {
@@ -48,5 +48,21 @@ public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
                 request.getApplicationHeaders(),
                 new Pong("pong!")
         );
+    }
+
+    public static class Pong {
+        private final String response;
+
+        public Pong(String response) {
+            this.response = response;
+        }
+    }
+
+    public static class Ping {
+        private final String request;
+
+        public Ping(String request) {
+            this.request = request;
+        }
     }
 }

@@ -20,12 +20,28 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.channels;
 
-public class Ping {
-    private final String request;
+import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelHandlerContext;
 
-    public Ping(String request) {
-        this.request = request;
+public class ChannelRegistrar extends ChannelHandlerAdapter {
+
+    private final ChannelManager channelManager;
+
+    public ChannelRegistrar(ChannelManager channelManager) {
+        this.channelManager = channelManager;
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        this.channelManager.add(ctx.channel());
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+        this.channelManager.remove(ctx.channel());
     }
 }

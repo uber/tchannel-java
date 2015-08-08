@@ -36,9 +36,6 @@ public class DefaultRawRequestHandler implements RawRequestHandler {
                 Unpooled.wrappedBuffer(new byte[]{0x00, 0x00})
         );
 
-        request.getArg1().release();
-        request.getArg2().release();
-        request.getArg3().release();
         return response;
     }
 }

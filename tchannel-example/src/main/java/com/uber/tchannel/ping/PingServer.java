@@ -50,7 +50,7 @@ public class PingServer {
                 .setPort(this.port)
                 .build();
 
-        server.start().channel().closeFuture().sync();
+        server.listen().channel().closeFuture().sync();
     }
 
 }
