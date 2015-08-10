@@ -22,8 +22,14 @@
 
 package com.uber.tchannel.schemes;
 
-public interface TypedRequestHandler<REQUEST_TYPE, RESPONSE_TYPE> {
-    Class<REQUEST_TYPE> getRequestType();
+/**
+ * Defines an interface for Request Handlers that have parametrized Java request/response types.
+ *
+ * @param <RequestT>  the Java type that the Request handler will pass to the handler
+ * @param <ResponseT> the Java type that the Request handler should return.
+ */
+public interface TypedRequestHandler<RequestT, ResponseT> {
+    Class<RequestT> getRequestType();
 
-    Class<RESPONSE_TYPE> getResponseType();
+    Class<ResponseT> getResponseType();
 }

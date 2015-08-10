@@ -64,15 +64,12 @@ public class PingClient {
         Promise<Response> p = client.request(new InetSocketAddress(this.host, this.port), new RawRequest(
                 42,
                 "service",
-                new HashMap<String, String>() {
-                    {
-                        put("as", "json");
-                    }
-                },
+                new HashMap<String, String>(),
                 Unpooled.wrappedBuffer("ping".getBytes()),
                 Unpooled.wrappedBuffer("{}".getBytes()),
                 Unpooled.wrappedBuffer("{'request': 'ping?'}".getBytes())
         ));
+
         Response res = p.get();
         System.out.println(res);
         client.shutdown();

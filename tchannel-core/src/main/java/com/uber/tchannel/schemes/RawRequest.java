@@ -23,6 +23,8 @@
 package com.uber.tchannel.schemes;
 
 import com.uber.tchannel.api.Request;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.messages.FullMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -46,15 +48,19 @@ public final class RawRequest implements Request, FullMessage {
 
     private final long id;
     private final String service;
-    private final Map<String, String> headers;
+    private final Map<String, String> transportHeaders;
     private final ByteBuf arg1;
     private final ByteBuf arg2;
     private final ByteBuf arg3;
 
-    public RawRequest(long id, String service, Map<String, String> headers, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    public RawRequest(long id, String service, Map<String, String> transportHeaders, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
         this.service = service;
-        this.headers = headers;
+        this.transportHeaders = transportHeaders;
+        this.transportHeaders.putIfAbsent(
+                TransportHeaders.ARG_SCHEME_KEY,
+                ArgScheme.RAW.getScheme()
+        );
         this.arg1 = arg1;
         this.arg2 = arg2;
         this.arg3 = arg3;
@@ -69,7 +75,7 @@ public final class RawRequest implements Request, FullMessage {
     }
 
     public Map<String, String> getTransportHeaders() {
-        return this.headers;
+        return this.transportHeaders;
     }
 
     public ByteBuf getArg1() {
@@ -87,11 +93,11 @@ public final class RawRequest implements Request, FullMessage {
     @Override
     public String toString() {
         return String.format(
-                "<%s id=%d service=%s headers=%s arg1=%s arg2=%s arg3=%s>",
+                "<%s id=%d service=%s transportHeaders=%s arg1=%s arg2=%s arg3=%s>",
                 this.getClass().getSimpleName(),
                 this.id,
                 this.service,
-                this.headers,
+                this.transportHeaders,
                 this.arg1.toString(CharsetUtil.UTF_8),
                 this.arg2.toString(CharsetUtil.UTF_8),
                 this.arg3.toString(CharsetUtil.UTF_8)

@@ -23,6 +23,8 @@
 package com.uber.tchannel.schemes;
 
 import com.uber.tchannel.api.Request;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 
 import java.util.Map;
 
@@ -40,6 +42,10 @@ public class JSONRequest<T> implements Request {
         this.id = id;
         this.service = service;
         this.transportHeaders = transportHeaders;
+        this.transportHeaders.putIfAbsent(
+                TransportHeaders.ARG_SCHEME_KEY,
+                ArgScheme.JSON.getScheme()
+        );
         this.method = method;
         this.applicationHeaders = applicationHeaders;
         this.body = body;
