@@ -47,28 +47,18 @@ response.addListener(new ChannelFutureListener {
 #### PingServer
 ```bash
 mvn package
-java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingServer
-# Starting server on port: 8888
-# Jul 29, 2015 10:28:07 AM io.netty.handler.logging.LoggingHandler channelRegistered
-# INFO: [id: 0x8b9e9085] REGISTERED
-# Jul 29, 2015 10:28:07 AM io.netty.handler.logging.LoggingHandler bind
-# INFO: [id: 0x8b9e9085] BIND: 0.0.0.0/0.0.0.0:8888
-# Jul 29, 2015 10:28:07 AM io.netty.handler.logging.LoggingHandler channelActive
-# INFO: [id: 0x8b9e9085, /0:0:0:0:0:0:0:0:8888] ACTIVE
+java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingServer 8888
 ```
 
 #### PingClient
 ```bash
 mvn package
-java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingClient
-#Connecting from client to server on port: 8888
-#<com.uber.tchannel.messages.InitResponse id=42 version=2 hostPort=0.0.0.0:0 processName=test-process>
-#com.uber.tchannel.messages.PingResponse@18ec223
-#Stopping Client...
+java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingClient localhost 8888
 ```
 
 ## Contributing
 
-Contributions are welcome and encouraged! Please push contributions to branches namespaced by your username and then create a pull request. Pull requests *must* have thorough testing and be reviewed by at least one other party. 
+Contributions are welcome and encouraged! Please push contributions to branches namespaced by your username and then
+create a pull request. Pull requests *must* have thorough testing and be reviewed by at least one other party. 
 
 ## MIT Licenced
