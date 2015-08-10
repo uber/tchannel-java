@@ -46,6 +46,7 @@ public class InitRequestInitiator extends ChannelHandlerAdapter {
         );
         ChannelFuture f = ctx.writeAndFlush(initRequest);
         f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        ctx.pipeline().remove(this);
 
     }
 }
