@@ -22,32 +22,10 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.schemes.JSONRequest;
-import com.uber.tchannel.schemes.JSONRequestHandler;
-import com.uber.tchannel.schemes.JSONResponse;
+public class Pong {
+    private final String response;
 
-public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
-
-    @Override
-    public Class<Ping> getRequestType() {
-        return Ping.class;
+    public Pong(String response) {
+        this.response = response;
     }
-
-    @Override
-    public Class<Pong> getResponseType() {
-        return Pong.class;
-    }
-
-    @Override
-    public JSONResponse<Pong> handle(JSONRequest<Ping> request) {
-        return new JSONResponse<>(
-                request.getId(),
-                request.getService(),
-                request.getTransportHeaders(),
-                request.getMethod(),
-                request.getApplicationHeaders(),
-                new Pong("pong!")
-        );
-    }
-
 }

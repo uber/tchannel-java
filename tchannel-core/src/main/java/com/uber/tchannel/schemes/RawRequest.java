@@ -53,7 +53,8 @@ public final class RawRequest implements Request, FullMessage {
     private final ByteBuf arg2;
     private final ByteBuf arg3;
 
-    public RawRequest(long id, String service, Map<String, String> transportHeaders, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    public RawRequest(long id, String service, Map<String, String> transportHeaders,
+                      ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
         this.service = service;
         this.transportHeaders = transportHeaders;

@@ -24,6 +24,8 @@ package com.uber.tchannel.ping;
 
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.RawRequest;
 import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Promise;
@@ -48,8 +50,8 @@ public class PingClient {
         if (args.length == 1) {
             port = Integer.parseInt(args[0]);
         } else if (args.length == 2) {
-            host = String.valueOf(args[1]);
-            port = Integer.parseInt(args[0]);
+            host = String.valueOf(args[0]);
+            port = Integer.parseInt(args[1]);
         }
 
         System.out.println(String.format("Connecting from client to server on port: %d", port));
@@ -64,7 +66,11 @@ public class PingClient {
         Promise<Response> p = client.request(new InetSocketAddress(this.host, this.port), new RawRequest(
                 42,
                 "service",
-                new HashMap<String, String>(),
+                new HashMap<String, String>() {
+                    {
+                        put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme());
+                    }
+                },
                 Unpooled.wrappedBuffer("ping".getBytes()),
                 Unpooled.wrappedBuffer("{}".getBytes()),
                 Unpooled.wrappedBuffer("{'request': 'ping?'}".getBytes())
