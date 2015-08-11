@@ -33,7 +33,6 @@ import com.uber.tchannel.handlers.RequestDispatcher;
 import com.uber.tchannel.handlers.ResponseDispatcher;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -168,7 +167,6 @@ public final class TChannel {
                     .group(this.childGroup)
                     .channel(NioSocketChannel.class)
                     .handler(this.channelInitializer(false))
-                    .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .validate();
         }
 
@@ -178,10 +176,8 @@ public final class TChannel {
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(logLevel))
                     .option(ChannelOption.SO_BACKLOG, 128)
-                    .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .childHandler(this.channelInitializer(true))
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
-                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .validate();
         }
 
