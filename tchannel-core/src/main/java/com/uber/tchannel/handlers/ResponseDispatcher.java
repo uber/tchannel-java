@@ -20,37 +20,33 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.Response;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Promise;
 
-public class PingServer {
+import java.util.HashMap;
+import java.util.Map;
 
-    private int port;
+public class ResponseDispatcher extends SimpleChannelInboundHandler<Response> {
 
-    public PingServer(int port) {
-        this.port = port;
+    private final Map<Long, Promise<Response>> messageMap = new HashMap<>();
+
+    public Promise<Response> put(long messageId, Promise<Response> promise) {
+        return this.messageMap.put(messageId, promise);
     }
 
-    public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
+    @Override
+    protected void messageReceived(ChannelHandlerContext ctx, Response response) throws Exception {
+
+        Promise<Response> promise = this.messageMap.remove(response.getId());
+        if (promise == null) {
+            System.err.println("Message received for unknown stream id " + response.getId());
+        } else {
+            promise.setSuccess(response);
         }
 
-        System.out.println(String.format("Starting server on port: %d", port));
-        new PingServer(port).run();
-        System.out.println("Stopping server...");
     }
-
-    public void run() throws Exception {
-        TChannel server = new TChannel.Builder("ping-server")
-                .register("ping", new PingRequestHandler())
-                .register("also-ping", new PingRequestHandler())
-                .setPort(this.port)
-                .build();
-
-        server.listen().channel().closeFuture().sync();
-    }
-
 }

@@ -49,4 +49,5 @@ public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
                 new Pong("pong!")
         );
     }
+
 }

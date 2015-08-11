@@ -45,11 +45,12 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
                 InitRequest initRequestMessage = (InitRequest) message;
 
                 if (initRequestMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
-                    ctx.writeAndFlush(new InitResponse(
+                    ChannelFuture f = ctx.writeAndFlush(new InitResponse(
                             initRequestMessage.getId(),
                             InitMessage.DEFAULT_VERSION,
                             initRequestMessage.getHeaders()
                     ));
+                    f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                     ctx.pipeline().remove(this);
                 } else {
                     ChannelFuture versionErrorFuture = ctx.writeAndFlush(new ErrorMessage(

@@ -22,23 +22,17 @@
 
 package com.uber.tchannel.schemes;
 
-import io.netty.buffer.Unpooled;
-
 public class DefaultRawRequestHandler implements RawRequestHandler {
     @Override
     public RawResponse handle(RawRequest request) {
 
-        RawResponse response = new RawResponse(
+        return new RawResponse(
                 request.getId(),
                 request.getTransportHeaders(),
-                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00}),
-                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00}),
-                Unpooled.wrappedBuffer(new byte[]{0x00, 0x00})
+                request.getArg1(),
+                request.getArg2(),
+                request.getArg3()
         );
 
-        request.getArg1().release();
-        request.getArg2().release();
-        request.getArg3().release();
-        return response;
     }
 }

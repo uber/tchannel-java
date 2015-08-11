@@ -20,37 +20,32 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.channels;
 
-import com.uber.tchannel.api.TChannel;
+import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelHandlerContext;
 
-public class PingServer {
+/**
+ * Simple ChannelHandlerAdapter that is responsible solely for registering new Channels with the ChannelManager
+ * and de-registering Channels when the go inactive.
+ */
+public class ChannelRegistrar extends ChannelHandlerAdapter {
 
-    private int port;
+    private final ChannelManager channelManager;
 
-    public PingServer(int port) {
-        this.port = port;
+    public ChannelRegistrar(ChannelManager channelManager) {
+        this.channelManager = channelManager;
     }
 
-    public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        }
-
-        System.out.println(String.format("Starting server on port: %d", port));
-        new PingServer(port).run();
-        System.out.println("Stopping server...");
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        this.channelManager.add(ctx.channel());
     }
 
-    public void run() throws Exception {
-        TChannel server = new TChannel.Builder("ping-server")
-                .register("ping", new PingRequestHandler())
-                .register("also-ping", new PingRequestHandler())
-                .setPort(this.port)
-                .build();
-
-        server.listen().channel().closeFuture().sync();
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+        this.channelManager.remove(ctx.channel());
     }
-
 }
