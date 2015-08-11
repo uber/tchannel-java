@@ -25,6 +25,10 @@ package com.uber.tchannel.channels;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 
+/**
+ * Simple ChannelHandlerAdapter that is responsible solely for registering new Channels with the ChannelManager
+ * and de-registering Channels when the go inactive.
+ */
 public class ChannelRegistrar extends ChannelHandlerAdapter {
 
     private final ChannelManager channelManager;

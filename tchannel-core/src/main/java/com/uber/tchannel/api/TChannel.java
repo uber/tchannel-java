@@ -82,6 +82,16 @@ public final class TChannel {
         this.childGroup.shutdownGracefully();
     }
 
+    /**
+     * Makes a Request to the remote address.
+     * <p/>
+     * This will attempt to reuse a connection, i.e. TCP socket, to a remote address and create one if needed.
+     *
+     * @param address the remote address to make the request
+     * @param request the request object to send
+     * @return a promise representing a future response from this request
+     * @throws InterruptedException
+     */
     public Promise<Response> request(final InetSocketAddress address,
                                      final Request request) throws InterruptedException {
 
@@ -91,12 +101,20 @@ public final class TChannel {
         // Write the request
         ch.write(request);
 
-        // Prepare for a response
-        ResponseDispatcher responseDispatcher = ch.pipeline().get(ResponseDispatcher.class);
+        // Prepare for a response.
+
+        // Create  a new response promise to hand to the client.
+        // TODO: on which EventExecutor should Promises be fulfilled?
         Promise<Response> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
+
+        // Get a handle to the responseDispatcher to tell it that it should expet a response
+        ResponseDispatcher responseDispatcher = ch.pipeline().get(ResponseDispatcher.class);
+
+        // Let the ResponseDispatch handler know that it should handle this response
         responseDispatcher.put(request.getId(), responsePromise);
 
         // Flush and return the response promise
+        // TODO: when and how often should we flush requests?
         ch.flush();
         return responsePromise;
 

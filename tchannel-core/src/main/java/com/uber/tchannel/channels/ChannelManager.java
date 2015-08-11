@@ -33,6 +33,13 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * ChannelManager keeps track of open channels, and provides a way to lookup Channels by their Remote Address.
+ * <p/>
+ * ChannelManager} maintains both a ChannelGroup of open connections and a Map of InetSocketAddress to ChannelId so that
+ * connections can be reused if a request is going to the same remote. The ChannelManager also provides a convenient
+ * entry point for shutting down all active Channels.
+ */
 public class ChannelManager {
 
     private final Map<InetSocketAddress, ChannelId> channelMap = new HashMap<>();
