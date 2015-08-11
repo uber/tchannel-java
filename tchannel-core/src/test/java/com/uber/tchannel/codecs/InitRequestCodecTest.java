@@ -22,9 +22,11 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.junit.Test;
 
 import java.util.HashMap;
