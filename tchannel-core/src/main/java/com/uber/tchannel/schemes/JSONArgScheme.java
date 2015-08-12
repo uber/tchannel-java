@@ -24,6 +24,7 @@ package com.uber.tchannel.schemes;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.uber.tchannel.messages.RawMessage;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
@@ -36,19 +37,19 @@ public final class JSONArgScheme {
 
     }).getType();
 
-    public static String decodeMethod(RawRequest request) {
+    public static String decodeMethod(RawMessage request) {
         String endpoint = request.getArg1().toString(CharsetUtil.UTF_8);
         request.getArg1().release();
         return endpoint;
     }
 
-    public static Map<String, String> decodeApplicationHeaders(RawRequest request) {
+    public static Map<String, String> decodeApplicationHeaders(RawMessage request) {
         String headerJSON = request.getArg2().toString(CharsetUtil.UTF_8);
         request.getArg2().release();
         return new Gson().fromJson(headerJSON, HEADER_TYPE);
     }
 
-    public static Object decodeBody(RawRequest request, Type objectType) {
+    public static Object decodeBody(RawMessage request, Type objectType) {
         String bodyJSON = request.getArg3().toString(CharsetUtil.UTF_8);
         request.getArg3().release();
         return new Gson().fromJson(bodyJSON, objectType);

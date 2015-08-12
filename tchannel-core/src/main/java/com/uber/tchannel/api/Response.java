@@ -26,8 +26,14 @@ import java.util.Map;
 /**
  * {@link Response} defines a common interface that all TChannel RPC responses should follow.
  */
-public interface Response {
+public interface Response<T, U, V> {
     long getId();
 
     Map<String, String> getTransportHeaders();
+
+    T getMethod();
+
+    U getApplicationHeaders();
+
+    V getBody();
 }

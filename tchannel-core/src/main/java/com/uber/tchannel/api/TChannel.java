@@ -31,6 +31,7 @@ import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
 import com.uber.tchannel.handlers.RequestDispatcher;
 import com.uber.tchannel.handlers.ResponseDispatcher;
+import com.uber.tchannel.schemes.RawResponse;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -92,7 +93,7 @@ public final class TChannel {
      * @return a promise representing a future response from this request
      * @throws InterruptedException
      */
-    public Promise<Response> request(final InetSocketAddress address,
+    public Promise<RawResponse> request(final InetSocketAddress address,
                                      final Request request) throws InterruptedException {
 
         // Get a channel for this request
@@ -105,7 +106,7 @@ public final class TChannel {
 
         // Create  a new response promise to hand to the client.
         // TODO: on which EventExecutor should Promises be fulfilled?
-        Promise<Response> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
+        Promise<RawResponse> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
 
         // Get a handle to the responseDispatcher to tell it that it should expet a response
         ResponseDispatcher responseDispatcher = ch.pipeline().get(ResponseDispatcher.class);

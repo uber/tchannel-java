@@ -41,4 +41,5 @@ public interface CallMessage extends Message, ByteBufHolder {
     ByteBuf getPayload();
 
     int getPayloadSize();
+
 }

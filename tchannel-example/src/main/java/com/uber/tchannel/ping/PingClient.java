@@ -22,11 +22,13 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.schemes.JSONArgScheme;
+import com.uber.tchannel.schemes.JSONResponse;
 import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.RawResponse;
 import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Promise;
 
@@ -63,7 +65,7 @@ public class PingClient {
     public void run() throws Exception {
         TChannel client = new TChannel.Builder("ping-client").build();
 
-        Promise<Response> p = client.request(new InetSocketAddress(this.host, this.port), new RawRequest(
+        Promise<RawResponse> p = client.request(new InetSocketAddress(this.host, this.port), new RawRequest(
                 42,
                 "service",
                 new HashMap<String, String>() {
@@ -76,8 +78,15 @@ public class PingClient {
                 Unpooled.wrappedBuffer("{'request': 'ping?'}".getBytes())
         ));
 
-        Response res = p.get();
-        System.out.println(res);
+        RawResponse res = p.get();
+        JSONResponse<Pong> jsonResponse = new JSONResponse<>(
+                res.getId(),
+                res.getTransportHeaders(),
+                JSONArgScheme.decodeMethod(res),
+                JSONArgScheme.decodeApplicationHeaders(res),
+                (Pong) JSONArgScheme.decodeBody(res, Pong.class)
+        );
+        System.out.println(jsonResponse);
         client.shutdown();
     }
 

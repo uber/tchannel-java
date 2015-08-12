@@ -28,7 +28,7 @@ import com.uber.tchannel.headers.TransportHeaders;
 
 import java.util.Map;
 
-public class JSONRequest<T> implements Request {
+public class JSONRequest<T> implements Request<String, Map<String, String>, T> {
 
     private final long id;
     private final String service;
@@ -51,26 +51,32 @@ public class JSONRequest<T> implements Request {
         this.body = body;
     }
 
+    @Override
     public long getId() {
         return this.id;
     }
 
+    @Override
     public String getService() {
         return this.service;
     }
 
+    @Override
     public Map<String, String> getTransportHeaders() {
         return this.transportHeaders;
     }
 
+    @Override
     public String getMethod() {
         return this.method;
     }
 
+    @Override
     public Map<String, String> getApplicationHeaders() {
         return this.applicationHeaders;
     }
 
+    @Override
     public T getBody() {
         return this.body;
     }

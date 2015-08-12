@@ -42,7 +42,6 @@ public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
     public JSONResponse<Pong> handle(JSONRequest<Ping> request) {
         return new JSONResponse<>(
                 request.getId(),
-                request.getService(),
                 request.getTransportHeaders(),
                 request.getMethod(),
                 request.getApplicationHeaders(),

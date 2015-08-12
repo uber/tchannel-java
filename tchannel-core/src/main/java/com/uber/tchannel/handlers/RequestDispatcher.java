@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
@@ -35,52 +34,46 @@ import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 
-public class RequestDispatcher extends SimpleChannelInboundHandler<Request> {
+public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
 
-    private final Map<String, RequestHandler> requestHandlers;
+    private final Map<String, ? extends RequestHandler> requestHandlers;
 
     public RequestDispatcher(Map<String, RequestHandler> requestHandlers) {
         this.requestHandlers = requestHandlers;
     }
 
     @Override
-    protected void messageReceived(final ChannelHandlerContext ctx, Request request) throws Exception {
+    protected void messageReceived(final ChannelHandlerContext ctx, RawRequest request) throws Exception {
 
-        ArgScheme argScheme = ArgScheme.fromString(
-                request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
-        );
+        ArgScheme argScheme = ArgScheme.fromString(request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
 
         if (argScheme == null) {
             throw new RuntimeException("Missing `Arg Scheme` header");
         }
 
-        RawRequest rawRequest = ((RawRequest) request);
         switch (argScheme) {
             case RAW:
-                RawResponse rawResponse = new DefaultRawRequestHandler().handle(rawRequest);
+                RawResponse rawResponse = new DefaultRawRequestHandler().handle(request);
                 ctx.writeAndFlush(rawResponse);
                 break;
             case JSON:
                 // arg1
-                String method = JSONArgScheme.decodeMethod(rawRequest);
+                String method = JSONArgScheme.decodeMethod(request);
+
+                // Get handler for this method
+                final JSONRequestHandler<?, ?> handler = (JSONRequestHandler<?, ?>) this.requestHandlers.get(method);
 
                 // arg2
-                Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(rawRequest);
+                Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(request);
 
                 // arg3
-                final JSONRequestHandler handler = (JSONRequestHandler) this.requestHandlers.get(method);
-
-                // deserialize object
-                Object body = JSONArgScheme.decodeBody(rawRequest, handler.getRequestType());
+                Object body = JSONArgScheme.decodeBody(request, handler.getRequestType());
 
                 // transform request into form the handler expects
-                final JSONRequest jsonRequest = new JSONRequest(
+                JSONRequest jsonRequest = new JSONRequest<>(
                         request.getId(),
                         request.getService(),
                         request.getTransportHeaders(),
@@ -90,27 +83,9 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<Request> {
                 );
 
                 // Handle the request
-                Future<JSONResponse> f = ctx.executor().submit(new Callable<JSONResponse>() {
-                    @Override
-                    public JSONResponse call() throws Exception {
-                        return (JSONResponse) handler.handle(jsonRequest);
-                    }
-                });
-
-                // Write the response back when done
-                f.addListener(new GenericFutureListener<Future<? super JSONResponse>>() {
-                    @Override
-                    public void operationComplete(Future<? super JSONResponse> future) throws Exception {
-                        // serialize the object
-                        RawResponse rawResponse = JSONArgScheme.encodeResponse(
-                                (JSONResponse) future.get(),
-                                handler.getResponseType()
-                        );
-
-                        // write and flush
-                        ctx.writeAndFlush(rawResponse);
-                    }
-                });
+                JSONResponse<?> jsonResponse = handler.handle(jsonRequest);
+                RawResponse response = JSONArgScheme.encodeResponse(jsonResponse, handler.getResponseType());
+                ctx.writeAndFlush(response);
 
                 break;
             case THRIFT:
