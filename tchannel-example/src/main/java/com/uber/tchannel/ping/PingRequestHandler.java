@@ -41,7 +41,7 @@ public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
 
     @Override
     public JSONResponse<Pong> handle(JSONRequest<Ping> request) {
-        return new JSONResponse<>(
+        return new JSONResponse<Pong>(
                 request.getId(),
                 request.getTransportHeaders(),
                 request.getMethod(),

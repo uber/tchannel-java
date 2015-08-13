@@ -27,6 +27,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.Map;
 
 public interface RawMessage {
+
     ByteBuf getArg1();
 
     ByteBuf getArg2();

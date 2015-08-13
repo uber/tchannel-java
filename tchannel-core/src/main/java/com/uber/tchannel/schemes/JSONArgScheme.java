@@ -55,7 +55,7 @@ public final class JSONArgScheme {
         return new Gson().fromJson(bodyJSON, objectType);
     }
 
-    public static RawResponse encodeResponse(JSONResponse jsonResponse, Type objectType) {
+    public static RawResponse encodeResponse(JSONResponse<?> jsonResponse, Type objectType) {
 
         String jsonMethod = jsonResponse.getMethod();
         String jsonHeaders = new Gson().toJson(jsonResponse.getApplicationHeaders());

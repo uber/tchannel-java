@@ -25,30 +25,64 @@ package com.uber.tchannel.handlers;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.DefaultRawRequestHandler;
 import com.uber.tchannel.schemes.JSONArgScheme;
 import com.uber.tchannel.schemes.JSONRequest;
 import com.uber.tchannel.schemes.JSONRequestHandler;
 import com.uber.tchannel.schemes.JSONResponse;
 import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.RawRequestHandler;
 import com.uber.tchannel.schemes.RawResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
-    private final Map<String, Map<String, ? extends RequestHandler>> argSchemeHandlers = new HashMap();
     private final Map<String, ? extends RequestHandler> requestHandlers;
+    private final RawRequestHandler rawRequestHandler;
 
-    public RequestRouter(Map<String, RequestHandler> requestHandlers) {
+    public RequestRouter(Map<String, RequestHandler> requestHandlers, RawRequestHandler rawRequestHandler) {
         this.requestHandlers = requestHandlers;
+        this.rawRequestHandler = rawRequestHandler;
+    }
+
+    protected void handleRaw(ChannelHandlerContext ctx, RawRequest request) {
+        RawResponse rawResponse = this.rawRequestHandler.handle(request);
+        ctx.writeAndFlush(rawResponse);
+    }
+
+    protected void handleJSON(ChannelHandlerContext ctx, RawRequest request) {
+        // arg1
+        String method = JSONArgScheme.decodeMethod(request);
+
+        // Get handler for this method
+        final JSONRequestHandler<?, ?> handler = (JSONRequestHandler<?, ?>) this.requestHandlers.get(method);
+
+        // arg2
+        Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(request);
+
+        // arg3
+        Object body = JSONArgScheme.decodeBody(request, handler.getRequestType());
+
+        // transform request into form the handler expects
+        JSONRequest jsonRequest = new JSONRequest<>(
+                request.getId(),
+                request.getService(),
+                request.getTransportHeaders(),
+                method,
+                applicationHeaders,
+                body
+        );
+
+        // Handle the request
+        JSONResponse<?> jsonResponse = handler.handle(jsonRequest);
+        RawResponse response = JSONArgScheme.encodeResponse(jsonResponse, handler.getResponseType());
+        ctx.writeAndFlush(response);
     }
 
     @Override
-    protected void messageReceived(final ChannelHandlerContext ctx, RawRequest request) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, RawRequest request) throws Exception {
 
         ArgScheme argScheme = ArgScheme.fromString(request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
 
@@ -58,37 +92,10 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
         switch (argScheme) {
             case RAW:
-                RawResponse rawResponse = new DefaultRawRequestHandler().handle(request);
-                ctx.writeAndFlush(rawResponse);
+                this.handleRaw(ctx, request);
                 break;
             case JSON:
-                // arg1
-                String method = JSONArgScheme.decodeMethod(request);
-
-                // Get handler for this method
-                final JSONRequestHandler<?, ?> handler = (JSONRequestHandler<?, ?>) this.requestHandlers.get(method);
-
-                // arg2
-                Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(request);
-
-                // arg3
-                Object body = JSONArgScheme.decodeBody(request, handler.getRequestType());
-
-                // transform request into form the handler expects
-                JSONRequest jsonRequest = new JSONRequest<>(
-                        request.getId(),
-                        request.getService(),
-                        request.getTransportHeaders(),
-                        method,
-                        applicationHeaders,
-                        body
-                );
-
-                // Handle the request
-                JSONResponse<?> jsonResponse = handler.handle(jsonRequest);
-                RawResponse response = JSONArgScheme.encodeResponse(jsonResponse, handler.getResponseType());
-                ctx.writeAndFlush(response);
-
+                this.handleJSON(ctx, request);
                 break;
             case THRIFT:
             case HTTP:

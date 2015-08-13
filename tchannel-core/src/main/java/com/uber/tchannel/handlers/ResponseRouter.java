@@ -22,7 +22,7 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.api.Response;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Promise;
@@ -30,23 +30,19 @@ import io.netty.util.concurrent.Promise;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ResponseDispatcher extends SimpleChannelInboundHandler<RawResponse> {
+public class ResponseRouter extends SimpleChannelInboundHandler<Response> {
 
-    private final Map<Long, Promise<RawResponse>> messageMap = new HashMap<>();
+    private final Map<Long, Promise<Response>> messageMap = new HashMap<>();
 
-    public Promise<RawResponse> put(long messageId, Promise<RawResponse> promise) {
+    public Promise<Response> expect(long messageId, Promise<Response> promise) {
         return this.messageMap.put(messageId, promise);
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, RawResponse response) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, Response response) throws Exception {
 
-        Promise<RawResponse> promise = this.messageMap.remove(response.getId());
-        if (promise == null) {
-            System.err.println("Message received for unknown stream id " + response.getId());
-        } else {
-            promise.setSuccess(response);
-        }
+        Promise<Response> promise = this.messageMap.remove(response.getId());
+        promise.setSuccess(response);
 
     }
 }
