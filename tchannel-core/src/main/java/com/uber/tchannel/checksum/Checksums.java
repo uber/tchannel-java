@@ -24,6 +24,7 @@ package com.uber.tchannel.checksum;
 import com.uber.tchannel.messages.CallMessage;
 
 import java.util.zip.Adler32;
+import java.util.zip.CRC32;
 
 public final class Checksums {
     public static boolean verifyChecksum(CallMessage msg) {
@@ -43,13 +44,18 @@ public final class Checksums {
         switch (msg.getChecksumType()) {
 
             case Adler32:
-                Adler32 f = new Adler32();
-                f.update((int) digestSeed);
-                f.update(msg.getPayload().nioBuffer());
-                return f.getValue();
+                Adler32 adler32 = new Adler32();
+                adler32.update((int) digestSeed);
+                adler32.update(msg.getPayload().nioBuffer());
+                return adler32.getValue();
             case FarmhashFingerPrint32:
             case NoChecksum:
             case CRC32C:
+                // TODO: look for hardware accelerated crc32
+                CRC32 crc32 = new CRC32();
+                crc32.update((int) digestSeed);
+                crc32.update(msg.getPayload().nioBuffer());
+                return crc32.getValue();
             default:
                 return 0;
         }
