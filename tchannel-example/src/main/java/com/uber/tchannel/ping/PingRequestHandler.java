@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.ping;
 
+import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.schemes.JSONRequest;
 import com.uber.tchannel.schemes.JSONRequestHandler;
 import com.uber.tchannel.schemes.JSONResponse;
@@ -49,4 +50,8 @@ public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
         );
     }
 
+    @Override
+    public String getArgScheme() {
+        return ArgScheme.JSON.getScheme();
+    }
 }

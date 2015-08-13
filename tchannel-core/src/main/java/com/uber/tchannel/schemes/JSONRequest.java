@@ -81,4 +81,17 @@ public class JSONRequest<T> implements Request<String, Map<String, String>, T> {
         return this.body;
     }
 
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s id=%d transportHeaders=%s method=%s applicationHeaders=%s body=%s>",
+                this.getClass().getSimpleName(),
+                this.id,
+                this.transportHeaders,
+                this.getMethod(),
+                this.getApplicationHeaders(),
+                this.getBody()
+        );
+    }
+
 }

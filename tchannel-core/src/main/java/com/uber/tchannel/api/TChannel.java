@@ -29,7 +29,7 @@ import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
-import com.uber.tchannel.handlers.RequestDispatcher;
+import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseDispatcher;
 import com.uber.tchannel.schemes.RawResponse;
 import io.netty.bootstrap.Bootstrap;
@@ -94,7 +94,7 @@ public final class TChannel {
      * @throws InterruptedException
      */
     public Promise<RawResponse> request(final InetSocketAddress address,
-                                     final Request request) throws InterruptedException {
+                                        final Request request) throws InterruptedException {
 
         // Get a channel for this request
         Channel ch = this.channelManager.findOrNew(address, this.clientBootstrap);
@@ -126,7 +126,7 @@ public final class TChannel {
         private final String service;
         private final ChannelManager channelManager = new ChannelManager();
         private InetSocketAddress address;
-        private Map<String, RequestHandler> requestHandlers = new HashMap<>();
+        private Map<String, Map<String, RequestHandler>> argSchemeHandlers = new HashMap<>();
         private EventLoopGroup bossGroup;
         private EventLoopGroup childGroup;
         private LogLevel logLevel;
@@ -144,7 +144,11 @@ public final class TChannel {
         }
 
         public Builder register(String service, RequestHandler requestHandler) {
-            this.requestHandlers.put(service, requestHandler);
+            Map<String, RequestHandler> handlers = this.argSchemeHandlers.get(requestHandler.getArgScheme());
+            if (handlers == null) {
+                handlers = new HashMap<>();
+            }
+            handlers.put(service, requestHandler);
             return this;
         }
 
@@ -222,8 +226,8 @@ public final class TChannel {
                     // Handles Call Request RPC
                     ch.pipeline().addLast("MessageMultiplexer", new MessageMultiplexer());
 
-                    // Pass RequestHandlers to the RequestDispatcher
-                    ch.pipeline().addLast("RequestDispatcher", new RequestDispatcher(requestHandlers));
+                    // Pass RequestHandlers to the RequestRouter
+                    ch.pipeline().addLast("RequestRouter", new RequestRouter(requestHandlers));
 
                     ch.pipeline().addLast("ResponseDispatcher", new ResponseDispatcher());
 

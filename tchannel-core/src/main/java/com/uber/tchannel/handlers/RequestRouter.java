@@ -35,13 +35,15 @@ import com.uber.tchannel.schemes.RawResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.util.HashMap;
 import java.util.Map;
 
-public class RequestDispatcher extends SimpleChannelInboundHandler<RawRequest> {
+public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
+    private final Map<String, Map<String, ? extends RequestHandler>> argSchemeHandlers = new HashMap();
     private final Map<String, ? extends RequestHandler> requestHandlers;
 
-    public RequestDispatcher(Map<String, RequestHandler> requestHandlers) {
+    public RequestRouter(Map<String, RequestHandler> requestHandlers) {
         this.requestHandlers = requestHandlers;
     }
 
