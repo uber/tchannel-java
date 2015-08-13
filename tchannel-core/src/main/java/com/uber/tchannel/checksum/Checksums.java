@@ -48,14 +48,13 @@ public final class Checksums {
                 adler32.update((int) digestSeed);
                 adler32.update(msg.getPayload().nioBuffer());
                 return adler32.getValue();
-            case FarmhashFingerPrint32:
-            case NoChecksum:
             case CRC32C:
-                // TODO: look for hardware accelerated crc32
                 CRC32 crc32 = new CRC32();
                 crc32.update((int) digestSeed);
                 crc32.update(msg.getPayload().nioBuffer());
                 return crc32.getValue();
+            case FarmhashFingerPrint32:
+            case NoChecksum:
             default:
                 return 0;
         }
