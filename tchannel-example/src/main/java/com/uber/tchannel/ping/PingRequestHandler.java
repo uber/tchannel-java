@@ -40,7 +40,7 @@ public class PingRequestHandler implements ReqHandler<Ping, Pong> {
 
     @Override
     public Res<Pong> handle(Req<Ping> request) {
-        return new Res<Pong>(
+        return new Res<>(
                 request.getEndpoint(),
                 request.getHeaders(),
                 new Pong("pong!")

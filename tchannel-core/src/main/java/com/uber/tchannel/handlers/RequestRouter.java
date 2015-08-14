@@ -92,9 +92,9 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         RawResponse rawResponse = new RawResponse(
                 rawRequest.getId(),
                 rawRequest.getTransportHeaders(),
-                this.serializer.encodeMethod(response.getEndpoint(), argScheme),
+                this.serializer.encodeEndpoint(response.getEndpoint(), argScheme),
                 this.serializer.encodeHeaders(response.getHeaders(), argScheme),
-                this.serializer.encodeBody(response.getBody(), handler.getResponseType(), argScheme)
+                this.serializer.encodeBody(response.getBody(), argScheme)
         );
 
         ctx.writeAndFlush(rawResponse);

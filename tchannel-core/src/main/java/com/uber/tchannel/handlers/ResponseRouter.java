@@ -55,7 +55,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
         Res<?> res = new Res<>(
                 this.serializer.decodeEndpoint(response),
                 this.serializer.decodeHeaders(response),
-                this.serializer.decodeBody(response, value.klass)
+                this.serializer.decodeBody(response, value.getKlass())
         );
 
         value.promise.setSuccess((Res) res);
@@ -69,6 +69,14 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
         public Value(Class<T> klass, Promise<Res<T>> promise) {
             this.klass = klass;
             this.promise = promise;
+        }
+
+        public Class<T> getKlass() {
+            return klass;
+        }
+
+        public Promise<Res<T>> getPromise() {
+            return promise;
         }
     }
 

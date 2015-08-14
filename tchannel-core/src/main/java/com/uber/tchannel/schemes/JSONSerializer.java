@@ -58,18 +58,18 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     }
 
     @Override
-    public ByteBuf encodeMethod(String method) {
+    public ByteBuf encodeEndpoint(String method) {
         return Unpooled.wrappedBuffer(method.getBytes());
     }
 
     @Override
     public ByteBuf encodeHeaders(Map<String, String> applicationHeaders) {
-        return Unpooled.wrappedBuffer(new Gson().toJson(applicationHeaders).getBytes());
+        return Unpooled.wrappedBuffer(new Gson().toJson(applicationHeaders, HEADER_TYPE).getBytes());
     }
 
     @Override
-    public <T> ByteBuf encodeBody(Object body, Class<T> klass) {
-        return Unpooled.wrappedBuffer(new Gson().toJson(body, klass).getBytes());
+    public ByteBuf encodeBody(Object body) {
+        return Unpooled.wrappedBuffer(new Gson().toJson(body).getBytes());
     }
 
 }

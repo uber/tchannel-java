@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.api;
 
-import com.google.gson.Gson;
 import com.uber.tchannel.channels.ChannelManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.MessageCodec;
@@ -32,10 +31,11 @@ import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
+import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.Serializer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -97,24 +97,25 @@ public final class TChannel {
 
         Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
 
+        Serializer.SerializerInterface serializer = new JSONSerializer();
+
         RawRequest rawRequest = new RawRequest(
-                new Random().nextInt(),
+                new Random().nextInt(Integer.MAX_VALUE),
                 service,
                 new HashMap<String, String>() {
                     {
                         put("as", argScheme);
                     }
                 },
-                Unpooled.wrappedBuffer(req.getEndpoint().getBytes()),
-                Unpooled.wrappedBuffer(new Gson().toJson(req.getHeaders()).getBytes()),
-                Unpooled.wrappedBuffer(new Gson().toJson(req.getBody()).getBytes())
+                serializer.encodeEndpoint(req.getEndpoint()),
+                serializer.encodeHeaders(req.getHeaders()),
+                serializer.encodeBody(req.getBody())
         );
 
-        ch.write(rawRequest);
         Promise<Res<T>> resPromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
         ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
         responseRouter.expect(rawRequest.getId(), resPromise, klass);
-        ch.flush();
+        ch.writeAndFlush(rawRequest);
         return resPromise;
 
     }

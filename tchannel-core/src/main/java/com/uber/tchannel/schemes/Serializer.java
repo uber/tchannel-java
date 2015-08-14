@@ -40,23 +40,23 @@ public class Serializer {
     }
 
     public Map<String, String> decodeHeaders(RawMessage message) {
-        return this.getSerializer(message).decodeHeaders(message.getArg1());
+        return this.getSerializer(message).decodeHeaders(message.getArg2());
     }
 
     public <T> T decodeBody(RawMessage message, Class<T> klass) {
         return this.getSerializer(message).decodeBody(message.getArg3(), klass);
     }
 
-    public ByteBuf encodeMethod(String method, ArgScheme argScheme) {
-        return this.getSerializer(argScheme).encodeMethod(method);
+    public ByteBuf encodeEndpoint(String method, ArgScheme argScheme) {
+        return this.getSerializer(argScheme).encodeEndpoint(method);
     }
 
     public ByteBuf encodeHeaders(Map<String, String> applicationHeaders, ArgScheme argScheme) {
         return this.getSerializer(argScheme).encodeHeaders(applicationHeaders);
     }
 
-    public <T> ByteBuf encodeBody(Object body, Class<T> klass, ArgScheme argScheme) {
-        return this.getSerializer(argScheme).encodeBody(body, klass);
+    public <T> ByteBuf encodeBody(Object body, ArgScheme argScheme) {
+        return this.getSerializer(argScheme).encodeBody(body);
     }
 
     private SerializerInterface getSerializer(RawMessage message) {
@@ -73,14 +73,14 @@ public class Serializer {
 
         String decodeEndpoint(ByteBuf arg1);
 
-        Map<String, String> decodeHeaders(ByteBuf arg1);
+        Map<String, String> decodeHeaders(ByteBuf arg2);
 
         <T> T decodeBody(ByteBuf arg3, Class<T> klass);
 
-        ByteBuf encodeMethod(String method);
+        ByteBuf encodeEndpoint(String method);
 
         ByteBuf encodeHeaders(Map<String, String> applicationHeaders);
 
-        <T> ByteBuf encodeBody(Object body, Class<T> klass);
+        ByteBuf encodeBody(Object body);
     }
 }

@@ -28,13 +28,14 @@ import java.util.Map;
 
 public interface RawMessage {
 
+    long getId();
+
+    Map<String, String> getTransportHeaders();
+
     ByteBuf getArg1();
 
     ByteBuf getArg2();
 
     ByteBuf getArg3();
 
-    long getId();
-
-    Map<String, String> getTransportHeaders();
 }

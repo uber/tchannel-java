@@ -47,4 +47,15 @@ public class Req<T> {
     public T getBody() {
         return body;
     }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s endpoint=%s headers=%s body=%s>",
+                this.getClass().getSimpleName(),
+                this.endpoint,
+                this.headers,
+                this.body
+        );
+    }
 }

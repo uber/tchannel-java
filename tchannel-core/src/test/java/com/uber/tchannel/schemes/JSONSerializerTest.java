@@ -22,12 +22,51 @@
 
 package com.uber.tchannel.schemes;
 
-import io.netty.util.CharsetUtil;
+import io.netty.buffer.ByteBuf;
+import org.junit.Test;
 
-public class RawArgScheme {
-    public static String decodeEndpoint(RawMessage request) {
-        String endpoint = request.getArg1().toString(CharsetUtil.UTF_8);
-        request.getArg1().release();
-        return endpoint;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+
+/**
+ * Created by wjs on 8/14/15.
+ */
+public class JSONSerializerTest {
+
+    private Serializer.SerializerInterface serializer;
+
+    @org.junit.Before
+    public void setUp() throws Exception {
+        this.serializer = new JSONSerializer();
+    }
+
+    @Test
+    public void testEncodeDecodeEndpoint() throws Exception {
+
+    }
+
+    @Test
+    public void testEncodeDecodeHeaders() throws Exception {
+
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("foo", "bar");
+        }};
+
+        ByteBuf binaryHeaders = serializer.encodeHeaders(headers);
+        Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
+
+        assertEquals(headers, decodedHeaders);
+    }
+
+    @Test
+    public void testEncodeDecodeBody() throws Exception {
+
+    }
+
+    @org.junit.After
+    public void tearDown() throws Exception {
+        this.serializer = null;
     }
 }

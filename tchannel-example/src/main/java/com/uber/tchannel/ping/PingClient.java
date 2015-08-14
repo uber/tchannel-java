@@ -26,33 +26,51 @@ import com.uber.tchannel.api.Req;
 import com.uber.tchannel.api.Res;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.headers.ArgScheme;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 
 import java.util.HashMap;
 
 public class PingClient {
 
-    private String host;
-    private int port;
+    private final String host;
+    private final int port;
+    private final int requests;
 
-    public PingClient(String host, int port) {
+    public PingClient(String host, int port, int requests) {
         this.host = host;
         this.port = port;
+        this.requests = requests;
     }
 
     public static void main(String[] args) throws Exception {
-        String host = "localhost";
-        int port = 8888;
+        Options options = new Options();
+        options.addOption("h", "host", true, "Server Host to connect to");
+        options.addOption("p", "port", true, "Server Port to connect to");
+        options.addOption("n", "requests", true, "Number of requests to make");
+        options.addOption("?", "help", false, "Usage");
+        HelpFormatter formatter = new HelpFormatter();
 
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        } else if (args.length == 2) {
-            host = String.valueOf(args[0]);
-            port = Integer.parseInt(args[1]);
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        if (cmd.hasOption("?")) {
+            formatter.printHelp("PingClient", options, true);
+            return;
         }
 
+        String host = cmd.getOptionValue("h", "localhost");
+        int port = Integer.parseInt(cmd.getOptionValue("p", "8888"));
+        int requests = Integer.parseInt(cmd.getOptionValue("n", "10000"));
+
         System.out.println(String.format("Connecting from client to server on port: %d", port));
-        new PingClient(host, port).run();
+        new PingClient(host, port, requests).run();
         System.out.println("Stopping Client...");
 
     }
@@ -70,15 +88,30 @@ public class PingClient {
                 new Ping("{'key': 'ping?'}")
         );
 
-        Promise<Res<Pong>> f = tchannel.makeRequest(
-                "localhost",
-                8888,
-                "service",
-                ArgScheme.JSON.getScheme(),
-                Pong.class,
-                req
-        );
-        Res<Pong> res = f.get();
+        for (int i = 0; i < this.requests; i++) {
+            Promise<Res<Pong>> f = tchannel.makeRequest(
+                    this.host,
+                    this.port,
+                    "service",
+                    ArgScheme.JSON.getScheme(),
+                    Pong.class,
+                    req
+            );
+
+            f.addListener(new GenericFutureListener<Future<? super Res<Pong>>>() {
+                @Override
+                public void operationComplete(Future<? super Res<Pong>> future) throws Exception {
+                    if (future.isSuccess()) {
+                        Res<Pong> res = (Res<Pong>) future.get();
+                        System.out.println(res);
+                    }
+                }
+            });
+
+        }
+
+        tchannel.shutdown();
+
     }
 
 }

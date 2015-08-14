@@ -65,18 +65,6 @@ public final class RawRequest implements RawMessage {
         this.arg3 = arg3;
     }
 
-    public ByteBuf getArg1() {
-        return arg1;
-    }
-
-    public ByteBuf getArg2() {
-        return arg2;
-    }
-
-    public ByteBuf getArg3() {
-        return arg3;
-    }
-
     @Override
     public long getId() {
         return this.id;
@@ -87,20 +75,23 @@ public final class RawRequest implements RawMessage {
     }
 
     @Override
+    public ByteBuf getArg1() {
+        return arg1;
+    }
+
+    @Override
+    public ByteBuf getArg2() {
+        return arg2;
+    }
+
+    @Override
+    public ByteBuf getArg3() {
+        return arg3;
+    }
+
+    @Override
     public Map<String, String> getTransportHeaders() {
         return this.transportHeaders;
-    }
-
-    public ByteBuf getMethod() {
-        return this.arg1;
-    }
-
-    public ByteBuf getApplicationHeaders() {
-        return this.arg2;
-    }
-
-    public ByteBuf getBody() {
-        return this.arg3;
     }
 
     @Override

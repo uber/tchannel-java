@@ -36,10 +36,6 @@ public class Res<T> {
         this.body = body;
     }
 
-    public static <T> Res<T> ResFactory(String endpoint, Map<String, String> headers, T body, Class<T> klass) {
-        return new Res<T>(endpoint, headers, body);
-    }
-
     public String getEndpoint() {
         return endpoint;
     }
@@ -50,5 +46,16 @@ public class Res<T> {
 
     public T getBody() {
         return body;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s endpoint=%s headers=%s body=%s>",
+                this.getClass().getSimpleName(),
+                this.endpoint,
+                this.headers,
+                this.body
+        );
     }
 }
