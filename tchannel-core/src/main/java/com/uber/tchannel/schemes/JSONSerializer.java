@@ -24,50 +24,52 @@ package com.uber.tchannel.schemes;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.uber.tchannel.messages.RawMessage;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
 import java.lang.reflect.Type;
 import java.util.Map;
 
-public final class JSONArgScheme {
-
+public final class JSONSerializer implements Serializer.SerializerInterface {
     private static final Type HEADER_TYPE = (new TypeToken<Map<String, String>>() {
 
     }).getType();
 
-    public static String decodeMethod(RawMessage request) {
-        String endpoint = request.getArg1().toString(CharsetUtil.UTF_8);
-        request.getArg1().release();
+    @Override
+    public String decodeEndpoint(ByteBuf arg1) {
+        String endpoint = arg1.toString(CharsetUtil.UTF_8);
+        arg1.release();
         return endpoint;
     }
 
-    public static Map<String, String> decodeApplicationHeaders(RawMessage request) {
-        String headerJSON = request.getArg2().toString(CharsetUtil.UTF_8);
-        request.getArg2().release();
+    @Override
+    public Map<String, String> decodeHeaders(ByteBuf arg2) {
+        String headerJSON = arg2.toString(CharsetUtil.UTF_8);
+        arg2.release();
         return new Gson().fromJson(headerJSON, HEADER_TYPE);
     }
 
-    public static Object decodeBody(RawMessage request, Type objectType) {
-        String bodyJSON = request.getArg3().toString(CharsetUtil.UTF_8);
-        request.getArg3().release();
-        return new Gson().fromJson(bodyJSON, objectType);
+    @Override
+    public <T> T decodeBody(ByteBuf arg3, Class<T> klass) {
+        String bodyJSON = arg3.toString(CharsetUtil.UTF_8);
+        arg3.release();
+        return new Gson().fromJson(bodyJSON, klass);
     }
 
-    public static RawResponse encodeResponse(JSONResponse<?> jsonResponse, Type objectType) {
+    @Override
+    public ByteBuf encodeMethod(String method) {
+        return Unpooled.wrappedBuffer(method.getBytes());
+    }
 
-        String jsonMethod = jsonResponse.getMethod();
-        String jsonHeaders = new Gson().toJson(jsonResponse.getApplicationHeaders());
-        String jsonBody = new Gson().toJson(jsonResponse.getBody(), objectType);
+    @Override
+    public ByteBuf encodeHeaders(Map<String, String> applicationHeaders) {
+        return Unpooled.wrappedBuffer(new Gson().toJson(applicationHeaders).getBytes());
+    }
 
-        return new RawResponse(
-                jsonResponse.getId(),
-                jsonResponse.getTransportHeaders(),
-                Unpooled.wrappedBuffer(jsonMethod.getBytes()),
-                Unpooled.wrappedBuffer(jsonHeaders.getBytes()),
-                Unpooled.wrappedBuffer(jsonBody.getBytes())
-        );
+    @Override
+    public <T> ByteBuf encodeBody(Object body, Class<T> klass) {
+        return Unpooled.wrappedBuffer(new Gson().toJson(body, klass).getBytes());
     }
 
 }

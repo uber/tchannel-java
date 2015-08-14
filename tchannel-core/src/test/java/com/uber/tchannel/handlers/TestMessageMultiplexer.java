@@ -25,7 +25,7 @@ import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.fragmentation.DefragmentationState;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
-import com.uber.tchannel.messages.RawMessage;
+import com.uber.tchannel.schemes.RawMessage;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;

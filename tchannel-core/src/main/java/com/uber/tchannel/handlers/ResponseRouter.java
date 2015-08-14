@@ -22,7 +22,11 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.Res;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.schemes.JSONSerializer;
+import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.Serializer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Promise;
@@ -30,19 +34,42 @@ import io.netty.util.concurrent.Promise;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ResponseRouter extends SimpleChannelInboundHandler<Response> {
+public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
 
-    private final Map<Long, Promise<Response>> messageMap = new HashMap<>();
+    private final Map<Long, Value> messageMap = new HashMap<>();
+    private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
+        {
+            put(ArgScheme.JSON, new JSONSerializer());
+        }
+    });
 
-    public Promise<Response> expect(long messageId, Promise<Response> promise) {
-        return this.messageMap.put(messageId, promise);
+    public <T> void expect(long messageId, Promise<Res<T>> promise, Class<T> klass) {
+        this.messageMap.put(messageId, new Value<>(klass, promise));
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Response response) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, RawResponse response) throws Exception {
 
-        Promise<Response> promise = this.messageMap.remove(response.getId());
-        promise.setSuccess(response);
+        Value<?> value = this.messageMap.remove(response.getId());
+
+        Res<?> res = new Res<>(
+                this.serializer.decodeEndpoint(response),
+                this.serializer.decodeHeaders(response),
+                this.serializer.decodeBody(response, value.klass)
+        );
+
+        value.promise.setSuccess((Res) res);
 
     }
+
+    private class Value<T> {
+        private final Class<T> klass;
+        private final Promise<Res<T>> promise;
+
+        public Value(Class<T> klass, Promise<Res<T>> promise) {
+            this.klass = klass;
+            this.promise = promise;
+        }
+    }
+
 }

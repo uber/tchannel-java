@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.messages;
+package com.uber.tchannel.schemes;
 
 import io.netty.buffer.ByteBuf;
 

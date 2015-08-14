@@ -20,14 +20,14 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.api;
 
-import com.uber.tchannel.api.RequestHandler;
+public interface ReqHandler<T, U> {
 
-public interface JSONRequestHandler<RequestT, ResponseT> extends
-        RequestHandler<JSONRequest<RequestT>, JSONResponse<ResponseT>> {
+    Res<U> handle(Req<T> request);
 
-    Class<ResponseT> getResponseType();
+    Class<T> getRequestType();
 
-    Class<RequestT> getRequestType();
+    Class<U> getResponseType();
+
 }

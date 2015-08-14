@@ -22,86 +22,82 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.Req;
+import com.uber.tchannel.api.ReqHandler;
+import com.uber.tchannel.api.Res;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.JSONArgScheme;
-import com.uber.tchannel.schemes.JSONRequest;
-import com.uber.tchannel.schemes.JSONRequestHandler;
-import com.uber.tchannel.schemes.JSONResponse;
+import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawRequestHandler;
 import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.Serializer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
-    private final Map<String, ? extends RequestHandler> requestHandlers;
-    private final RawRequestHandler rawRequestHandler;
+    private final Map<String, ? extends ReqHandler> requestHandlers;
+    private final Serializer serializer;
 
-    public RequestRouter(Map<String, RequestHandler> requestHandlers, RawRequestHandler rawRequestHandler) {
+    public RequestRouter(Map<String, ReqHandler> requestHandlers) {
         this.requestHandlers = requestHandlers;
-        this.rawRequestHandler = rawRequestHandler;
+        this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
+            {
+                put(ArgScheme.JSON, new JSONSerializer());
+            }
+        }
+        );
     }
 
-    protected void handleRaw(ChannelHandlerContext ctx, RawRequest request) {
-        RawResponse rawResponse = this.rawRequestHandler.handle(request);
-        ctx.writeAndFlush(rawResponse);
-    }
+    @Override
+    protected void messageReceived(ChannelHandlerContext ctx, RawRequest rawRequest) throws Exception {
 
-    protected void handleJSON(ChannelHandlerContext ctx, RawRequest request) {
+        ArgScheme argScheme = ArgScheme.fromString(
+                rawRequest.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
+        );
+
+        if (argScheme == null) {
+            throw new RuntimeException("Missing `Arg Scheme` header");
+        }
+
         // arg1
-        String method = JSONArgScheme.decodeMethod(request);
+        String method = this.serializer.decodeEndpoint(rawRequest);
 
         // Get handler for this method
-        final JSONRequestHandler<?, ?> handler = (JSONRequestHandler<?, ?>) this.requestHandlers.get(method);
+        ReqHandler<?, ?> handler = this.requestHandlers.get(method);
+
+        if (handler == null) {
+            throw new RuntimeException(String.format("No handler for %s", method));
+        }
 
         // arg2
-        Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(request);
+        Map<String, String> applicationHeaders = this.serializer.decodeHeaders(rawRequest);
 
         // arg3
-        Object body = JSONArgScheme.decodeBody(request, handler.getRequestType());
+        Object body = this.serializer.decodeBody(rawRequest, handler.getRequestType());
 
         // transform request into form the handler expects
-        JSONRequest jsonRequest = new JSONRequest<>(
-                request.getId(),
-                request.getService(),
-                request.getTransportHeaders(),
+        Req<?> request = new Req<>(
                 method,
                 applicationHeaders,
                 body
         );
 
         // Handle the request
-        JSONResponse<?> jsonResponse = handler.handle(jsonRequest);
-        RawResponse response = JSONArgScheme.encodeResponse(jsonResponse, handler.getResponseType());
-        ctx.writeAndFlush(response);
-    }
+        Res<?> response = handler.handle((Req) request);
 
-    @Override
-    protected void messageReceived(ChannelHandlerContext ctx, RawRequest request) throws Exception {
+        RawResponse rawResponse = new RawResponse(
+                rawRequest.getId(),
+                rawRequest.getTransportHeaders(),
+                this.serializer.encodeMethod(response.getEndpoint(), argScheme),
+                this.serializer.encodeHeaders(response.getHeaders(), argScheme),
+                this.serializer.encodeBody(response.getBody(), handler.getResponseType(), argScheme)
+        );
 
-        ArgScheme argScheme = ArgScheme.fromString(request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
+        ctx.writeAndFlush(rawResponse);
 
-        if (argScheme == null) {
-            throw new RuntimeException("Missing `Arg Scheme` header");
-        }
-
-        switch (argScheme) {
-            case RAW:
-                this.handleRaw(ctx, request);
-                break;
-            case JSON:
-                this.handleJSON(ctx, request);
-                break;
-            case THRIFT:
-            case HTTP:
-            case STREAMING_THRIFT:
-            default:
-                break;
-        }
     }
 }

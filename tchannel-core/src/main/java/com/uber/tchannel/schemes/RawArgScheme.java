@@ -19,24 +19,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.api;
 
-import java.util.Map;
+package com.uber.tchannel.schemes;
 
-/**
- * {@link Request} defines a common interface that all TChannel RPC requests should follow.
- */
-public interface Request<T, U, V> {
-    long getId();
+import io.netty.util.CharsetUtil;
 
-    String getService();
-
-    Map<String, String> getTransportHeaders();
-
-    T getMethod();
-
-    U getApplicationHeaders();
-
-    V getBody();
-
+public class RawArgScheme {
+    public static String decodeEndpoint(RawMessage request) {
+        String endpoint = request.getArg1().toString(CharsetUtil.UTF_8);
+        request.getArg1().release();
+        return endpoint;
+    }
 }

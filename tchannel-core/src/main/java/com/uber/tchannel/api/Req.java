@@ -22,8 +22,29 @@
 
 package com.uber.tchannel.api;
 
-public interface RequestHandler<T extends Request, U extends Response> {
-    U handle(T request);
+import java.util.Map;
 
-    String getArgScheme();
+public class Req<T> {
+
+    private final String endpoint;
+    private final Map<String, String> headers;
+    private final T body;
+
+    public Req(String endpoint, Map<String, String> headers, T body) {
+        this.endpoint = endpoint;
+        this.headers = headers;
+        this.body = body;
+    }
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public T getBody() {
+        return body;
+    }
 }

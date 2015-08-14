@@ -20,10 +20,35 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.api;
 
-import com.uber.tchannel.api.RequestHandler;
+import java.util.Map;
 
-public interface RawRequestHandler extends RequestHandler<RawRequest, RawResponse> {
+public class Res<T> {
 
+    private final String endpoint;
+    private final Map<String, String> headers;
+    private final T body;
+
+    public Res(String endpoint, Map<String, String> headers, T body) {
+        this.endpoint = endpoint;
+        this.headers = headers;
+        this.body = body;
+    }
+
+    public static <T> Res<T> ResFactory(String endpoint, Map<String, String> headers, T body, Class<T> klass) {
+        return new Res<T>(endpoint, headers, body);
+    }
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public T getBody() {
+        return body;
+    }
 }

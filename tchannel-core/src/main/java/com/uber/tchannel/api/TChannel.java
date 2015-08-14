@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.api;
 
+import com.google.gson.Gson;
 import com.uber.tchannel.channels.ChannelManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.MessageCodec;
@@ -31,10 +32,10 @@ import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
-import com.uber.tchannel.schemes.DefaultRawRequestHandler;
-import com.uber.tchannel.schemes.RawRequestHandler;
+import com.uber.tchannel.schemes.RawRequest;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -53,6 +54,7 @@ import io.netty.util.concurrent.Promise;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public final class TChannel {
 
@@ -84,41 +86,36 @@ public final class TChannel {
         this.childGroup.shutdownGracefully();
     }
 
-    /**
-     * Makes a Request to the remote address.
-     * <p/>
-     * This will attempt to reuse a connection, i.e. TCP socket, to a remote address and create one if needed.
-     *
-     * @param address the remote address to make the request
-     * @param request the request object to send
-     * @return a promise representing a future response from this request
-     * @throws InterruptedException
-     */
-    public Promise<Response> request(final InetSocketAddress address,
-                                     final Request request) throws InterruptedException {
+    public <T, U> Promise<Res<T>> makeRequest(
+            String host,
+            int port,
+            String service,
+            final String argScheme,
+            Class<T> klass,
+            Req<U> req
+    ) throws InterruptedException {
 
-        // Get a channel for this request
-        Channel ch = this.channelManager.findOrNew(address, this.clientBootstrap);
+        Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
 
-        // Write the request
-        ch.write(request);
+        RawRequest rawRequest = new RawRequest(
+                new Random().nextInt(),
+                service,
+                new HashMap<String, String>() {
+                    {
+                        put("as", argScheme);
+                    }
+                },
+                Unpooled.wrappedBuffer(req.getEndpoint().getBytes()),
+                Unpooled.wrappedBuffer(new Gson().toJson(req.getHeaders()).getBytes()),
+                Unpooled.wrappedBuffer(new Gson().toJson(req.getBody()).getBytes())
+        );
 
-        // Prepare for a response.
-
-        // Create  a new response promise to hand to the client.
-        // TODO: on which EventExecutor should Promises be fulfilled?
-        Promise<Response> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
-
-        // Get a handle to the responseRouter to tell it that it should expet a response
+        ch.write(rawRequest);
+        Promise<Res<T>> resPromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
         ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
-
-        // Let the ResponseDispatch handler know that it should handle this response
-        responseRouter.expect(request.getId(), responsePromise);
-
-        // Flush and return the response promise
-        // TODO: when and how often should we flush requests?
+        responseRouter.expect(rawRequest.getId(), resPromise, klass);
         ch.flush();
-        return responsePromise;
+        return resPromise;
 
     }
 
@@ -127,8 +124,7 @@ public final class TChannel {
         private final String service;
         private final ChannelManager channelManager = new ChannelManager();
         private InetSocketAddress address;
-        private RawRequestHandler rawRequestHandler;
-        private Map<String, RequestHandler> requestHandlers = new HashMap<>();
+        private Map<String, ReqHandler> requestHandlers = new HashMap<>();
         private EventLoopGroup bossGroup;
         private EventLoopGroup childGroup;
         private LogLevel logLevel;
@@ -145,13 +141,8 @@ public final class TChannel {
             return this;
         }
 
-        public Builder register(String service, RequestHandler requestHandler) {
+        public Builder register(String service, ReqHandler requestHandler) {
             requestHandlers.put(service, requestHandler);
-            return this;
-        }
-
-        public Builder registerRawRequestHandler(RawRequestHandler rawRequestHandler) {
-            this.rawRequestHandler = rawRequestHandler;
             return this;
         }
 
@@ -183,11 +174,8 @@ public final class TChannel {
             if (logLevel == null) {
                 logLevel = LogLevel.INFO;
             }
-            if (rawRequestHandler == null) {
-                rawRequestHandler = new DefaultRawRequestHandler();
-            }
-            return new TChannel(this);
 
+            return new TChannel(this);
         }
 
         private Bootstrap bootstrap() {
@@ -232,7 +220,7 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageMultiplexer", new MessageMultiplexer());
 
                     // Pass RequestHandlers to the RequestRouter
-                    ch.pipeline().addLast("RequestRouter", new RequestRouter(requestHandlers, rawRequestHandler));
+                    ch.pipeline().addLast("RequestRouter", new RequestRouter(requestHandlers));
 
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter());
 

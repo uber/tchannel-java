@@ -22,15 +22,12 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.Req;
+import com.uber.tchannel.api.Res;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.RawRequest;
-import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Promise;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 
 public class PingClient {
@@ -63,22 +60,25 @@ public class PingClient {
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-client").build();
 
-        Promise<Response> p = tchannel.request(new InetSocketAddress(this.host, this.port), new RawRequest(
-                42,
-                "service",
+        Req<Ping> req = new Req<Ping>(
+                "ping",
                 new HashMap<String, String>() {
                     {
-                        put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme());
+                        put("some", "header");
                     }
                 },
-                Unpooled.wrappedBuffer("ping".getBytes()),
-                Unpooled.wrappedBuffer("{}".getBytes()),
-                Unpooled.wrappedBuffer("{'request': 'ping?'}".getBytes())
-        ));
+                new Ping("{'key': 'ping?'}")
+        );
 
-        Response res = p.get();
-        System.out.println(res);
-        tchannel.shutdown();
+        Promise<Res<Pong>> f = tchannel.makeRequest(
+                "localhost",
+                8888,
+                "service",
+                ArgScheme.JSON.getScheme(),
+                Pong.class,
+                req
+        );
+        Res<Pong> res = f.get();
     }
 
 }
