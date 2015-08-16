@@ -26,15 +26,15 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.Map;
 
-public interface FullMessage {
-
-    long getId();
-
-    Map<String, String> getTransportHeaders();
+public interface RawMessage {
 
     ByteBuf getArg1();
 
     ByteBuf getArg2();
 
     ByteBuf getArg3();
+
+    long getId();
+
+    Map<String, String> getTransportHeaders();
 }

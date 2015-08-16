@@ -25,7 +25,7 @@ import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.fragmentation.DefragmentationState;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
-import com.uber.tchannel.messages.FullMessage;
+import com.uber.tchannel.messages.RawMessage;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -46,7 +46,7 @@ public class TestMessageMultiplexer {
     public void testMergeMessage() {
 
         MessageMultiplexer mux = new MessageMultiplexer();
-        Map<Long, FullMessage> map = mux.getMessageMap();
+        Map<Long, RawMessage> map = mux.getMessageMap();
         EmbeddedChannel channel = new EmbeddedChannel(mux);
         long id = 42;
 
@@ -84,7 +84,7 @@ public class TestMessageMultiplexer {
         assertEquals(1, firstCallRequestContinue.refCnt());
         assertEquals(1, secondCallRequestContinue.refCnt());
 
-        FullMessage fullMessage = channel.readInbound();
+        RawMessage fullMessage = channel.readInbound();
         assertEquals(1, fullMessage.getArg1().refCnt());
         assertEquals(1, fullMessage.getArg2().refCnt());
         assertEquals(1, fullMessage.getArg3().refCnt());

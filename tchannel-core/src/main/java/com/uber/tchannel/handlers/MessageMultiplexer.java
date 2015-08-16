@@ -29,7 +29,7 @@ import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.CallResponseContinue;
-import com.uber.tchannel.messages.FullMessage;
+import com.uber.tchannel.messages.RawMessage;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.tracing.Trace;
@@ -42,18 +42,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullMessage> {
+public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, RawMessage> {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024;
     private static final int MAX_BUFFER_SIZE = TFrame.MAX_FRAME_LENGTH - TFrame.FRAME_HEADER_LENGTH;
 
-    // Maintains a mapping of MessageId -> Partial FullMessage
-    private final Map<Long, FullMessage> messageMap = new HashMap<Long, FullMessage>();
+    // Maintains a mapping of MessageId -> Partial RawMessage
+    private final Map<Long, RawMessage> messageMap = new HashMap<>();
 
     // Maintains a mapping of MessageId -> Message Defragmentation State */
     private final Map<Long, DefragmentationState> defragmentationState = new HashMap<Long, DefragmentationState>();
 
-    protected Map<Long, FullMessage> getMessageMap() {
+    protected Map<Long, RawMessage> getMessageMap() {
         return this.messageMap;
     }
 
@@ -62,7 +62,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, FullMessage msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, RawMessage msg, List<Object> out) throws Exception {
 
         ByteBuf buffer = ctx.alloc().buffer(DEFAULT_BUFFER_SIZE, MAX_BUFFER_SIZE);
         // arg1~2
@@ -123,7 +123,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, FullM
         }
 
         if (!msg.moreFragmentsFollow()) {
-            FullMessage completeResponse = this.messageMap.remove(msg.getId());
+            RawMessage completeResponse = this.messageMap.remove(msg.getId());
             out.add(completeResponse);
         }
 

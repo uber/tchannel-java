@@ -29,8 +29,10 @@ import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
-import com.uber.tchannel.handlers.RequestDispatcher;
-import com.uber.tchannel.handlers.ResponseDispatcher;
+import com.uber.tchannel.handlers.RequestRouter;
+import com.uber.tchannel.handlers.ResponseRouter;
+import com.uber.tchannel.schemes.DefaultRawRequestHandler;
+import com.uber.tchannel.schemes.RawRequestHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -107,11 +109,11 @@ public final class TChannel {
         // TODO: on which EventExecutor should Promises be fulfilled?
         Promise<Response> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
 
-        // Get a handle to the responseDispatcher to tell it that it should expet a response
-        ResponseDispatcher responseDispatcher = ch.pipeline().get(ResponseDispatcher.class);
+        // Get a handle to the responseRouter to tell it that it should expet a response
+        ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
 
         // Let the ResponseDispatch handler know that it should handle this response
-        responseDispatcher.put(request.getId(), responsePromise);
+        responseRouter.expect(request.getId(), responsePromise);
 
         // Flush and return the response promise
         // TODO: when and how often should we flush requests?
@@ -125,6 +127,7 @@ public final class TChannel {
         private final String service;
         private final ChannelManager channelManager = new ChannelManager();
         private InetSocketAddress address;
+        private RawRequestHandler rawRequestHandler;
         private Map<String, RequestHandler> requestHandlers = new HashMap<>();
         private EventLoopGroup bossGroup;
         private EventLoopGroup childGroup;
@@ -143,7 +146,12 @@ public final class TChannel {
         }
 
         public Builder register(String service, RequestHandler requestHandler) {
-            this.requestHandlers.put(service, requestHandler);
+            requestHandlers.put(service, requestHandler);
+            return this;
+        }
+
+        public Builder registerRawRequestHandler(RawRequestHandler rawRequestHandler) {
+            this.rawRequestHandler = rawRequestHandler;
             return this;
         }
 
@@ -175,7 +183,9 @@ public final class TChannel {
             if (logLevel == null) {
                 logLevel = LogLevel.INFO;
             }
-
+            if (rawRequestHandler == null) {
+                rawRequestHandler = new DefaultRawRequestHandler();
+            }
             return new TChannel(this);
 
         }
@@ -221,10 +231,10 @@ public final class TChannel {
                     // Handles Call Request RPC
                     ch.pipeline().addLast("MessageMultiplexer", new MessageMultiplexer());
 
-                    // Pass RequestHandlers to the RequestDispatcher
-                    ch.pipeline().addLast("RequestDispatcher", new RequestDispatcher(requestHandlers));
+                    // Pass RequestHandlers to the RequestRouter
+                    ch.pipeline().addLast("RequestRouter", new RequestRouter(requestHandlers, rawRequestHandler));
 
-                    ch.pipeline().addLast("ResponseDispatcher", new ResponseDispatcher());
+                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter());
 
                     // Register Channels as they are created.
                     ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(channelManager));

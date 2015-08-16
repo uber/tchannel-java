@@ -22,6 +22,8 @@
 
 package com.uber.tchannel.api;
 
-public interface RequestHandler<RequestT, ResponseT> {
-    ResponseT handle(RequestT request);
+public interface RequestHandler<T extends Request, U extends Response> {
+    U handle(T request);
+
+    String getArgScheme();
 }

@@ -28,19 +28,17 @@ import com.uber.tchannel.headers.TransportHeaders;
 
 import java.util.Map;
 
-public class JSONResponse<T> implements Response {
+public class JSONResponse<T> implements Response<String, Map<String, String>, T> {
 
     private final long id;
-    private final String service;
     private final Map<String, String> transportHeaders;
     private final String method;
     private final Map<String, String> applicationHeaders;
     private final T body;
 
-    public JSONResponse(long id, String service, Map<String, String> transportHeaders, String method,
+    public JSONResponse(long id, Map<String, String> transportHeaders, String method,
                         Map<String, String> applicationHeaders, T body) {
         this.id = id;
-        this.service = service;
         this.transportHeaders = transportHeaders;
         this.transportHeaders.putIfAbsent(
                 TransportHeaders.ARG_SCHEME_KEY,
@@ -51,24 +49,42 @@ public class JSONResponse<T> implements Response {
         this.body = body;
     }
 
+    @Override
     public long getId() {
         return this.id;
     }
 
+    @Override
     public Map<String, String> getTransportHeaders() {
         return this.transportHeaders;
     }
 
+    @Override
     public String getMethod() {
         return this.method;
     }
 
+    @Override
     public Map<String, String> getApplicationHeaders() {
         return this.applicationHeaders;
     }
 
+    @Override
     public T getBody() {
         return this.body;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s id=%d transportHeaders=%s method=%s applicationHeaders=%s body=%s>",
+                this.getClass().getSimpleName(),
+                this.id,
+                this.transportHeaders,
+                this.getMethod(),
+                this.getApplicationHeaders(),
+                this.getBody()
+        );
     }
 
 }

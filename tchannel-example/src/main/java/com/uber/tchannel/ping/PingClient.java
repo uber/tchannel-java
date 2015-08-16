@@ -61,9 +61,9 @@ public class PingClient {
     }
 
     public void run() throws Exception {
-        TChannel client = new TChannel.Builder("ping-client").build();
+        TChannel tchannel = new TChannel.Builder("ping-client").build();
 
-        Promise<Response> p = client.request(new InetSocketAddress(this.host, this.port), new RawRequest(
+        Promise<Response> p = tchannel.request(new InetSocketAddress(this.host, this.port), new RawRequest(
                 42,
                 "service",
                 new HashMap<String, String>() {
@@ -78,7 +78,7 @@ public class PingClient {
 
         Response res = p.get();
         System.out.println(res);
-        client.shutdown();
+        tchannel.shutdown();
     }
 
 }

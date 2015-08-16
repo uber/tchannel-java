@@ -25,7 +25,7 @@ package com.uber.tchannel.schemes;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.messages.FullMessage;
+import com.uber.tchannel.messages.RawMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
@@ -44,7 +44,7 @@ import java.util.Map;
  * The `raw` encoding is intended for any custom encodings you want to do that
  * are not part of TChannel but are application specific.
  */
-public final class RawResponse implements Response, FullMessage {
+public final class RawResponse implements Response<ByteBuf, ByteBuf, ByteBuf>, RawMessage {
 
     private final long id;
     private final Map<String, String> transportHeaders;
@@ -64,23 +64,40 @@ public final class RawResponse implements Response, FullMessage {
         this.arg3 = arg3;
     }
 
+    public ByteBuf getArg1() {
+        return arg1;
+    }
+
+    public ByteBuf getArg2() {
+        return arg2;
+    }
+
+    public ByteBuf getArg3() {
+        return arg3;
+    }
+
+    @Override
     public long getId() {
         return this.id;
     }
 
+    @Override
     public Map<String, String> getTransportHeaders() {
         return this.transportHeaders;
     }
 
-    public ByteBuf getArg1() {
+    @Override
+    public ByteBuf getMethod() {
         return this.arg1;
     }
 
-    public ByteBuf getArg2() {
+    @Override
+    public ByteBuf getApplicationHeaders() {
         return this.arg2;
     }
 
-    public ByteBuf getArg3() {
+    @Override
+    public ByteBuf getBody() {
         return this.arg3;
     }
 

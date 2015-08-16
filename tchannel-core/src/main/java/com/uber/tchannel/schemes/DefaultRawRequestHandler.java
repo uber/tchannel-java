@@ -22,6 +22,8 @@
 
 package com.uber.tchannel.schemes;
 
+import com.uber.tchannel.headers.ArgScheme;
+
 public class DefaultRawRequestHandler implements RawRequestHandler {
     @Override
     public RawResponse handle(RawRequest request) {
@@ -34,5 +36,10 @@ public class DefaultRawRequestHandler implements RawRequestHandler {
                 request.getArg3()
         );
 
+    }
+
+    @Override
+    public String getArgScheme() {
+        return ArgScheme.RAW.getScheme();
     }
 }

@@ -30,11 +30,11 @@ import io.netty.util.concurrent.Promise;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ResponseDispatcher extends SimpleChannelInboundHandler<Response> {
+public class ResponseRouter extends SimpleChannelInboundHandler<Response> {
 
     private final Map<Long, Promise<Response>> messageMap = new HashMap<>();
 
-    public Promise<Response> put(long messageId, Promise<Response> promise) {
+    public Promise<Response> expect(long messageId, Promise<Response> promise) {
         return this.messageMap.put(messageId, promise);
     }
 
@@ -42,11 +42,7 @@ public class ResponseDispatcher extends SimpleChannelInboundHandler<Response> {
     protected void messageReceived(ChannelHandlerContext ctx, Response response) throws Exception {
 
         Promise<Response> promise = this.messageMap.remove(response.getId());
-        if (promise == null) {
-            System.err.println("Message received for unknown stream id " + response.getId());
-        } else {
-            promise.setSuccess(response);
-        }
+        promise.setSuccess(response);
 
     }
 }
