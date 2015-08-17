@@ -20,40 +20,51 @@ A Java implementation of the [TChannel](https://github.com/uber/tchannel) protoc
 - Handling Errors properly
 - Performance
 
-## *Proposed* Example Usage
+## Example Usage
 
 ```java
-TChannel server = new TChannel('server');
-server.register('noop', new RawRequestHandler() {
-    @Override
-    public void onRequest(Stream s, Request req) {
-        System.out.println(req);
-    }
-});
-ChannelFuture f = server.listen('127.0.0.1:8888');
-f.addListener(ChannelFutureListener.CLOSE_ON_FAILURE)
+// Create a TChannel, and register a RequestHandler
+TChannel tchannel = new TChannel.Builder("ping-server")
+	.register("ping", new PingRequestHandler())
+	.setServerPort(this.port)
+	.build();
 
-TChannel client = new TChannel('client');
-ChannelFuture response = client.request('127.0.0.1:8888', 'noop', new RawRequest('func1', 'arg1', 'arg2'));
-response.addListener(new ChannelFutureListener {
-    @Override
-    public void operationComplete(ChannelFuture f) {
-        System.out.println(f.isSuccess());
-    }
-});
+// Listen for incoming connections
+tchannel.listen();
+
+// Create another TChannel to act as a client.
+TChannel tchannelClient = new TChannel.Builder("ping-client").build();
+Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"))
+	.setEndpoint("ping")
+	.setHeaders(headers)
+	.build();
+
+// Make an asynchronous request
+Promise<Response<Pong>> responseFuture = tchannel.makeRequest(
+	this.host,
+	this.port,
+	"service",
+	ArgScheme.JSON,
+	request,
+	Pong.class
+);
+
+// Block and wait for the response
+Response<Pong> response = responseFuture.get(100, TimeUnit.MILLISECONDS)
+System.out.println(response);
 ```
 
 ## Run The Examples
 #### PingServer
 ```bash
 mvn package
-java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingServer 8888
+java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingServer -p 8888
 ```
 
 #### PingClient
 ```bash
 mvn package
-java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingClient localhost 8888
+java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingClient -h localhost -p 8888 -n 1000
 ```
 
 ## Contributing

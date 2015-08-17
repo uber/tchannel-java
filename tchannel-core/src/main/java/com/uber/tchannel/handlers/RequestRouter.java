@@ -22,86 +22,81 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.Response;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.JSONArgScheme;
-import com.uber.tchannel.schemes.JSONRequest;
-import com.uber.tchannel.schemes.JSONRequestHandler;
-import com.uber.tchannel.schemes.JSONResponse;
+import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawRequestHandler;
 import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.Serializer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
     private final Map<String, ? extends RequestHandler> requestHandlers;
-    private final RawRequestHandler rawRequestHandler;
+    private final Serializer serializer;
 
-    public RequestRouter(Map<String, RequestHandler> requestHandlers, RawRequestHandler rawRequestHandler) {
+    public RequestRouter(Map<String, RequestHandler> requestHandlers) {
         this.requestHandlers = requestHandlers;
-        this.rawRequestHandler = rawRequestHandler;
-    }
-
-    protected void handleRaw(ChannelHandlerContext ctx, RawRequest request) {
-        RawResponse rawResponse = this.rawRequestHandler.handle(request);
-        ctx.writeAndFlush(rawResponse);
-    }
-
-    protected void handleJSON(ChannelHandlerContext ctx, RawRequest request) {
-        // arg1
-        String method = JSONArgScheme.decodeMethod(request);
-
-        // Get handler for this method
-        final JSONRequestHandler<?, ?> handler = (JSONRequestHandler<?, ?>) this.requestHandlers.get(method);
-
-        // arg2
-        Map<String, String> applicationHeaders = JSONArgScheme.decodeApplicationHeaders(request);
-
-        // arg3
-        Object body = JSONArgScheme.decodeBody(request, handler.getRequestType());
-
-        // transform request into form the handler expects
-        JSONRequest jsonRequest = new JSONRequest<>(
-                request.getId(),
-                request.getService(),
-                request.getTransportHeaders(),
-                method,
-                applicationHeaders,
-                body
+        this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
+            {
+                put(ArgScheme.JSON, new JSONSerializer());
+            }
+        }
         );
-
-        // Handle the request
-        JSONResponse<?> jsonResponse = handler.handle(jsonRequest);
-        RawResponse response = JSONArgScheme.encodeResponse(jsonResponse, handler.getResponseType());
-        ctx.writeAndFlush(response);
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, RawRequest request) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, RawRequest rawRequest) throws Exception {
 
-        ArgScheme argScheme = ArgScheme.fromString(request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
+        ArgScheme argScheme = ArgScheme.fromString(
+                rawRequest.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
+        );
 
         if (argScheme == null) {
             throw new RuntimeException("Missing `Arg Scheme` header");
         }
 
-        switch (argScheme) {
-            case RAW:
-                this.handleRaw(ctx, request);
-                break;
-            case JSON:
-                this.handleJSON(ctx, request);
-                break;
-            case THRIFT:
-            case HTTP:
-            case STREAMING_THRIFT:
-            default:
-                break;
+        // arg1
+        String method = this.serializer.decodeEndpoint(rawRequest);
+
+        // Get handler for this method
+        RequestHandler<?, ?> handler = this.requestHandlers.get(method);
+
+        if (handler == null) {
+            throw new RuntimeException(String.format("No handler for %s", method));
         }
+
+        // arg2
+        Map<String, String> applicationHeaders = this.serializer.decodeHeaders(rawRequest);
+
+        // arg3
+        Object body = this.serializer.decodeBody(rawRequest, handler.getRequestType());
+
+        // transform request into form the handler expects
+        Request<?> request = new Request.Builder<>(body)
+                .setEndpoint(method)
+                .setHeaders(applicationHeaders)
+                .build();
+
+        // Handle the request
+        Response<?> response = handler.handle((Request) request);
+
+        RawResponse rawResponse = new RawResponse(
+                rawRequest.getId(),
+                rawRequest.getTransportHeaders(),
+                this.serializer.encodeEndpoint(response.getEndpoint(), argScheme),
+                this.serializer.encodeHeaders(response.getHeaders(), argScheme),
+                this.serializer.encodeBody(response.getBody(), argScheme)
+        );
+
+        ctx.writeAndFlush(rawResponse);
+
     }
 }

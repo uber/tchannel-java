@@ -19,21 +19,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.api;
 
 import java.util.Map;
 
-/**
- * {@link Response} defines a common interface that all TChannel RPC responses should follow.
- */
-public interface Response<T, U, V> {
-    long getId();
+public final class Response<T> {
 
-    Map<String, String> getTransportHeaders();
+    private final String endpoint;
+    private final Map<String, String> headers;
+    private final T body;
 
-    T getMethod();
+    public Response(String endpoint, Map<String, String> headers, T body) {
+        this.endpoint = endpoint;
+        this.headers = headers;
+        this.body = body;
+    }
 
-    U getApplicationHeaders();
+    public String getEndpoint() {
+        return endpoint;
+    }
 
-    V getBody();
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public T getBody() {
+        return body;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s endpoint=%s headers=%s body=%s>",
+                this.getClass().getSimpleName(),
+                this.endpoint,
+                this.headers,
+                this.body
+        );
+    }
 }

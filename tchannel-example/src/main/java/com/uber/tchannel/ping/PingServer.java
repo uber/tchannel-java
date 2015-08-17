@@ -23,6 +23,11 @@
 package com.uber.tchannel.ping;
 
 import com.uber.tchannel.api.TChannel;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 
 public class PingServer {
 
@@ -33,10 +38,20 @@ public class PingServer {
     }
 
     public static void main(String[] args) throws Exception {
-        int port = 8888;
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
+        Options options = new Options();
+        options.addOption("p", "port", true, "Server Port to connect to");
+        options.addOption("?", "help", false, "Usage");
+        HelpFormatter formatter = new HelpFormatter();
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        if (cmd.hasOption("?")) {
+            formatter.printHelp("PingClient", options, true);
+            return;
         }
+
+        int port = Integer.parseInt(cmd.getOptionValue("p", "8888"));
 
         System.out.println(String.format("Starting server on port: %d", port));
         new PingServer(port).run();
@@ -46,7 +61,7 @@ public class PingServer {
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-server")
                 .register("ping", new PingRequestHandler())
-                .setPort(this.port)
+                .setServerPort(this.port)
                 .build();
 
         tchannel.listen().channel().closeFuture().sync();

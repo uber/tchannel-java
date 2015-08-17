@@ -19,24 +19,69 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.api;
 
 import java.util.Map;
 
-/**
- * {@link Request} defines a common interface that all TChannel RPC requests should follow.
- */
-public interface Request<T, U, V> {
-    long getId();
+public final class Request<T> {
 
-    String getService();
+    private final String endpoint;
+    private final Map<String, String> headers;
+    private final T body;
 
-    Map<String, String> getTransportHeaders();
+    private Request(Builder<T> builder) {
+        this.endpoint = builder.endpoint;
+        this.headers = builder.headers;
+        this.body = builder.body;
+    }
 
-    T getMethod();
+    public String getEndpoint() {
+        return endpoint;
+    }
 
-    U getApplicationHeaders();
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
 
-    V getBody();
+    public T getBody() {
+        return body;
+    }
 
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s endpoint=%s headers=%s body=%s>",
+                this.getClass().getSimpleName(),
+                this.endpoint,
+                this.headers,
+                this.body
+        );
+    }
+
+    public static class Builder<U> {
+
+        private String endpoint;
+        private Map<String, String> headers;
+        private U body;
+
+        public Builder(U body) {
+            this.body = body;
+        }
+
+        public Builder<U> setEndpoint(String endpoint) {
+            this.endpoint = endpoint;
+            return this;
+        }
+
+        public Builder<U> setHeaders(Map<String, String> headers) {
+            this.headers = headers;
+            return this;
+        }
+
+        public Request<U> build() {
+            return new Request<>(this);
+        }
+
+    }
 }

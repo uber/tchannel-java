@@ -22,27 +22,93 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.schemes.JSONSerializer;
+import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.Serializer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Promise;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class ResponseRouter extends SimpleChannelInboundHandler<Response> {
+public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
 
-    private final Map<Long, Promise<Response>> messageMap = new HashMap<>();
+    private final Map<Long, ResponsePromise> messageMap = new HashMap<>();
+    private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
+        {
+            put(ArgScheme.JSON, new JSONSerializer());
+        }
+    });
+    private final AtomicInteger idGenerator = new AtomicInteger(0);
+    private ChannelHandlerContext ctx;
 
-    public Promise<Response> expect(long messageId, Promise<Response> promise) {
-        return this.messageMap.put(messageId, promise);
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        this.ctx = ctx;
+    }
+
+    public <T, U> Promise<Response<T>> expectResponse(String service,
+                                                      ArgScheme argScheme,
+                                                      Class<T> responseType,
+                                                      Request<U> request) throws InterruptedException {
+
+        Map<String, String> transportHeaders = new HashMap<>();
+        transportHeaders.put("as", argScheme.getScheme());
+
+        RawRequest rawRequest = new RawRequest(
+                idGenerator.getAndIncrement(),
+                service,
+                transportHeaders,
+                serializer.encodeEndpoint(request.getEndpoint(), argScheme),
+                serializer.encodeHeaders(request.getHeaders(), argScheme),
+                serializer.encodeBody(request.getBody(), argScheme)
+        );
+
+        Promise<Response<T>> responsePromise = new DefaultPromise<>(ctx.executor());
+        this.messageMap.put(rawRequest.getId(), new ResponsePromise<>(responsePromise, responseType));
+        ctx.writeAndFlush(rawRequest).await();
+        return responsePromise;
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Response response) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, RawResponse rawResponse) throws Exception {
 
-        Promise<Response> promise = this.messageMap.remove(response.getId());
-        promise.setSuccess(response);
+        ResponsePromise<?> responsePromise = this.messageMap.remove(rawResponse.getId());
+
+        Response<?> response = new Response<>(
+                this.serializer.decodeEndpoint(rawResponse),
+                this.serializer.decodeHeaders(rawResponse),
+                this.serializer.decodeBody(rawResponse, responsePromise.getPromiseType())
+        );
+
+        responsePromise.getPromise().setSuccess((Response) response);
 
     }
+
+    private class ResponsePromise<T> {
+        private final Promise<Response<T>> promise;
+        private final Class<T> promiseType;
+
+        public ResponsePromise(Promise<Response<T>> promise, Class<T> promiseType) {
+            this.promise = promise;
+            this.promiseType = promiseType;
+        }
+
+        public Promise<Response<T>> getPromise() {
+            return promise;
+        }
+
+        public Class<T> getPromiseType() {
+            return promiseType;
+        }
+    }
+
 }

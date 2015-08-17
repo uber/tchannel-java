@@ -22,12 +22,20 @@
 
 package com.uber.tchannel.schemes;
 
-import com.uber.tchannel.api.RequestHandler;
+import io.netty.buffer.ByteBuf;
 
-public interface JSONRequestHandler<RequestT, ResponseT> extends
-        RequestHandler<JSONRequest<RequestT>, JSONResponse<ResponseT>> {
+import java.util.Map;
 
-    Class<ResponseT> getResponseType();
+public interface RawMessage {
 
-    Class<RequestT> getRequestType();
+    long getId();
+
+    Map<String, String> getTransportHeaders();
+
+    ByteBuf getArg1();
+
+    ByteBuf getArg2();
+
+    ByteBuf getArg3();
+
 }

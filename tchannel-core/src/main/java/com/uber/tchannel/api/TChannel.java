@@ -31,8 +31,7 @@ import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
-import com.uber.tchannel.schemes.DefaultRawRequestHandler;
-import com.uber.tchannel.schemes.RawRequestHandler;
+import com.uber.tchannel.headers.ArgScheme;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -46,8 +45,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.concurrent.DefaultPromise;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 import java.net.InetSocketAddress;
@@ -65,7 +62,7 @@ public final class TChannel {
     private final InetSocketAddress address;
 
     private TChannel(Builder builder) {
-        this.service = builder.service;
+        this.service = builder.channelName;
         this.serverBootstrap = builder.serverBootstrap();
         this.clientBootstrap = builder.bootstrap();
         this.channelManager = builder.channelManager;
@@ -84,74 +81,46 @@ public final class TChannel {
         this.childGroup.shutdownGracefully();
     }
 
-    /**
-     * Makes a Request to the remote address.
-     * <p/>
-     * This will attempt to reuse a connection, i.e. TCP socket, to a remote address and create one if needed.
-     *
-     * @param address the remote address to make the request
-     * @param request the request object to send
-     * @return a promise representing a future response from this request
-     * @throws InterruptedException
-     */
-    public Promise<Response> request(final InetSocketAddress address,
-                                     final Request request) throws InterruptedException {
+    public <T, U> Promise<Response<T>> makeRequest(
+            String host,
+            int port,
+            String service,
+            ArgScheme argScheme,
+            Request<U> request,
+            Class<T> responseType
 
-        // Get a channel for this request
-        Channel ch = this.channelManager.findOrNew(address, this.clientBootstrap);
+    ) throws InterruptedException {
 
-        // Write the request
-        ch.write(request);
-
-        // Prepare for a response.
-
-        // Create  a new response promise to hand to the client.
-        // TODO: on which EventExecutor should Promises be fulfilled?
-        Promise<Response> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
-
-        // Get a handle to the responseRouter to tell it that it should expet a response
+        Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
         ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
-
-        // Let the ResponseDispatch handler know that it should handle this response
-        responseRouter.expect(request.getId(), responsePromise);
-
-        // Flush and return the response promise
-        // TODO: when and how often should we flush requests?
-        ch.flush();
-        return responsePromise;
+        return responseRouter.expectResponse(service, argScheme, responseType, request);
 
     }
 
     public static class Builder {
 
-        private final String service;
+        private final String channelName;
         private final ChannelManager channelManager = new ChannelManager();
         private InetSocketAddress address;
-        private RawRequestHandler rawRequestHandler;
         private Map<String, RequestHandler> requestHandlers = new HashMap<>();
-        private EventLoopGroup bossGroup;
-        private EventLoopGroup childGroup;
-        private LogLevel logLevel;
+        private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        private EventLoopGroup childGroup = new NioEventLoopGroup();
+        private LogLevel logLevel = LogLevel.INFO;
 
-        public Builder(String service) {
-            if (service == null) {
-                throw new NullPointerException("`service` cannot be null");
+        public Builder(String channelName) {
+            if (channelName == null) {
+                throw new NullPointerException("`channelName` cannot be null");
             }
-            this.service = service;
+            this.channelName = channelName;
         }
 
-        public Builder setPort(int port) {
+        public Builder setServerPort(int port) {
             this.address = new InetSocketAddress(port);
             return this;
         }
 
-        public Builder register(String service, RequestHandler requestHandler) {
-            requestHandlers.put(service, requestHandler);
-            return this;
-        }
-
-        public Builder registerRawRequestHandler(RawRequestHandler rawRequestHandler) {
-            this.rawRequestHandler = rawRequestHandler;
+        public Builder register(String endpoint, RequestHandler requestHandler) {
+            requestHandlers.put(endpoint, requestHandler);
             return this;
         }
 
@@ -171,23 +140,7 @@ public final class TChannel {
         }
 
         public TChannel build() {
-            if (address == null) {
-                address = new InetSocketAddress(0);
-            }
-            if (bossGroup == null) {
-                bossGroup = new NioEventLoopGroup();
-            }
-            if (childGroup == null) {
-                childGroup = new NioEventLoopGroup();
-            }
-            if (logLevel == null) {
-                logLevel = LogLevel.INFO;
-            }
-            if (rawRequestHandler == null) {
-                rawRequestHandler = new DefaultRawRequestHandler();
-            }
             return new TChannel(this);
-
         }
 
         private Bootstrap bootstrap() {
@@ -232,7 +185,7 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageMultiplexer", new MessageMultiplexer());
 
                     // Pass RequestHandlers to the RequestRouter
-                    ch.pipeline().addLast("RequestRouter", new RequestRouter(requestHandlers, rawRequestHandler));
+                    ch.pipeline().addLast("RequestRouter", new RequestRouter(requestHandlers));
 
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter());
 

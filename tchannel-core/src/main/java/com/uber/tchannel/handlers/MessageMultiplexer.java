@@ -29,7 +29,7 @@ import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.CallResponseContinue;
-import com.uber.tchannel.messages.RawMessage;
+import com.uber.tchannel.schemes.RawMessage;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.tracing.Trace;

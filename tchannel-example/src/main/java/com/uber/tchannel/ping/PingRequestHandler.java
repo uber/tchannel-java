@@ -22,12 +22,11 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.schemes.JSONRequest;
-import com.uber.tchannel.schemes.JSONRequestHandler;
-import com.uber.tchannel.schemes.JSONResponse;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.Response;
 
-public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
+public class PingRequestHandler implements RequestHandler<Ping, Pong> {
 
     @Override
     public Class<Ping> getRequestType() {
@@ -40,18 +39,12 @@ public class PingRequestHandler implements JSONRequestHandler<Ping, Pong> {
     }
 
     @Override
-    public JSONResponse<Pong> handle(JSONRequest<Ping> request) {
-        return new JSONResponse<Pong>(
-                request.getId(),
-                request.getTransportHeaders(),
-                request.getMethod(),
-                request.getApplicationHeaders(),
+    public Response<Pong> handle(Request<Ping> request) {
+        return new Response<>(
+                request.getEndpoint(),
+                request.getHeaders(),
                 new Pong("pong!")
         );
     }
 
-    @Override
-    public String getArgScheme() {
-        return ArgScheme.JSON.getScheme();
-    }
 }

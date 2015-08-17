@@ -20,21 +20,50 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.messages;
+package com.uber.tchannel.schemes;
 
 import io.netty.buffer.ByteBuf;
+import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
-public interface RawMessage {
+import static org.junit.Assert.assertEquals;
 
-    ByteBuf getArg1();
+public class JSONSerializerTest {
 
-    ByteBuf getArg2();
+    private Serializer.SerializerInterface serializer;
 
-    ByteBuf getArg3();
+    @org.junit.Before
+    public void setUp() throws Exception {
+        this.serializer = new JSONSerializer();
+    }
 
-    long getId();
+    @Test
+    public void testEncodeDecodeEndpoint() throws Exception {
 
-    Map<String, String> getTransportHeaders();
+    }
+
+    @Test
+    public void testEncodeDecodeHeaders() throws Exception {
+
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("foo", "bar");
+        }};
+
+        ByteBuf binaryHeaders = serializer.encodeHeaders(headers);
+        Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
+
+        assertEquals(headers, decodedHeaders);
+    }
+
+    @Test
+    public void testEncodeDecodeBody() throws Exception {
+
+    }
+
+    @org.junit.After
+    public void tearDown() throws Exception {
+        this.serializer = null;
+    }
 }

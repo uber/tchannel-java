@@ -22,40 +22,57 @@
 
 package com.uber.tchannel.ping;
 
+import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.RawRequest;
-import io.netty.buffer.Unpooled;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class PingClient {
 
-    private String host;
-    private int port;
+    private final String host;
+    private final int port;
+    private final int requests;
 
-    public PingClient(String host, int port) {
+    public PingClient(String host, int port, int requests) {
         this.host = host;
         this.port = port;
+        this.requests = requests;
     }
 
     public static void main(String[] args) throws Exception {
-        String host = "localhost";
-        int port = 8888;
+        Options options = new Options();
+        options.addOption("h", "host", true, "Server Host to connect to");
+        options.addOption("p", "port", true, "Server Port to connect to");
+        options.addOption("n", "requests", true, "Number of requests to make");
+        options.addOption("?", "help", false, "Usage");
+        HelpFormatter formatter = new HelpFormatter();
 
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        } else if (args.length == 2) {
-            host = String.valueOf(args[0]);
-            port = Integer.parseInt(args[1]);
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        if (cmd.hasOption("?")) {
+            formatter.printHelp("PingClient", options, true);
+            return;
         }
 
+        String host = cmd.getOptionValue("h", "localhost");
+        int port = Integer.parseInt(cmd.getOptionValue("p", "8888"));
+        int requests = Integer.parseInt(cmd.getOptionValue("n", "10000"));
+
         System.out.println(String.format("Connecting from client to server on port: %d", port));
-        new PingClient(host, port).run();
+        new PingClient(host, port, requests).run();
         System.out.println("Stopping Client...");
 
     }
@@ -63,22 +80,43 @@ public class PingClient {
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-client").build();
 
-        Promise<Response> p = tchannel.request(new InetSocketAddress(this.host, this.port), new RawRequest(
-                42,
-                "service",
-                new HashMap<String, String>() {
-                    {
-                        put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme());
-                    }
-                },
-                Unpooled.wrappedBuffer("ping".getBytes()),
-                Unpooled.wrappedBuffer("{}".getBytes()),
-                Unpooled.wrappedBuffer("{'request': 'ping?'}".getBytes())
-        ));
+        Map<String, String> headers = new HashMap<String, String>() {
+            {
+                put("some", "header");
+            }
+        };
 
-        Response res = p.get();
-        System.out.println(res);
+        Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"))
+                .setEndpoint("ping")
+                .setHeaders(headers)
+                .build();
+
+        for (int i = 0; i < this.requests; i++) {
+            Promise<Response<Pong>> f = tchannel.makeRequest(
+                    this.host,
+                    this.port,
+                    "service",
+                    ArgScheme.JSON,
+                    request,
+                    Pong.class
+            );
+
+            final int iteration = i;
+            f.addListener(new GenericFutureListener<Future<? super Response<Pong>>>() {
+                @Override
+                public void operationComplete(Future<? super Response<Pong>> future) throws Exception {
+                    Response<?> response = (Response<?>) future.get(100, TimeUnit.MILLISECONDS);
+                    if (iteration % 1000 == 0) {
+                        System.out.println(response);
+                    }
+                }
+
+            });
+
+        }
+
         tchannel.shutdown();
+
     }
 
 }
