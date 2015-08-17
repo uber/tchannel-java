@@ -30,9 +30,6 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by wjs on 8/14/15.
- */
 public class JSONSerializerTest {
 
     private Serializer.SerializerInterface serializer;
