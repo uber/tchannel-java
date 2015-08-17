@@ -24,16 +24,16 @@ package com.uber.tchannel.api;
 
 import java.util.Map;
 
-public class Req<T> {
+public final class Request<T> {
 
     private final String endpoint;
     private final Map<String, String> headers;
     private final T body;
 
-    public Req(String endpoint, Map<String, String> headers, T body) {
-        this.endpoint = endpoint;
-        this.headers = headers;
-        this.body = body;
+    private Request(Builder<T> builder) {
+        this.endpoint = builder.endpoint;
+        this.headers = builder.headers;
+        this.body = builder.body;
     }
 
     public String getEndpoint() {
@@ -57,5 +57,31 @@ public class Req<T> {
                 this.headers,
                 this.body
         );
+    }
+
+    public static class Builder<U> {
+
+        private String endpoint;
+        private Map<String, String> headers;
+        private U body;
+
+        public Builder(U body) {
+            this.body = body;
+        }
+
+        public Builder<U> setEndpoint(String endpoint) {
+            this.endpoint = endpoint;
+            return this;
+        }
+
+        public Builder<U> setHeaders(Map<String, String> headers) {
+            this.headers = headers;
+            return this;
+        }
+
+        public Request<U> build() {
+            return new Request<>(this);
+        }
+
     }
 }

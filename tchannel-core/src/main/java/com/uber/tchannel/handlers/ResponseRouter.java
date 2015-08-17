@@ -22,61 +22,92 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.Res;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.Response;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.schemes.JSONSerializer;
+import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.schemes.Serializer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Promise;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
 
-    private final Map<Long, Value> messageMap = new HashMap<>();
+    private final Map<Long, ResponsePromise> messageMap = new HashMap<>();
     private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
             put(ArgScheme.JSON, new JSONSerializer());
         }
     });
+    private final AtomicInteger idGenerator = new AtomicInteger(0);
+    private ChannelHandlerContext ctx;
 
-    public <T> void expect(long messageId, Promise<Res<T>> promise, Class<T> klass) {
-        this.messageMap.put(messageId, new Value<>(klass, promise));
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        this.ctx = ctx;
+    }
+
+    public <T, U> Promise<Response<T>> expectResponse(String service,
+                                                      ArgScheme argScheme,
+                                                      Class<T> responseType,
+                                                      Request<U> request) throws InterruptedException {
+
+        Map<String, String> transportHeaders = new HashMap<>();
+        transportHeaders.put("as", argScheme.getScheme());
+
+        RawRequest rawRequest = new RawRequest(
+                idGenerator.getAndIncrement(),
+                service,
+                transportHeaders,
+                serializer.encodeEndpoint(request.getEndpoint(), argScheme),
+                serializer.encodeHeaders(request.getHeaders(), argScheme),
+                serializer.encodeBody(request.getBody(), argScheme)
+        );
+
+        Promise<Response<T>> responsePromise = new DefaultPromise<>(ctx.executor());
+        this.messageMap.put(rawRequest.getId(), new ResponsePromise<>(responsePromise, responseType));
+        ctx.writeAndFlush(rawRequest).await();
+        return responsePromise;
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, RawResponse response) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, RawResponse rawResponse) throws Exception {
 
-        Value<?> value = this.messageMap.remove(response.getId());
+        ResponsePromise<?> responsePromise = this.messageMap.remove(rawResponse.getId());
 
-        Res<?> res = new Res<>(
-                this.serializer.decodeEndpoint(response),
-                this.serializer.decodeHeaders(response),
-                this.serializer.decodeBody(response, value.getKlass())
+        Response<?> response = new Response<>(
+                this.serializer.decodeEndpoint(rawResponse),
+                this.serializer.decodeHeaders(rawResponse),
+                this.serializer.decodeBody(rawResponse, responsePromise.getPromiseType())
         );
 
-        value.promise.setSuccess((Res) res);
+        responsePromise.getPromise().setSuccess((Response) response);
 
     }
 
-    private class Value<T> {
-        private final Class<T> klass;
-        private final Promise<Res<T>> promise;
+    private class ResponsePromise<T> {
+        private final Promise<Response<T>> promise;
+        private final Class<T> promiseType;
 
-        public Value(Class<T> klass, Promise<Res<T>> promise) {
-            this.klass = klass;
+        public ResponsePromise(Promise<Response<T>> promise, Class<T> promiseType) {
             this.promise = promise;
+            this.promiseType = promiseType;
         }
 
-        public Class<T> getKlass() {
-            return klass;
-        }
-
-        public Promise<Res<T>> getPromise() {
+        public Promise<Response<T>> getPromise() {
             return promise;
+        }
+
+        public Class<T> getPromiseType() {
+            return promiseType;
         }
     }
 

@@ -22,9 +22,9 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.Req;
-import com.uber.tchannel.api.ReqHandler;
-import com.uber.tchannel.api.Res;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.Response;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.JSONSerializer;
@@ -39,10 +39,10 @@ import java.util.Map;
 
 public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
-    private final Map<String, ? extends ReqHandler> requestHandlers;
+    private final Map<String, ? extends RequestHandler> requestHandlers;
     private final Serializer serializer;
 
-    public RequestRouter(Map<String, ReqHandler> requestHandlers) {
+    public RequestRouter(Map<String, RequestHandler> requestHandlers) {
         this.requestHandlers = requestHandlers;
         this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
             {
@@ -67,7 +67,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         String method = this.serializer.decodeEndpoint(rawRequest);
 
         // Get handler for this method
-        ReqHandler<?, ?> handler = this.requestHandlers.get(method);
+        RequestHandler<?, ?> handler = this.requestHandlers.get(method);
 
         if (handler == null) {
             throw new RuntimeException(String.format("No handler for %s", method));
@@ -80,14 +80,13 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         Object body = this.serializer.decodeBody(rawRequest, handler.getRequestType());
 
         // transform request into form the handler expects
-        Req<?> request = new Req<>(
-                method,
-                applicationHeaders,
-                body
-        );
+        Request<?> request = new Request.Builder<>(body)
+                .setEndpoint(method)
+                .setHeaders(applicationHeaders)
+                .build();
 
         // Handle the request
-        Res<?> response = handler.handle((Req) request);
+        Response<?> response = handler.handle((Request) request);
 
         RawResponse rawResponse = new RawResponse(
                 rawRequest.getId(),

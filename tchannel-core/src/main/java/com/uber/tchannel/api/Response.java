@@ -24,13 +24,13 @@ package com.uber.tchannel.api;
 
 import java.util.Map;
 
-public class Res<T> {
+public final class Response<T> {
 
     private final String endpoint;
     private final Map<String, String> headers;
     private final T body;
 
-    public Res(String endpoint, Map<String, String> headers, T body) {
+    public Response(String endpoint, Map<String, String> headers, T body) {
         this.endpoint = endpoint;
         this.headers = headers;
         this.body = body;

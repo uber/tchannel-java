@@ -22,11 +22,11 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.Req;
-import com.uber.tchannel.api.ReqHandler;
-import com.uber.tchannel.api.Res;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.Response;
 
-public class PingRequestHandler implements ReqHandler<Ping, Pong> {
+public class PingRequestHandler implements RequestHandler<Ping, Pong> {
 
     @Override
     public Class<Ping> getRequestType() {
@@ -39,8 +39,8 @@ public class PingRequestHandler implements ReqHandler<Ping, Pong> {
     }
 
     @Override
-    public Res<Pong> handle(Req<Ping> request) {
-        return new Res<>(
+    public Response<Pong> handle(Request<Ping> request) {
+        return new Response<>(
                 request.getEndpoint(),
                 request.getHeaders(),
                 new Pong("pong!")

@@ -31,9 +31,7 @@ import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
-import com.uber.tchannel.schemes.JSONSerializer;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.Serializer;
+import com.uber.tchannel.headers.ArgScheme;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -47,14 +45,11 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.concurrent.DefaultPromise;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 public final class TChannel {
 
@@ -67,7 +62,7 @@ public final class TChannel {
     private final InetSocketAddress address;
 
     private TChannel(Builder builder) {
-        this.service = builder.service;
+        this.service = builder.channelName;
         this.serverBootstrap = builder.serverBootstrap();
         this.clientBootstrap = builder.bootstrap();
         this.channelManager = builder.channelManager;
@@ -86,64 +81,46 @@ public final class TChannel {
         this.childGroup.shutdownGracefully();
     }
 
-    public <T, U> Promise<Res<T>> makeRequest(
+    public <T, U> Promise<Response<T>> makeRequest(
             String host,
             int port,
             String service,
-            final String argScheme,
-            Class<T> klass,
-            Req<U> req
+            ArgScheme argScheme,
+            Request<U> request,
+            Class<T> responseType
+
     ) throws InterruptedException {
 
         Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
-
-        Serializer.SerializerInterface serializer = new JSONSerializer();
-
-        RawRequest rawRequest = new RawRequest(
-                new Random().nextInt(Integer.MAX_VALUE),
-                service,
-                new HashMap<String, String>() {
-                    {
-                        put("as", argScheme);
-                    }
-                },
-                serializer.encodeEndpoint(req.getEndpoint()),
-                serializer.encodeHeaders(req.getHeaders()),
-                serializer.encodeBody(req.getBody())
-        );
-
-        Promise<Res<T>> resPromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
         ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
-        responseRouter.expect(rawRequest.getId(), resPromise, klass);
-        ch.writeAndFlush(rawRequest);
-        return resPromise;
+        return responseRouter.expectResponse(service, argScheme, responseType, request);
 
     }
 
     public static class Builder {
 
-        private final String service;
+        private final String channelName;
         private final ChannelManager channelManager = new ChannelManager();
         private InetSocketAddress address;
-        private Map<String, ReqHandler> requestHandlers = new HashMap<>();
-        private EventLoopGroup bossGroup;
-        private EventLoopGroup childGroup;
-        private LogLevel logLevel;
+        private Map<String, RequestHandler> requestHandlers = new HashMap<>();
+        private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        private EventLoopGroup childGroup = new NioEventLoopGroup();
+        private LogLevel logLevel = LogLevel.INFO;
 
-        public Builder(String service) {
-            if (service == null) {
-                throw new NullPointerException("`service` cannot be null");
+        public Builder(String channelName) {
+            if (channelName == null) {
+                throw new NullPointerException("`channelName` cannot be null");
             }
-            this.service = service;
+            this.channelName = channelName;
         }
 
-        public Builder setPort(int port) {
+        public Builder setServerPort(int port) {
             this.address = new InetSocketAddress(port);
             return this;
         }
 
-        public Builder register(String service, ReqHandler requestHandler) {
-            requestHandlers.put(service, requestHandler);
+        public Builder register(String endpoint, RequestHandler requestHandler) {
+            requestHandlers.put(endpoint, requestHandler);
             return this;
         }
 
@@ -163,19 +140,6 @@ public final class TChannel {
         }
 
         public TChannel build() {
-            if (address == null) {
-                address = new InetSocketAddress(0);
-            }
-            if (bossGroup == null) {
-                bossGroup = new NioEventLoopGroup();
-            }
-            if (childGroup == null) {
-                childGroup = new NioEventLoopGroup();
-            }
-            if (logLevel == null) {
-                logLevel = LogLevel.INFO;
-            }
-
             return new TChannel(this);
         }
 

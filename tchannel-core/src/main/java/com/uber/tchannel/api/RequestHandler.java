@@ -22,9 +22,9 @@
 
 package com.uber.tchannel.api;
 
-public interface ReqHandler<T, U> {
+public interface RequestHandler<T, U> {
 
-    Res<U> handle(Req<T> request);
+    Response<U> handle(Request<T> request);
 
     Class<T> getRequestType();
 

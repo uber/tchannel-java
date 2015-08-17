@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.Req;
-import com.uber.tchannel.api.Res;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.headers.ArgScheme;
 import io.netty.util.concurrent.Future;
@@ -36,6 +36,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class PingClient {
 
@@ -78,34 +80,37 @@ public class PingClient {
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-client").build();
 
-        Req<Ping> req = new Req<Ping>(
-                "ping",
-                new HashMap<String, String>() {
-                    {
-                        put("some", "header");
-                    }
-                },
-                new Ping("{'key': 'ping?'}")
-        );
+        Map<String, String> headers = new HashMap<String, String>() {
+            {
+                put("some", "header");
+            }
+        };
+
+        Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"))
+                .setEndpoint("ping")
+                .setHeaders(headers)
+                .build();
 
         for (int i = 0; i < this.requests; i++) {
-            Promise<Res<Pong>> f = tchannel.makeRequest(
+            Promise<Response<Pong>> f = tchannel.makeRequest(
                     this.host,
                     this.port,
                     "service",
-                    ArgScheme.JSON.getScheme(),
-                    Pong.class,
-                    req
+                    ArgScheme.JSON,
+                    request,
+                    Pong.class
             );
 
-            f.addListener(new GenericFutureListener<Future<? super Res<Pong>>>() {
+            final int iteration = i;
+            f.addListener(new GenericFutureListener<Future<? super Response<Pong>>>() {
                 @Override
-                public void operationComplete(Future<? super Res<Pong>> future) throws Exception {
-                    if (future.isSuccess()) {
-                        Res<Pong> res = (Res<Pong>) future.get();
-                        System.out.println(res);
+                public void operationComplete(Future<? super Response<Pong>> future) throws Exception {
+                    Response<?> response = (Response<?>) future.get(100, TimeUnit.MILLISECONDS);
+                    if (iteration % 1000 == 0) {
+                        System.out.println(response);
                     }
                 }
+
             });
 
         }
