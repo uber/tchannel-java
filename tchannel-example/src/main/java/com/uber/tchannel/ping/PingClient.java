@@ -73,6 +73,8 @@ public class PingClient {
         int port = Integer.parseInt(cmd.getOptionValue("p", "8888"));
         int requests = Integer.parseInt(cmd.getOptionValue("n", "10000"));
 
+        System.out.println(cmd.getArgList());
+
         System.out.println(String.format("Connecting from client to server on port: %d", port));
         new PingClient(host, port, requests).run();
         System.out.println("Stopping Client...");

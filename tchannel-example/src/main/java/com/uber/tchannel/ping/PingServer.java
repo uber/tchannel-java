@@ -51,7 +51,7 @@ public class PingServer {
             return;
         }
 
-        int port = Integer.parseInt(cmd.getOptionValue("p", "8888"));
+        int port = Integer.parseInt(cmd.getOptionValue("p", "0"));
 
         System.out.println(String.format("Starting server on port: %d", port));
         new PingServer(port).run();

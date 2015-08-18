@@ -89,8 +89,8 @@ public class RequestTest {
                 .build();
 
         Promise<Response<Integer>> responsePromise = tchannel.call(
-                tchannel.getAddress().getAddress(),
-                tchannel.getAddress().getPort(),
+                tchannel.getHost(),
+                tchannel.getServerPort(),
                 request,
                 Integer.class
         );
