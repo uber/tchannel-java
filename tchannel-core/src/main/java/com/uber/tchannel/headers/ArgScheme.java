@@ -36,7 +36,7 @@ public enum ArgScheme {
         this.scheme = scheme;
     }
 
-    public static ArgScheme fromString(String argScheme) {
+    public static ArgScheme toScheme(String argScheme) {
         switch (argScheme) {
             case "raw":
                 return RAW;

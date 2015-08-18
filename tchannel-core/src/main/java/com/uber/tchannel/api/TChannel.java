@@ -31,7 +31,6 @@ import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
-import com.uber.tchannel.headers.ArgScheme;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -47,7 +46,9 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.Promise;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,6 +72,10 @@ public final class TChannel {
         this.address = builder.address;
     }
 
+    public InetSocketAddress getAddress() {
+        return address;
+    }
+
     public ChannelFuture listen() throws InterruptedException {
         return this.serverBootstrap.bind(this.address).sync();
     }
@@ -81,19 +86,16 @@ public final class TChannel {
         this.childGroup.shutdownGracefully();
     }
 
-    public <T, U> Promise<Response<T>> makeRequest(
-            String host,
+    public <T, U> Promise<Response<T>> call(
+            InetAddress host,
             int port,
-            String service,
-            ArgScheme argScheme,
             Request<U> request,
             Class<T> responseType
-
     ) throws InterruptedException {
 
         Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
         ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
-        return responseRouter.expectResponse(service, argScheme, responseType, request);
+        return responseRouter.expectResponse(request, responseType);
 
     }
 
@@ -114,8 +116,9 @@ public final class TChannel {
             this.channelName = channelName;
         }
 
-        public Builder setServerPort(int port) {
-            this.address = new InetSocketAddress(port);
+        public Builder setServerPort(int port) throws UnknownHostException {
+            InetAddress address = InetAddress.getLocalHost();
+            this.address = new InetSocketAddress(address, port);
             return this;
         }
 

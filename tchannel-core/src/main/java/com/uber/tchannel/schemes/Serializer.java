@@ -61,7 +61,7 @@ public class Serializer {
 
     private SerializerInterface getSerializer(RawMessage message) {
         Map<String, String> transportHeaders = message.getTransportHeaders();
-        ArgScheme argScheme = ArgScheme.fromString(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
+        ArgScheme argScheme = ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
         return this.serializers.get(argScheme);
     }
 

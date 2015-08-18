@@ -23,11 +23,12 @@
 package com.uber.tchannel.api;
 
 import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.handler.logging.LogLevel;
 import io.netty.util.concurrent.Promise;
 import org.junit.Test;
 
-import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -36,7 +37,10 @@ public class RequestTest {
 
     @Test
     public void testGetBody() throws Exception {
-        Request<String> request = new Request.Builder<>("Hello, World!").build();
+        Request<String> request = new Request.Builder<>("Hello, World!")
+                .setEndpoint("some-endpoint")
+                .setService("some-service")
+                .build();
         assertNotNull(request);
         assertEquals(String.class, request.getBody().getClass());
         assertEquals("Hello, World!", request.getBody());
@@ -55,11 +59,11 @@ public class RequestTest {
 
                         assertEquals(requestBody, request.getBody());
 
-                        return new Response<Integer>(
-                                request.getEndpoint(),
-                                request.getHeaders(),
-                                responseBody
-                        );
+                        return new Response.Builder<>(responseBody)
+                                .setEndpoint(request.getEndpoint())
+                                .setHeaders(request.getHeaders())
+                                .build();
+
                     }
 
                     @Override
@@ -79,19 +83,19 @@ public class RequestTest {
         tchannel.listen();
 
         Request<String> request = new Request.Builder<>(requestBody)
+                .setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme())
                 .setEndpoint("endpoint")
-                .setHeaders(new HashMap<String, String>())
+                .setService("ping-service")
                 .build();
 
-        Promise<Response<Integer>> responsePromise = tchannel.makeRequest(
-                "localhost",
-                8888,
-                "service-name",
-                ArgScheme.JSON,
+        Promise<Response<Integer>> responsePromise = tchannel.call(
+                tchannel.getAddress().getAddress(),
+                tchannel.getAddress().getPort(),
                 request,
                 Integer.class
         );
-        Response<Integer> response = responsePromise.get();
+
+        Response<Integer> response = responsePromise.get(1000, TimeUnit.MILLISECONDS);
 
         assertEquals(responseBody, (int) response.getBody());
 
@@ -109,7 +113,10 @@ public class RequestTest {
             @Override
             public Response<String> handle(Request<String> request) {
                 assertEquals(requestBody, request.getBody());
-                return new Response<>(request.getEndpoint(), request.getHeaders(), responseBody);
+                return new Response.Builder<>(responseBody)
+                        .setEndpoint(request.getEndpoint())
+                        .setHeaders(request.getHeaders())
+                        .build();
             }
 
             @Override
@@ -123,7 +130,10 @@ public class RequestTest {
             }
         };
 
-        Request<String> request = new Request.Builder<>(requestBody).build();
+        Request<String> request = new Request.Builder<>(requestBody)
+                .setService("some-service")
+                .setEndpoint("some-endpoint")
+                .build();
 
         Response<String> response = requestHandler.handle(request);
 

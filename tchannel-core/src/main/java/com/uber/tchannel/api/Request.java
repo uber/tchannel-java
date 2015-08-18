@@ -22,18 +22,31 @@
 
 package com.uber.tchannel.api;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public final class Request<T> {
 
+    private final String service;
+    private final Map<String, String> transportHeaders;
     private final String endpoint;
     private final Map<String, String> headers;
     private final T body;
 
     private Request(Builder<T> builder) {
+        this.service = builder.service;
+        this.transportHeaders = builder.transportHeaders;
         this.endpoint = builder.endpoint;
         this.headers = builder.headers;
         this.body = builder.body;
+    }
+
+    public String getService() {
+        return service;
+    }
+
+    public Map<String, String> getTransportHeaders() {
+        return transportHeaders;
     }
 
     public String getEndpoint() {
@@ -51,8 +64,10 @@ public final class Request<T> {
     @Override
     public String toString() {
         return String.format(
-                "<%s endpoint=%s headers=%s body=%s>",
+                "<%s service=%s transportHeaders=%s endpoint=%s headers=%s body=%s>",
                 this.getClass().getSimpleName(),
+                this.service,
+                this.transportHeaders,
                 this.endpoint,
                 this.headers,
                 this.body
@@ -61,12 +76,29 @@ public final class Request<T> {
 
     public static class Builder<U> {
 
+        private String service;
+        private Map<String, String> transportHeaders = new HashMap<>();
         private String endpoint;
-        private Map<String, String> headers;
+        private Map<String, String> headers = new HashMap<>();
         private U body;
 
         public Builder(U body) {
             this.body = body;
+        }
+
+        public Builder<U> setService(String service) {
+            this.service = service;
+            return this;
+        }
+
+        public Builder<U> setTransportHeader(String key, String value) {
+            this.transportHeaders.put(key, value);
+            return this;
+        }
+
+        public Builder<U> setTransportHeaders(Map<String, String> transportHeaders) {
+            this.transportHeaders.putAll(transportHeaders);
+            return this;
         }
 
         public Builder<U> setEndpoint(String endpoint) {
@@ -74,13 +106,30 @@ public final class Request<T> {
             return this;
         }
 
+        public Builder<U> setHeader(String key, String value) {
+            this.headers.put(key, value);
+            return this;
+        }
+
         public Builder<U> setHeaders(Map<String, String> headers) {
-            this.headers = headers;
+            this.headers.putAll(headers);
+            return this;
+        }
+
+        public Builder<U> validate() {
+            if (service == null) {
+                throw new IllegalStateException("`service` cannot be null.");
+            }
+
+            if (endpoint == null) {
+                throw new IllegalStateException("`endpoint` cannot be null.");
+            }
+
             return this;
         }
 
         public Request<U> build() {
-            return new Request<>(this);
+            return new Request<>(this.validate());
         }
 
     }
