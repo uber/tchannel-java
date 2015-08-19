@@ -43,8 +43,8 @@ public class Serializer {
         return this.getSerializer(message).decodeHeaders(message.getArg2());
     }
 
-    public <T> T decodeBody(RawMessage message, Class<T> klass) {
-        return this.getSerializer(message).decodeBody(message.getArg3(), klass);
+    public <T> T decodeBody(RawMessage message, Class<T> bodyType) {
+        return this.getSerializer(message).decodeBody(message.getArg3(), bodyType);
     }
 
     public ByteBuf encodeEndpoint(String method, ArgScheme argScheme) {
@@ -61,7 +61,7 @@ public class Serializer {
 
     private SerializerInterface getSerializer(RawMessage message) {
         Map<String, String> transportHeaders = message.getTransportHeaders();
-        ArgScheme argScheme = ArgScheme.fromString(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
+        ArgScheme argScheme = ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
         return this.serializers.get(argScheme);
     }
 
@@ -75,7 +75,7 @@ public class Serializer {
 
         Map<String, String> decodeHeaders(ByteBuf arg2);
 
-        <T> T decodeBody(ByteBuf arg3, Class<T> klass);
+        <T> T decodeBody(ByteBuf arg3, Class<T> bodyType);
 
         ByteBuf encodeEndpoint(String method);
 

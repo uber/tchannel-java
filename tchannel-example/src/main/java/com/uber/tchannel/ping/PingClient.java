@@ -26,6 +26,7 @@ import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
@@ -35,6 +36,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +73,8 @@ public class PingClient {
         int port = Integer.parseInt(cmd.getOptionValue("p", "8888"));
         int requests = Integer.parseInt(cmd.getOptionValue("n", "10000"));
 
+        System.out.println(cmd.getArgList());
+
         System.out.println(String.format("Connecting from client to server on port: %d", port));
         new PingClient(host, port, requests).run();
         System.out.println("Stopping Client...");
@@ -89,14 +93,14 @@ public class PingClient {
         Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"))
                 .setEndpoint("ping")
                 .setHeaders(headers)
+                .setService("some-service")
+                .setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme())
                 .build();
 
         for (int i = 0; i < this.requests; i++) {
-            Promise<Response<Pong>> f = tchannel.makeRequest(
-                    this.host,
+            Promise<Response<Pong>> f = tchannel.call(
+                    InetAddress.getByName(this.host),
                     this.port,
-                    "service",
-                    ArgScheme.JSON,
                     request,
                     Pong.class
             );

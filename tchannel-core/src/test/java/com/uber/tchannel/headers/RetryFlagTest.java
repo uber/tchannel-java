@@ -20,32 +20,46 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.headers;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.RequestHandler;
-import com.uber.tchannel.api.Response;
+import org.junit.Test;
 
-public class PingRequestHandler implements RequestHandler<Ping, Pong> {
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-    @Override
-    public Class<Ping> getRequestType() {
-        return Ping.class;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
+public class RetryFlagTest {
+
+    @Test
+    public void testToRetryFlag() throws Exception {
+        List<Character> unparsedFlags = new ArrayList<Character>() {{
+            add('t');
+            add('n');
+            add('c');
+        }};
+
+        for (char c : unparsedFlags) {
+            assertNotNull(RetryFlag.toRetryFlag(c));
+        }
+
+        assertNull(RetryFlag.toRetryFlag('f'));
+
     }
 
-    @Override
-    public Class<Pong> getResponseType() {
-        return Pong.class;
+    @Test
+    public void testParseFlags() throws Exception {
+        Set<RetryFlag> realFlags = new HashSet<RetryFlag>() {{
+            add(RetryFlag.NoRetry);
+            add(RetryFlag.RetryOnConnectionError);
+            add(RetryFlag.RetryOnTimeout);
+        }};
+
+        Set<RetryFlag> parsedFlags = RetryFlag.parseFlags("tnc");
+        assertEquals(realFlags, parsedFlags);
     }
-
-    @Override
-    public Response<Pong> handle(Request<Ping> request) {
-
-        return new Response.Builder<>(new Pong("pong!"))
-                .setEndpoint(request.getEndpoint())
-                .setHeaders(request.getHeaders())
-                .build();
-
-    }
-
 }

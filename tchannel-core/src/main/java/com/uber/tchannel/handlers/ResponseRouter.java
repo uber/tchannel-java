@@ -25,6 +25,7 @@ package com.uber.tchannel.handlers;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
@@ -55,18 +56,19 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
         this.ctx = ctx;
     }
 
-    public <T, U> Promise<Response<T>> expectResponse(String service,
-                                                      ArgScheme argScheme,
-                                                      Class<T> responseType,
-                                                      Request<U> request) throws InterruptedException {
+    public <T, U> Promise<Response<T>> expectResponse(Request<U> request,
+                                                      Class<T> responseType) throws InterruptedException {
 
-        Map<String, String> transportHeaders = new HashMap<>();
-        transportHeaders.put("as", argScheme.getScheme());
+        String as = request.getTransportHeaders().getOrDefault(
+                TransportHeaders.ARG_SCHEME_KEY,
+                ArgScheme.RAW.getScheme()
+        );
+        ArgScheme argScheme = ArgScheme.toScheme(as);
 
         RawRequest rawRequest = new RawRequest(
                 idGenerator.getAndIncrement(),
-                service,
-                transportHeaders,
+                request.getService(),
+                request.getTransportHeaders(),
                 serializer.encodeEndpoint(request.getEndpoint(), argScheme),
                 serializer.encodeHeaders(request.getHeaders(), argScheme),
                 serializer.encodeBody(request.getBody(), argScheme)
@@ -83,11 +85,11 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
 
         ResponsePromise<?> responsePromise = this.messageMap.remove(rawResponse.getId());
 
-        Response<?> response = new Response<>(
-                this.serializer.decodeEndpoint(rawResponse),
-                this.serializer.decodeHeaders(rawResponse),
-                this.serializer.decodeBody(rawResponse, responsePromise.getPromiseType())
-        );
+        Response<?> response = new Response.Builder<>(
+                this.serializer.decodeBody(rawResponse, responsePromise.getPromiseType()))
+                .setEndpoint(this.serializer.decodeEndpoint(rawResponse))
+                .setHeaders(this.serializer.decodeHeaders(rawResponse))
+                .build();
 
         responsePromise.getPromise().setSuccess((Response) response);
 

@@ -20,32 +20,46 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.headers;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.RequestHandler;
-import com.uber.tchannel.api.Response;
+import java.util.HashSet;
+import java.util.Set;
 
-public class PingRequestHandler implements RequestHandler<Ping, Pong> {
+public enum RetryFlag {
+    NoRetry('n'),
+    RetryOnConnectionError('c'),
+    RetryOnTimeout('t');
 
-    @Override
-    public Class<Ping> getRequestType() {
-        return Ping.class;
+    private char flag;
+
+    RetryFlag(char flag) {
+        this.flag = flag;
     }
 
-    @Override
-    public Class<Pong> getResponseType() {
-        return Pong.class;
+    public static RetryFlag toRetryFlag(char c) {
+        switch (c) {
+            case 'n':
+                return NoRetry;
+            case 'c':
+                return RetryOnConnectionError;
+            case 't':
+                return RetryOnTimeout;
+            default:
+                return null;
+
+        }
     }
 
-    @Override
-    public Response<Pong> handle(Request<Ping> request) {
+    public static Set<RetryFlag> parseFlags(String flags) {
+        Set<RetryFlag> retryFlags = new HashSet<>();
+        for (char c : flags.toCharArray()) {
+            retryFlags.add(toRetryFlag(c));
+        }
+        return retryFlags;
+    }
 
-        return new Response.Builder<>(new Pong("pong!"))
-                .setEndpoint(request.getEndpoint())
-                .setHeaders(request.getHeaders())
-                .build();
-
+    public char getFlag() {
+        return flag;
     }
 
 }

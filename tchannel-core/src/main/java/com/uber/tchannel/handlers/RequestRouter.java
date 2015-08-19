@@ -55,7 +55,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, RawRequest rawRequest) throws Exception {
 
-        ArgScheme argScheme = ArgScheme.fromString(
+        ArgScheme argScheme = ArgScheme.toScheme(
                 rawRequest.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
         );
 
@@ -83,6 +83,8 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         Request<?> request = new Request.Builder<>(body)
                 .setEndpoint(method)
                 .setHeaders(applicationHeaders)
+                .setService(rawRequest.getService())
+                .setTransportHeaders(rawRequest.getTransportHeaders())
                 .build();
 
         // Handle the request

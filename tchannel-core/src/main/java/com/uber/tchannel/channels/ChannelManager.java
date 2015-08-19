@@ -50,19 +50,19 @@ public class ChannelManager {
         return this.channels.add(channel);
     }
 
-    public boolean remove(Channel ch) {
-        this.channelMap.remove((InetSocketAddress) ch.remoteAddress());
-        return this.channels.remove(ch);
+    public boolean remove(Channel channel) {
+        this.channelMap.remove((InetSocketAddress) channel.remoteAddress());
+        return this.channels.remove(channel);
     }
 
     public Channel findOrNew(InetSocketAddress address, Bootstrap bootstrap) throws InterruptedException {
-        Channel ch = this.find(address);
+        Channel channel = this.find(address);
 
-        if (ch == null) {
-            ch = this.newChannel(address, bootstrap);
+        if (channel == null) {
+            channel = this.newChannel(address, bootstrap);
         }
 
-        return ch;
+        return channel;
     }
 
     public void close() throws InterruptedException {
@@ -80,8 +80,8 @@ public class ChannelManager {
     }
 
     public Channel newChannel(InetSocketAddress address, Bootstrap bootstrap) throws InterruptedException {
-        Channel ch = bootstrap.connect(address).sync().channel();
-        this.add(ch);
-        return ch;
+        Channel channel = bootstrap.connect(address).sync().channel();
+        this.add(channel);
+        return channel;
     }
 }
