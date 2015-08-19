@@ -24,20 +24,21 @@ package com.uber.tchannel.errors;
 
 import com.uber.tchannel.tracing.Trace;
 
-public class FatalProtocolError extends Exception implements ProtocolError {
-    private static final long ID = 0xFFFFFFFF;
+public class BadRequestError extends Exception implements ProtocolError {
+    private final long id;
     private final ErrorType errorType = ErrorType.FatalProtocolError;
     private final Trace trace;
     private final String message;
 
-    public FatalProtocolError(Trace trace, String message) {
+    public BadRequestError(long id, Trace trace, String message) {
+        this.id = id;
         this.trace = trace;
         this.message = message;
     }
 
     @Override
     public long getId() {
-        return ID;
+        return id;
     }
 
     @Override

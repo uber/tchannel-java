@@ -25,12 +25,14 @@ package com.uber.tchannel.handlers;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.api.Response;
+import com.uber.tchannel.errors.BadRequestError;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.schemes.Serializer;
+import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -60,7 +62,11 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         );
 
         if (argScheme == null) {
-            throw new RuntimeException("Missing `Arg Scheme` header");
+            throw new BadRequestError(
+                    rawRequest.getId(),
+                    new Trace(0, 0, 0, (byte) 0),
+                    "Missing `Arg Scheme` header"
+            );
         }
 
         // arg1

@@ -57,7 +57,6 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
                     ctx.pipeline().remove(this);
                 } else {
                     throw new FatalProtocolError(
-                            message.getId(),
                             new Trace(0, 0, 0, (byte) 0x00),
                             String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION)
                     );
@@ -68,7 +67,6 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
             default:
 
                 throw new FatalProtocolError(
-                        message.getId(),
                         new Trace(0, 0, 0, (byte) 0x00),
                         "Must not send any data until receiving Init Request"
                 );
