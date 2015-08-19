@@ -28,12 +28,11 @@ public class BadRequestError extends Exception implements ProtocolError {
     private final long id;
     private final ErrorType errorType = ErrorType.FatalProtocolError;
     private final Trace trace;
-    private final String message;
 
     public BadRequestError(long id, Trace trace, String message) {
+        super(message);
         this.id = id;
         this.trace = trace;
-        this.message = message;
     }
 
     @Override
@@ -51,8 +50,4 @@ public class BadRequestError extends Exception implements ProtocolError {
         return trace;
     }
 
-    @Override
-    public String getErrorMessage() {
-        return message;
-    }
 }

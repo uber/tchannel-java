@@ -34,7 +34,7 @@ public class ProtocolErrorProcessor {
                 protocolError.getId(),
                 protocolError.getErrorType(),
                 protocolError.getTrace(),
-                protocolError.getErrorMessage()
+                protocolError.getMessage()
         ));
         switch (protocolError.getErrorType()) {
 

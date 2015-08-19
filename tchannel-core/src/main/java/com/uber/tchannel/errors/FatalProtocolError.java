@@ -28,11 +28,10 @@ public class FatalProtocolError extends Exception implements ProtocolError {
     private static final long ID = 0xFFFFFFFF;
     private final ErrorType errorType = ErrorType.FatalProtocolError;
     private final Trace trace;
-    private final String message;
 
     public FatalProtocolError(Trace trace, String message) {
+        super(message);
         this.trace = trace;
-        this.message = message;
     }
 
     @Override
@@ -50,8 +49,4 @@ public class FatalProtocolError extends Exception implements ProtocolError {
         return trace;
     }
 
-    @Override
-    public String getErrorMessage() {
-        return message;
-    }
 }

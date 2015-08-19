@@ -32,6 +32,6 @@ public interface ProtocolError {
 
     Trace getTrace();
 
-    String getErrorMessage();
+    String getMessage();
 
 }
