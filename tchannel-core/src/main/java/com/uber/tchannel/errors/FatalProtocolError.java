@@ -24,12 +24,12 @@ package com.uber.tchannel.errors;
 
 import com.uber.tchannel.tracing.Trace;
 
-public class FatalProtocolError extends Exception implements ProtocolError {
+public class FatalProtocolError extends ProtocolError {
     private static final long ID = 0xFFFFFFFF;
-    private final ErrorType errorType = ErrorType.FatalProtocolError;
+    private static final ErrorType errorType = ErrorType.FatalProtocolError;
     private final Trace trace;
 
-    public FatalProtocolError(Trace trace, String message) {
+    public FatalProtocolError(String message, Trace trace) {
         super(message);
         this.trace = trace;
     }

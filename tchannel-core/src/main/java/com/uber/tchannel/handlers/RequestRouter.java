@@ -63,9 +63,9 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
         if (argScheme == null) {
             throw new BadRequestError(
-                    rawRequest.getId(),
+                    "Missing `Arg Scheme` header",
                     new Trace(0, 0, 0, (byte) 0),
-                    "Missing `Arg Scheme` header"
+                    rawRequest.getId()
             );
         }
 

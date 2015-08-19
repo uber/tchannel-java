@@ -55,8 +55,8 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
                     ctx.pipeline().remove(this);
                 } else {
                     throw new FatalProtocolError(
-                            new Trace(0, 0, 0, (byte) 0x00),
-                            String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION)
+                            String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION),
+                            new Trace(0, 0, 0, (byte) 0x00)
                     );
                 }
 
@@ -65,8 +65,8 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
             default:
 
                 throw new FatalProtocolError(
-                        new Trace(0, 0, 0, (byte) 0x00),
-                        "Must not send any data until receiving Init Request"
+                        "Must not send any data until receiving Init Request",
+                        new Trace(0, 0, 0, (byte) 0x00)
                 );
 
         }

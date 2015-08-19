@@ -40,7 +40,7 @@ import java.util.HashMap;
 public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Message message) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, Message message) throws ProtocolError {
         switch (message.getMessageType()) {
 
             case InitResponse:
@@ -51,8 +51,8 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
                     ctx.pipeline().remove(this);
                 } else {
                     throw new FatalProtocolError(
-                            new Trace(0, 0, 0, (byte) 0x00),
-                            String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION)
+                            String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION),
+                            new Trace(0, 0, 0, (byte) 0x00)
                     );
                 }
 
@@ -61,8 +61,8 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
             default:
 
                 throw new FatalProtocolError(
-                        new Trace(0, 0, 0, (byte) 0x00),
-                        "Must not send any data until receiving Init Response"
+                        "Must not send any data until receiving Init Response",
+                        new Trace(0, 0, 0, (byte) 0x00)
                 );
 
         }
