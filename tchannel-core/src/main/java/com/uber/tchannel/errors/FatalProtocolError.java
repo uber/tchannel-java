@@ -20,40 +20,39 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.errors;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.ErrorMessage;
 import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+public class FatalProtocolError extends Exception implements ProtocolError {
+    private final long id;
+    private final ErrorType errorType = ErrorType.FatalProtocolError;
+    private final Trace trace;
+    private final String message;
 
-public class ErrorCodecTest {
+    public FatalProtocolError(long id, Trace trace, String message) {
+        this.id = id;
+        this.trace = trace;
+        this.message = message;
+    }
 
-    @Test
-    public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
-        );
+    @Override
+    public long getId() {
+        return id;
+    }
 
-        ErrorMessage errorMessage = new ErrorMessage(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
+    @Override
+    public ErrorType getErrorType() {
+        return errorType;
+    }
 
-        channel.writeOutbound(errorMessage);
-        channel.writeInbound(channel.readOutbound());
+    @Override
+    public Trace getTrace() {
+        return trace;
+    }
 
-        ErrorMessage newErrorMessage = channel.readInbound();
-
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
-
+    @Override
+    public String getErrorMessage() {
+        return message;
     }
 }

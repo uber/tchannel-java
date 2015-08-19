@@ -21,7 +21,9 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.errors.FatalProtocolError;
+import com.uber.tchannel.errors.ProtocolError;
+import com.uber.tchannel.errors.ProtocolErrorProcessor;
 import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
@@ -42,6 +44,7 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
         switch (message.getMessageType()) {
 
             case InitRequest:
+
                 InitRequest initRequestMessage = (InitRequest) message;
 
                 if (initRequestMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
@@ -53,28 +56,35 @@ public class InitRequestHandler extends ChannelHandlerAdapter {
                     f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                     ctx.pipeline().remove(this);
                 } else {
-                    ChannelFuture versionErrorFuture = ctx.writeAndFlush(new ErrorMessage(
+                    throw new FatalProtocolError(
                             message.getId(),
-                            ErrorMessage.ErrorType.FatalProtocolError,
                             new Trace(0, 0, 0, (byte) 0x00),
                             String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION)
-                    ));
-                    versionErrorFuture.addListener(ChannelFutureListener.CLOSE);
+                    );
                 }
 
                 break;
 
             default:
-                ChannelFuture protocolErrorFuture = ctx.writeAndFlush(new ErrorMessage(
+
+                throw new FatalProtocolError(
                         message.getId(),
-                        ErrorMessage.ErrorType.FatalProtocolError,
                         new Trace(0, 0, 0, (byte) 0x00),
                         "Must not send any data until receiving Init Request"
-                ));
-                protocolErrorFuture.addListener(ChannelFutureListener.CLOSE);
-                break;
+                );
 
         }
     }
 
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+
+        if (cause instanceof ProtocolError) {
+            ProtocolError protocolError = (ProtocolError) cause;
+            ProtocolErrorProcessor.handleError(ctx, protocolError);
+        } else {
+            super.exceptionCaught(ctx, cause);
+        }
+
+    }
 }

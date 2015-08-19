@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.messages;
 
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.tracing.Trace;
 
 public final class ErrorMessage implements Message {
@@ -34,7 +35,7 @@ public final class ErrorMessage implements Message {
      * Designated Constructor
      *
      * @param id        unique of the message
-     * @param errorType the type of Error this represents
+     * @param errorType the type of error this represents
      * @param tracing   tracing information
      * @param message   human readable string meant for logs
      */
@@ -73,56 +74,6 @@ public final class ErrorMessage implements Message {
                 this.getId(),
                 this.message
         );
-    }
-
-    public enum ErrorType {
-        Invalid((byte) 0x00),
-        Timeout((byte) 0x01),
-        Cancelled((byte) 0x02),
-        Busy((byte) 0x03),
-        Declined((byte) 0x04),
-        UnexpectedError((byte) 0x05),
-        BadRequest((byte) 0x06),
-        NetworkError((byte) 0x07),
-        Unhealthy((byte) 0x08),
-        FatalProtocolError((byte) 0xff);
-
-        private final byte code;
-
-        ErrorType(byte code) {
-            this.code = code;
-        }
-
-        public static ErrorType fromByte(byte value) {
-            switch (value) {
-                case (byte) 0x00:
-                    return Invalid;
-                case (byte) 0x01:
-                    return Timeout;
-                case (byte) 0x02:
-                    return Cancelled;
-                case (byte) 0x03:
-                    return Busy;
-                case (byte) 0x04:
-                    return Declined;
-                case (byte) 0x05:
-                    return UnexpectedError;
-                case (byte) 0x06:
-                    return BadRequest;
-                case (byte) 0x07:
-                    return NetworkError;
-                case (byte) 0x08:
-                    return Unhealthy;
-                case (byte) 0xff:
-                    return FatalProtocolError;
-                default:
-                    return null;
-            }
-        }
-
-        public byte byteValue() {
-            return this.code;
-        }
     }
 
 }

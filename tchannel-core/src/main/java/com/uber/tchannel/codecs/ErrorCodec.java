@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.ErrorMessage;
 import com.uber.tchannel.tracing.Trace;
@@ -52,7 +53,7 @@ public final class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorMessage
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
         // code:1
-        ErrorMessage.ErrorType type = ErrorMessage.ErrorType.fromByte(frame.payload.readByte());
+        ErrorType type = ErrorType.fromByte(frame.payload.readByte());
 
         // tracing:25
         Trace tracing = CodecUtils.decodeTrace(frame.payload);
