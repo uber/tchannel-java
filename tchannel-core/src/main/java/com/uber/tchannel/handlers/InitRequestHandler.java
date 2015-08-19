@@ -31,15 +31,13 @@ import com.uber.tchannel.messages.Message;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
-public class InitRequestHandler extends ChannelHandlerAdapter {
+public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object object) throws Exception {
-
-        Message message = (Message) object;
+    public void messageReceived(ChannelHandlerContext ctx, Message message) throws Exception {
 
         switch (message.getMessageType()) {
 

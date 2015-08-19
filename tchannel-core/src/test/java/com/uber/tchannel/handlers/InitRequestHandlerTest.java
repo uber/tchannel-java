@@ -54,7 +54,7 @@ public class InitRequestHandlerTest {
                 new InitRequestHandler()
         );
 
-        assertEquals(channel.pipeline().names().size(), 3);
+        assertEquals(3, channel.pipeline().names().size());
 
         InitRequest initRequest = new InitRequest(
                 42,
@@ -78,7 +78,7 @@ public class InitRequestHandlerTest {
         assertEquals(initRequest.getHostPort(), initResponse.getHostPort());
 
         // Assert Pipeline is empty
-        assertEquals(channel.pipeline().names().size(), 2);
+        assertEquals(2, channel.pipeline().names().size());
 
         // Make sure Messages are still passed through
         channel.writeInbound(initRequest);

@@ -19,18 +19,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.messages.PingRequest;
-import com.uber.tchannel.messages.PingResponse;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.messages.InitResponse;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Test;
 
-public class PingHandler extends SimpleChannelInboundHandler<PingRequest> {
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-    @Override
-    protected void messageReceived(ChannelHandlerContext ctx, PingRequest msg) throws Exception {
-        ctx.writeAndFlush(new PingResponse(msg.getId()));
+public class InitRequestInitiatorTest {
+
+    @Test
+    public void testValidInitResponse() throws Exception {
+        // Given
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new InitRequestInitiator()
+        );
+        assertEquals(3, channel.pipeline().names().size());
+
+        // Then
+        InitRequest initRequest = channel.readOutbound();
+
+        // Assert
+        assertNotNull(initRequest);
+
+        channel.writeInbound(new InitResponse(
+                initRequest.getId(),
+                initRequest.getVersion(),
+                initRequest.getHeaders()
+        ));
+
+        Object obj = channel.readOutbound();
+        assertNull(obj);
+
+        assertEquals(2, channel.pipeline().names().size());
+
     }
-
 }
