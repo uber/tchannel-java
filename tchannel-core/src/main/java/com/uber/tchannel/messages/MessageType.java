@@ -21,8 +21,6 @@
  */
 package com.uber.tchannel.messages;
 
-import java.util.Optional;
-
 public enum MessageType {
 
     // First message on every connection must be init
@@ -64,32 +62,32 @@ public enum MessageType {
         this.type = type;
     }
 
-    public static Optional<MessageType> fromByte(byte value) {
+    public static MessageType fromByte(byte value) {
         switch (value) {
             case (byte) 0x01:
-                return Optional.of(InitRequest);
+                return InitRequest;
             case (byte) 0x02:
-                return Optional.of(InitResponse);
+                return InitResponse;
             case (byte) 0x03:
-                return Optional.of(CallRequest);
+                return CallRequest;
             case (byte) 0x04:
-                return Optional.of(CallResponse);
+                return CallResponse;
             case (byte) 0x13:
-                return Optional.of(CallRequestContinue);
+                return CallRequestContinue;
             case (byte) 0x14:
-                return Optional.of(CallResponseContinue);
+                return CallResponseContinue;
             case (byte) 0xc0:
-                return Optional.of(Cancel);
+                return Cancel;
             case (byte) 0xc1:
-                return Optional.of(Claim);
+                return Claim;
             case (byte) 0xd0:
-                return Optional.of(PingRequest);
+                return PingRequest;
             case (byte) 0xd1:
-                return Optional.of(PingResponse);
+                return PingResponse;
             case (byte) 0xff:
-                return Optional.of(Error);
+                return Error;
             default:
-                return Optional.empty();
+                return null;
         }
     }
 

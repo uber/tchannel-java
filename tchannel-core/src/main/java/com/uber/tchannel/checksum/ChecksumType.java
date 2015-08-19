@@ -21,8 +21,6 @@
  */
 package com.uber.tchannel.checksum;
 
-import java.util.Optional;
-
 public enum ChecksumType {
     NoChecksum((byte) 0x00),
     Adler32((byte) 0x1),
@@ -35,18 +33,18 @@ public enum ChecksumType {
         this.type = type;
     }
 
-    public static Optional<ChecksumType> fromByte(byte value) {
+    public static ChecksumType fromByte(byte value) {
         switch (value) {
             case (byte) 0x00:
-                return Optional.of(NoChecksum);
+                return NoChecksum;
             case (byte) 0x01:
-                return Optional.of(Adler32);
+                return Adler32;
             case (byte) 0x02:
-                return Optional.of(FarmhashFingerPrint32);
+                return FarmhashFingerPrint32;
             case (byte) 0x03:
-                return Optional.of(CRC32C);
+                return CRC32C;
             default:
-                return Optional.empty();
+                return null;
         }
     }
 

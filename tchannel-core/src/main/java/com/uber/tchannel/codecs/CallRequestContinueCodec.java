@@ -67,7 +67,7 @@ public final class CallRequestContinueCodec extends MessageToMessageCodec<TFrame
         byte flags = frame.payload.readByte();
 
         // csumtype:1
-        ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte()).get();
+        ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte());
 
         // (csum:4){0,1}
         int checksum = CodecUtils.decodeChecksum(checksumType, frame.payload);
