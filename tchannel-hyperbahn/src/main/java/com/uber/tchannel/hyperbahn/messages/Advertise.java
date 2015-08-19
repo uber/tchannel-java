@@ -27,17 +27,6 @@ import java.util.List;
 
 public class Advertise {
 
-    // Inner class representing a service object in a hyperbahn message.
-    public class Service {
-        private final String serviceName;
-        private final int cost;
-
-        public Service(String serviceName, int cost) {
-            this.serviceName = serviceName;
-            this.cost = cost;
-        }
-    }
-
     private final List<Service> services;
 
     public Advertise(List<Service> services) {
@@ -47,8 +36,20 @@ public class Advertise {
     public Advertise() {
         services = new ArrayList<Service>();
     }
+
     public void addService(String serviceName, int cost) {
         services.add(new Service(serviceName, cost));
+    }
+
+    // Inner class representing a service object in a hyperbahn message.
+    public class Service {
+        private final String serviceName;
+        private final int cost;
+
+        public Service(String serviceName, int cost) {
+            this.serviceName = serviceName;
+            this.cost = cost;
+        }
     }
 }
 
