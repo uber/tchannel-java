@@ -99,7 +99,12 @@ public final class MessageCodec extends MessageToMessageCodec<TFrame, Message> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        MessageType type = MessageType.fromByte(frame.type).get();
+        MessageType type = MessageType.fromByte(frame.type);
+
+        if (type == null) {
+            throw new Exception("protocol exception");
+        }
+
         switch (type) {
             case CallRequest:
                 this.callRequestCodec.decode(ctx, frame, out);

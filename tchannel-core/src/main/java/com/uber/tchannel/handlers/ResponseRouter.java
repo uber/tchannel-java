@@ -59,10 +59,8 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
     public <T, U> Promise<Response<T>> expectResponse(Request<U> request,
                                                       Class<T> responseType) throws InterruptedException {
 
-        String as = request.getTransportHeaders().getOrDefault(
-                TransportHeaders.ARG_SCHEME_KEY,
-                ArgScheme.RAW.getScheme()
-        );
+        String as = request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY);
+
         ArgScheme argScheme = ArgScheme.toScheme(as);
 
         RawRequest rawRequest = new RawRequest(

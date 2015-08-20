@@ -99,7 +99,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
         Map<String, String> headers = CodecUtils.decodeSmallHeaders(frame.payload);
 
         // csumtype:1
-        ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte()).get();
+        ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte());
 
         // (csum:4){0,1}
         int checksum = CodecUtils.decodeChecksum(checksumType, frame.payload);

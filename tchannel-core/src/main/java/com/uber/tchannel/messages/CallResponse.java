@@ -27,7 +27,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Very similar to {@link CallRequest}, differing only in: adds a code field, no ttl field and no service field.
@@ -181,14 +180,14 @@ public final class CallResponse implements Message, CallMessage {
             this.code = code;
         }
 
-        public static Optional<CallResponseCode> fromByte(byte code) {
+        public static CallResponseCode fromByte(byte code) {
             switch (code) {
                 case 0x00:
-                    return Optional.of(OK);
+                    return OK;
                 case 0x01:
-                    return Optional.of(Error);
+                    return Error;
                 default:
-                    return Optional.empty();
+                    return null;
             }
         }
 

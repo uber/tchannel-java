@@ -22,6 +22,7 @@
 package com.uber.tchannel.checksum;
 
 import com.uber.tchannel.messages.CallMessage;
+import io.netty.buffer.ByteBuf;
 
 import java.util.zip.Adler32;
 
@@ -40,12 +41,17 @@ public final class Checksums {
 
     public static long calculateChecksum(CallMessage msg, long digestSeed) {
 
+        // TODO: this is bad
+        ByteBuf payloadCopy = msg.getPayload().slice();
+        byte[] payloadBytes = new byte[msg.getPayloadSize()];
+        payloadCopy.readBytes(payloadBytes);
+
         switch (msg.getChecksumType()) {
 
             case Adler32:
                 Adler32 f = new Adler32();
                 f.update((int) digestSeed);
-                f.update(msg.getPayload().nioBuffer());
+                f.update(payloadBytes);
                 return f.getValue();
             case FarmhashFingerPrint32:
             case NoChecksum:

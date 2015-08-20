@@ -86,7 +86,7 @@ public final class CallResponseCodec extends MessageToMessageCodec<TFrame, CallR
         byte flags = frame.payload.readByte();
 
         // code:1
-        CallResponse.CallResponseCode code = CallResponse.CallResponseCode.fromByte(frame.payload.readByte()).get();
+        CallResponse.CallResponseCode code = CallResponse.CallResponseCode.fromByte(frame.payload.readByte());
 
         // tracing:25
         Trace trace = CodecUtils.decodeTrace(frame.payload);
@@ -95,7 +95,7 @@ public final class CallResponseCodec extends MessageToMessageCodec<TFrame, CallR
         Map<String, String> headers = CodecUtils.decodeSmallHeaders(frame.payload);
 
         // csumtype:1
-        ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte()).get();
+        ChecksumType checksumType = ChecksumType.fromByte(frame.payload.readByte());
 
         // (csum:4){0,1}
         int checksum = CodecUtils.decodeChecksum(checksumType, frame.payload);

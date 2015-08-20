@@ -23,8 +23,6 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.tracing.Trace;
 
-import java.util.Optional;
-
 public final class ErrorMessage implements Message {
 
     private final long id;
@@ -95,30 +93,30 @@ public final class ErrorMessage implements Message {
             this.code = code;
         }
 
-        public static Optional<ErrorType> fromByte(byte value) {
+        public static ErrorType fromByte(byte value) {
             switch (value) {
                 case (byte) 0x00:
-                    return Optional.of(Invalid);
+                    return Invalid;
                 case (byte) 0x01:
-                    return Optional.of(Timeout);
+                    return Timeout;
                 case (byte) 0x02:
-                    return Optional.of(Cancelled);
+                    return Cancelled;
                 case (byte) 0x03:
-                    return Optional.of(Busy);
+                    return Busy;
                 case (byte) 0x04:
-                    return Optional.of(Declined);
+                    return Declined;
                 case (byte) 0x05:
-                    return Optional.of(UnexpectedError);
+                    return UnexpectedError;
                 case (byte) 0x06:
-                    return Optional.of(BadRequest);
+                    return BadRequest;
                 case (byte) 0x07:
-                    return Optional.of(NetworkError);
+                    return NetworkError;
                 case (byte) 0x08:
-                    return Optional.of(Unhealthy);
+                    return Unhealthy;
                 case (byte) 0xff:
-                    return Optional.of(FatalProtocolError);
+                    return FatalProtocolError;
                 default:
-                    return Optional.empty();
+                    return null;
             }
         }
 
