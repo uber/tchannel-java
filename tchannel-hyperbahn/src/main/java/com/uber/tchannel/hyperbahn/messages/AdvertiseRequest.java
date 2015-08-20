@@ -25,15 +25,15 @@ package com.uber.tchannel.hyperbahn.messages;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Advertise {
+public class AdvertiseRequest {
 
     private final List<Service> services;
 
-    public Advertise(List<Service> services) {
+    public AdvertiseRequest(List<Service> services) {
         this.services = services;
     }
 
-    public Advertise() {
+    public AdvertiseRequest() {
         services = new ArrayList<Service>();
     }
 
