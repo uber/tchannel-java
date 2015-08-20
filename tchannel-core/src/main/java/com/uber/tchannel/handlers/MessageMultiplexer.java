@@ -186,7 +186,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, RawMe
                 Unpooled.wrappedBuffer(partialRequest.getArg3(), arg3)
         );
 
-        this.messageMap.replace(msg.getId(), updatedRequest);
+        this.messageMap.put(msg.getId(), updatedRequest);
     }
 
     private void decodeCallResponseContinue(ChannelHandlerContext ctx, CallResponseContinue msg, List<Object> out) {
@@ -208,7 +208,7 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, RawMe
 
         );
 
-        this.messageMap.replace(msg.getId(), updatedResponse);
+        this.messageMap.put(msg.getId(), updatedResponse);
     }
 
     /**
@@ -253,10 +253,13 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, RawMe
          * Call{Request,Response}Continue message. Call{R,R}Continue messages don't carry arg1 payloads, so we skip
          * ahead to the arg2 processing state.
          */
-        if (msg instanceof CallRequest || msg instanceof CallResponse) {
-            this.defragmentationState.putIfAbsent(msg.getId(), DefragmentationState.PROCESSING_ARG_1);
-        } else {
-            this.defragmentationState.putIfAbsent(msg.getId(), DefragmentationState.PROCESSING_ARG_2);
+
+        if (!this.defragmentationState.containsKey(msg.getId())) {
+            if (msg instanceof CallRequest || msg instanceof CallResponse) {
+                this.defragmentationState.put(msg.getId(), DefragmentationState.PROCESSING_ARG_1);
+            } else {
+                this.defragmentationState.put(msg.getId(), DefragmentationState.PROCESSING_ARG_2);
+            }
         }
 
         DefragmentationState currentState = this.defragmentationState.get(msg.getId());

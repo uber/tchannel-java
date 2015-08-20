@@ -22,8 +22,6 @@
 
 package com.uber.tchannel.api;
 
-import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.handler.logging.LogLevel;
 import io.netty.util.concurrent.Promise;
 import org.junit.Test;
@@ -83,12 +81,11 @@ public class RequestTest {
         tchannel.listen();
 
         Request<String> request = new Request.Builder<>(requestBody)
-                .setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme())
                 .setEndpoint("endpoint")
                 .setService("ping-service")
                 .build();
 
-        Promise<Response<Integer>> responsePromise = tchannel.call(
+        Promise<Response<Integer>> responsePromise = tchannel.callJSON(
                 tchannel.getHost(),
                 tchannel.getServerPort(),
                 request,

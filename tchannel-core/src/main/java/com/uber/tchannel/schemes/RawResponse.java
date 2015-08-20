@@ -22,8 +22,6 @@
 
 package com.uber.tchannel.schemes;
 
-import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
@@ -53,10 +51,6 @@ public final class RawResponse implements RawMessage {
     public RawResponse(long id, Map<String, String> transportHeaders, ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
         this.transportHeaders = transportHeaders;
-        this.transportHeaders.putIfAbsent(
-                TransportHeaders.ARG_SCHEME_KEY,
-                ArgScheme.RAW.getScheme()
-        );
         this.arg1 = arg1;
         this.arg2 = arg2;
         this.arg3 = arg3;

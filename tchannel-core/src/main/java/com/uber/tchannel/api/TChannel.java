@@ -31,6 +31,7 @@ import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageMultiplexer;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
+import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -93,15 +94,35 @@ public final class TChannel {
         this.childGroup.shutdownGracefully();
     }
 
-    public <T, U> Promise<Response<T>> call(
+    public <T, U> Promise<Response<T>> callJSON(
             InetAddress host,
             int port,
             Request<U> request,
             Class<T> responseType
     ) throws InterruptedException {
+        return this.call(host, port, request, responseType, ArgScheme.JSON);
+    }
+
+    public <T, U> Promise<Response<T>> callRaw(
+            InetAddress host,
+            int port,
+            Request<U> request,
+            Class<T> responseType
+    ) throws InterruptedException {
+        return this.call(host, port, request, responseType, ArgScheme.RAW);
+    }
+
+    public <T, U> Promise<Response<T>> call(
+            InetAddress host,
+            int port,
+            Request<U> request,
+            Class<T> responseType,
+            ArgScheme argScheme
+    ) throws InterruptedException {
 
         // Set the 'cn' header
         request.getTransportHeaders().put(TransportHeaders.CALLER_NAME_KEY, this.service);
+        request.getTransportHeaders().put(TransportHeaders.ARG_SCHEME_KEY, argScheme.getScheme());
 
         // Get an outbound channel
         Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
