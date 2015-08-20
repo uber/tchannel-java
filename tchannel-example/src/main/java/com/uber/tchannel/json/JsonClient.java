@@ -36,7 +36,7 @@ public class JsonClient {
     public static void main(String[] args) throws Exception {
         final TChannel tchannel = new TChannel.Builder("json-server").build();
 
-        Promise<Response<ResponsePojo>> p = tchannel.call(InetAddress.getLocalHost(), 8888, new Request.Builder<>(
+        Promise<Response<ResponsePojo>> p = tchannel.callJSON(InetAddress.getLocalHost(), 8888, new Request.Builder<>(
                         new RequestPojo(0, "hello?"))
                         .setService("json-service")
                         .setEndpoint("json-endpoint")
