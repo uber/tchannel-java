@@ -32,4 +32,5 @@ public class PingHandler extends SimpleChannelInboundHandler<PingRequest> {
     protected void messageReceived(ChannelHandlerContext ctx, PingRequest msg) throws Exception {
         ctx.writeAndFlush(new PingResponse(msg.getId()));
     }
+
 }

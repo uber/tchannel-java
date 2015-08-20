@@ -20,40 +20,31 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.json;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+public class ResponsePojo {
+    private final boolean responseBool;
+    private final String responseMessage;
 
-import static org.junit.Assert.assertEquals;
+    public ResponsePojo(boolean responseBool, String responseMessage) {
+        this.responseBool = responseBool;
+        this.responseMessage = responseMessage;
+    }
 
-public class ErrorCodecTest {
+    public boolean isResponseBool() {
+        return responseBool;
+    }
 
-    @Test
-    public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
+    public String getResponseMessage() {
+        return responseMessage;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<%s bool=%s message=%s>",
+                this.getClass().getSimpleName(),
+                this.responseBool,
+                this.responseMessage
         );
-
-        ErrorMessage errorMessage = new ErrorMessage(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
-
-        channel.writeOutbound(errorMessage);
-        channel.writeInbound(channel.readOutbound());
-
-        ErrorMessage newErrorMessage = channel.readInbound();
-
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
-
     }
 }

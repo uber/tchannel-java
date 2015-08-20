@@ -22,16 +22,52 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.errors.FatalProtocolError;
+import com.uber.tchannel.errors.ProtocolError;
+import com.uber.tchannel.errors.ProtocolErrorProcessor;
 import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.messages.InitResponse;
+import com.uber.tchannel.messages.Message;
+import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.util.HashMap;
 
-public class InitRequestInitiator extends ChannelHandlerAdapter {
+public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
+
+    @Override
+    protected void messageReceived(ChannelHandlerContext ctx, Message message) throws ProtocolError {
+        switch (message.getMessageType()) {
+
+            case InitResponse:
+
+                InitResponse initResponseMessage = (InitResponse) message;
+
+                if (initResponseMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
+                    ctx.pipeline().remove(this);
+                } else {
+                    throw new FatalProtocolError(
+                            String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION),
+                            new Trace(0, 0, 0, (byte) 0x00)
+                    );
+                }
+
+                break;
+
+            default:
+
+                throw new FatalProtocolError(
+                        "Must not send any data until receiving Init Response",
+                        new Trace(0, 0, 0, (byte) 0x00)
+                );
+
+        }
+    }
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
@@ -46,7 +82,19 @@ public class InitRequestInitiator extends ChannelHandlerAdapter {
         );
         ChannelFuture f = ctx.writeAndFlush(initRequest);
         f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-        ctx.pipeline().remove(this);
 
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+
+        if (cause instanceof ProtocolError) {
+            ProtocolError protocolError = (ProtocolError) cause;
+            ProtocolErrorProcessor.handleError(ctx, protocolError);
+        } else {
+            super.exceptionCaught(ctx, cause);
+        }
+
+    }
+
 }

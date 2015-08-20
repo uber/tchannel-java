@@ -20,40 +20,22 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.json;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+import com.uber.tchannel.api.TChannel;
+import io.netty.channel.ChannelFuture;
 
-import static org.junit.Assert.assertEquals;
+public class JsonServer {
+    public static void main(String[] args) throws Exception {
+        final TChannel tchannel = new TChannel.Builder("json-server")
+                .register("json-endpoint", new JsonReqeustHandler())
+                .setServerPort(8888)
+                .build();
 
-public class ErrorCodecTest {
+        ChannelFuture f = tchannel.listen();
 
-    @Test
-    public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
-        );
+        f.channel().closeFuture().sync();
 
-        ErrorMessage errorMessage = new ErrorMessage(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
-
-        channel.writeOutbound(errorMessage);
-        channel.writeInbound(channel.readOutbound());
-
-        ErrorMessage newErrorMessage = channel.readInbound();
-
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
-
+        tchannel.shutdown();
     }
 }

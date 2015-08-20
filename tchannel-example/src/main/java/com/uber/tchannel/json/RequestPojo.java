@@ -20,40 +20,32 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.json;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+public class RequestPojo {
+    private final long requestId;
+    private final String requestMessage;
 
-import static org.junit.Assert.assertEquals;
-
-public class ErrorCodecTest {
-
-    @Test
-    public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
-        );
-
-        ErrorMessage errorMessage = new ErrorMessage(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
-
-        channel.writeOutbound(errorMessage);
-        channel.writeInbound(channel.readOutbound());
-
-        ErrorMessage newErrorMessage = channel.readInbound();
-
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
-
+    public RequestPojo(long requestId, String requestMessage) {
+        this.requestId = requestId;
+        this.requestMessage = requestMessage;
     }
+
+    public long getRequestId() {
+        return requestId;
+    }
+
+    public String getRequestMessage() {
+        return requestMessage;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<%s id=%d message=%s>",
+                this.getClass().getSimpleName(),
+                this.requestId,
+                this.requestMessage
+        );
+    }
+
 }

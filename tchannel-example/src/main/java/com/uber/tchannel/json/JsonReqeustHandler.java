@@ -20,40 +20,31 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.json;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.Response;
 
-import static org.junit.Assert.assertEquals;
+public class JsonReqeustHandler implements RequestHandler<RequestPojo, ResponsePojo> {
+    @Override
+    public Response<ResponsePojo> handle(Request<RequestPojo> request) {
+        System.out.println(request);
 
-public class ErrorCodecTest {
+        return new Response.Builder<>(new ResponsePojo(true, "hi!"))
+                .setEndpoint(request.getEndpoint())
+                .setHeaders(request.getHeaders())
+                .setTransportHeaders(request.getTransportHeaders())
+                .build();
+    }
 
-    @Test
-    public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
-        );
+    @Override
+    public Class<RequestPojo> getRequestType() {
+        return RequestPojo.class;
+    }
 
-        ErrorMessage errorMessage = new ErrorMessage(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
-
-        channel.writeOutbound(errorMessage);
-        channel.writeInbound(channel.readOutbound());
-
-        ErrorMessage newErrorMessage = channel.readInbound();
-
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
-
+    @Override
+    public Class<ResponsePojo> getResponseType() {
+        return ResponsePojo.class;
     }
 }

@@ -22,6 +22,7 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.ErrorMessage;
 import com.uber.tchannel.messages.InitMessage;
@@ -36,6 +37,7 @@ import org.junit.rules.ExpectedException;
 import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -52,7 +54,7 @@ public class InitRequestHandlerTest {
                 new InitRequestHandler()
         );
 
-        assertEquals(channel.pipeline().names().size(), 3);
+        assertEquals(3, channel.pipeline().names().size());
 
         InitRequest initRequest = new InitRequest(
                 42,
@@ -76,7 +78,7 @@ public class InitRequestHandlerTest {
         assertEquals(initRequest.getHostPort(), initResponse.getHostPort());
 
         // Assert Pipeline is empty
-        assertEquals(channel.pipeline().names().size(), 2);
+        assertEquals(2, channel.pipeline().names().size());
 
         // Make sure Messages are still passed through
         channel.writeInbound(initRequest);
@@ -128,7 +130,34 @@ public class InitRequestHandlerTest {
         CallRequest callRequest = Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER);
         channel.writeInbound(callRequest);
         ErrorMessage error = channel.readOutbound();
-        assertThat(error.getType(), is(ErrorMessage.ErrorType.FatalProtocolError));
+        assertNotNull(error);
+        assertThat(error.getType(), is(ErrorType.FatalProtocolError));
+
+        this.expectedClosedChannelException.expect(ClosedChannelException.class);
+        channel.writeOutbound();
+
+    }
+
+    @Test
+    public void testIncorrectProtocolVersion() throws Exception {
+        // Given
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new InitRequestHandler()
+        );
+
+        InitRequest initRequest = new InitRequest(42,
+                1,
+                new HashMap<String, String>() {{
+                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
+                }}
+        );
+
+        channel.writeInbound(initRequest);
+        ErrorMessage error = channel.readOutbound();
+        assertNotNull(error);
+        assertThat(error.getType(), is(ErrorType.FatalProtocolError));
+        assertThat(error.getMessage(), containsString("version"));
 
         this.expectedClosedChannelException.expect(ClosedChannelException.class);
         channel.writeOutbound();

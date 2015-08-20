@@ -20,40 +20,43 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
+import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.messages.InitResponse;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
+import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-public class ErrorCodecTest {
+public class InitRequestInitiatorTest {
 
     @Test
-    public void testEncodeDecode() throws Exception {
+    public void testValidInitResponse() throws Exception {
+        // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
+                new InitRequestInitiator()
         );
+        assertEquals(3, channel.pipeline().names().size());
 
-        ErrorMessage errorMessage = new ErrorMessage(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
+        // Then
+        InitRequest initRequest = channel.readOutbound();
 
-        channel.writeOutbound(errorMessage);
-        channel.writeInbound(channel.readOutbound());
+        // Assert
+        assertNotNull(initRequest);
 
-        ErrorMessage newErrorMessage = channel.readInbound();
+        channel.writeInbound(new InitResponse(
+                initRequest.getId(),
+                initRequest.getVersion(),
+                initRequest.getHeaders()
+        ));
 
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
+        Object obj = channel.readOutbound();
+        assertNull(obj);
+
+        assertEquals(2, channel.pipeline().names().size());
 
     }
 }

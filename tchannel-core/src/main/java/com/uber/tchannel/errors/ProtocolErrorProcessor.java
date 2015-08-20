@@ -20,40 +20,40 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.errors;
 
-import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 
-import static org.junit.Assert.assertEquals;
+public class ProtocolErrorProcessor {
 
-public class ErrorCodecTest {
+    public static void handleError(ChannelHandlerContext ctx, ProtocolError protocolError) {
+        ChannelFuture f = ctx.writeAndFlush(new ErrorMessage(
+                protocolError.getId(),
+                protocolError.getErrorType(),
+                protocolError.getTrace(),
+                protocolError.getMessage()
+        ));
+        switch (protocolError.getErrorType()) {
 
-    @Test
-    public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
-        );
-
-        ErrorMessage errorMessage = new ErrorMessage(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
-
-        channel.writeOutbound(errorMessage);
-        channel.writeInbound(channel.readOutbound());
-
-        ErrorMessage newErrorMessage = channel.readInbound();
-
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
+            case Invalid:
+            case Timeout:
+            case Cancelled:
+            case Busy:
+            case Declined:
+            case UnexpectedError:
+            case BadRequest:
+            case NetworkError:
+            case Unhealthy:
+                break;
+            case FatalProtocolError:
+                f.addListener(ChannelFutureListener.CLOSE);
+                break;
+            default:
+                break;
+        }
 
     }
 }

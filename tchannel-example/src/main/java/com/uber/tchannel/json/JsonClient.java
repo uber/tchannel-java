@@ -20,40 +20,36 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.json;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
+import io.netty.util.concurrent.Promise;
 
-import static org.junit.Assert.assertEquals;
+import java.net.InetAddress;
 
-public class ErrorCodecTest {
+public class JsonClient {
 
-    @Test
-    public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
+    public static void main(String[] args) throws Exception {
+        final TChannel tchannel = new TChannel.Builder("json-server").build();
+
+        Promise<Response<ResponsePojo>> p = tchannel.callJSON(InetAddress.getLocalHost(), 8888, new Request.Builder<>(
+                        new RequestPojo(0, "hello?"))
+                        .setService("json-service")
+                        .setEndpoint("json-endpoint")
+                        .setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme())
+                        .build(),
+                ResponsePojo.class
         );
 
-        ErrorMessage errorMessage = new ErrorMessage(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
+        Response<ResponsePojo> res = p.get();
 
-        channel.writeOutbound(errorMessage);
-        channel.writeInbound(channel.readOutbound());
+        System.out.println(res);
 
-        ErrorMessage newErrorMessage = channel.readInbound();
-
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
-
+        tchannel.shutdown();
     }
+
 }
