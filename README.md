@@ -25,7 +25,7 @@ A Java implementation of the [TChannel](https://github.com/uber/tchannel) protoc
 ```java
 // Create a TChannel, and register a RequestHandler
 TChannel tchannel = new TChannel.Builder("ping-server")
-	.register("ping", new PingRequestHandler())
+	.register("ping-handler", new PingRequestHandler())
 	.setServerPort(this.port)
 	.build();
 
@@ -34,23 +34,21 @@ tchannel.listen();
 
 // Create another TChannel to act as a client.
 TChannel tchannelClient = new TChannel.Builder("ping-client").build();
-Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"))
-	.setEndpoint("ping")
-	.setHeaders(headers)
+Request<Ping> request = new Request.Builder<>(new Ping("ping?"))
+	.setEndpoint("ping-handler")
 	.build();
 
 // Make an asynchronous request
-Promise<Response<Pong>> responseFuture = tchannel.makeRequest(
-	this.host,
-	this.port,
+Promise<Response<Pong>> responseFuture = tchannel.callJSON(
+	tchannel.getHost(),
+	tchannel.getServerPort(),
 	"service",
-	ArgScheme.JSON,
 	request,
 	Pong.class
 );
 
 // Block and wait for the response
-Response<Pong> response = responseFuture.get(100, TimeUnit.MILLISECONDS)
+Response<Pong> response = responseFuture.get(100, TimeUnit.MILLISECONDS);
 System.out.println(response);
 ```
 
