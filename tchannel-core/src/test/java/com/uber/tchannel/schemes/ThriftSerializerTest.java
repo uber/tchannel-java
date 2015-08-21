@@ -22,14 +22,15 @@
 
 package com.uber.tchannel.schemes;
 
+import com.uber.tchannel.schemes.generated.Example;
 import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ThriftSerializerTest {
 
@@ -78,7 +79,7 @@ public class ThriftSerializerTest {
 
         // Then
         ByteBuf bodyBuf = this.serializer.encodeBody(obj);
-        Ex decodedObj = (Example) this.serializer.decodeBody(bodyBuf, instanceType);
+        Example decodedObj = (Example) this.serializer.decodeBody(bodyBuf, instanceType);
 
         assertEquals(obj.getAnInteger(), decodedObj.getAnInteger());
         assertEquals(obj.getAString(), decodedObj.getAString());
