@@ -22,37 +22,72 @@
 
 package com.uber.tchannel.schemes;
 
-import org.apache.thrift.TSerializer;
-import org.apache.thrift.protocol.TBinaryProtocol;
+import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static junit.framework.TestCase.assertNotNull;
+import static org.junit.Assert.assertEquals;
 
 public class ThriftSerializerTest {
+
+    private Serializer.SerializerInterface serializer;
+
+    @org.junit.Before
+    public void setUp() throws Exception {
+        this.serializer = new ThriftSerializer();
+    }
 
     @Test
     public void testNewInstance() throws Exception {
         Class<?> instanceType = Ex.class;
-        Object obj = instanceType.newInstance();
+        Ex obj = (Ex) instanceType.newInstance();
         assertNotNull(obj);
-        System.out.println(obj);
-
-        TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory(true, true));
-
     }
 
     @Test
-    public void testDecodeEndpoint() throws Exception {
-
+    public void testEncodeDecodeEndpoint() throws Exception {
+        String endpoint = "SomeService::someMethod";
+        ByteBuf endpointBuf = this.serializer.encodeEndpoint(endpoint);
+        String decodedEndpoint = this.serializer.decodeEndpoint(endpointBuf);
+        assertEquals(endpoint, decodedEndpoint);
     }
 
     @Test
-    public void testDecodeHeaders() throws Exception {
+    public void testEncodeDecodeHeaders() throws Exception {
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("foo", "bar");
+        }};
 
+        ByteBuf binaryHeaders = serializer.encodeHeaders(headers);
+        Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
+
+        assertEquals(headers, decodedHeaders);
     }
 
     @Test
-    public void testDecodeBody() throws Exception {
+    public void testEncodeDecodeBody() throws Exception {
 
+        // Given
+        Class<?> instanceType = Ex.class;
+        Ex obj = (Ex) instanceType.newInstance();
+        obj.setAnInteger(42);
+        obj.setAString("Hello, World!");
+
+        // Then
+        ByteBuf bodyBuf = this.serializer.encodeBody(obj);
+        Ex decodedObj = (Ex) this.serializer.decodeBody(bodyBuf, instanceType);
+
+        assertEquals(obj.getAnInteger(), decodedObj.getAnInteger());
+        assertEquals(obj.getAString(), decodedObj.getAString());
+        assertEquals(obj, decodedObj);
     }
+
+    @org.junit.After
+    public void tearDown() throws Exception {
+        this.serializer = null;
+    }
+
 }
