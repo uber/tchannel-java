@@ -30,9 +30,11 @@ import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.schemes.Serializer;
+import com.uber.tchannel.schemes.ThriftSerializer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 import java.util.HashMap;
@@ -45,6 +47,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
     private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
             put(ArgScheme.JSON, new JSONSerializer());
+            put(ArgScheme.THRIFT, new ThriftSerializer());
         }
     });
     private final AtomicInteger idGenerator = new AtomicInteger(0);
@@ -72,7 +75,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
                 serializer.encodeBody(request.getBody(), argScheme)
         );
 
-        Promise<Response<T>> responsePromise = new DefaultPromise<>(ctx.executor());
+        Promise<Response<T>> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
         this.messageMap.put(rawRequest.getId(), new ResponsePromise<>(responsePromise, responseType));
         ctx.writeAndFlush(rawRequest).await();
         return responsePromise;

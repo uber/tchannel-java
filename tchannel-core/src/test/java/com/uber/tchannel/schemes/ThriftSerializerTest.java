@@ -42,8 +42,8 @@ public class ThriftSerializerTest {
 
     @Test
     public void testNewInstance() throws Exception {
-        Class<?> instanceType = Ex.class;
-        Ex obj = (Ex) instanceType.newInstance();
+        Class<?> instanceType = Example.class;
+        Example obj = (Example) instanceType.newInstance();
         assertNotNull(obj);
     }
 
@@ -71,14 +71,14 @@ public class ThriftSerializerTest {
     public void testEncodeDecodeBody() throws Exception {
 
         // Given
-        Class<?> instanceType = Ex.class;
-        Ex obj = (Ex) instanceType.newInstance();
+        Class<?> instanceType = Example.class;
+        Example obj = (Example) instanceType.newInstance();
         obj.setAnInteger(42);
         obj.setAString("Hello, World!");
 
         // Then
         ByteBuf bodyBuf = this.serializer.encodeBody(obj);
-        Ex decodedObj = (Ex) this.serializer.decodeBody(bodyBuf, instanceType);
+        Ex decodedObj = (Example) this.serializer.decodeBody(bodyBuf, instanceType);
 
         assertEquals(obj.getAnInteger(), decodedObj.getAnInteger());
         assertEquals(obj.getAString(), decodedObj.getAString());
