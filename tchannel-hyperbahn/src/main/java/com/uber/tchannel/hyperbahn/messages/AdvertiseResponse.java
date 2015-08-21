@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.hyperbahn.messages;
 
-
 public class AdvertiseResponse {
     private final int connectionCount;
 
