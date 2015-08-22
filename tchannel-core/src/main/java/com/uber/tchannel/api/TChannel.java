@@ -94,6 +94,15 @@ public final class TChannel {
         this.childGroup.shutdownGracefully();
     }
 
+    public <T, U> Promise<Response<T>> callThrift(
+            InetAddress host,
+            int port,
+            Request<U> request,
+            Class<T> responseType
+    ) throws InterruptedException {
+        return this.call(host, port, request, responseType, ArgScheme.THRIFT);
+    }
+
     public <T, U> Promise<Response<T>> callJSON(
             InetAddress host,
             int port,

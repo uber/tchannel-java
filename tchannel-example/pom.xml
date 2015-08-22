@@ -34,6 +34,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <thrift.executable>/usr/local/bin/thrift</thrift.executable>
     </properties>
 
     <dependencies>
@@ -56,6 +57,51 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-sources</id>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="${project.build.directory}/generated-sources/thrift/gen-java"/>
+                                <exec executable="${thrift.executable}" failonerror="true">
+                                    <arg value="--gen"/>
+                                    <arg value="java:private-members"/>
+                                    <arg value="--out"/>
+                                    <arg value="${project.build.directory}/generated-sources/thrift/gen-java"/>
+                                    <arg value="src/main/thrift/keyvalue.thrift"/>
+                                </exec>
+                                <copy todir="src/main/gen-java" overwrite="true">
+                                    <fileset dir="target/generated-sources/thrift/gen-java"/>
+                                </copy>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.9.1</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/gen-java</source>
+                            </sources>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -32,6 +32,7 @@ import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.schemes.Serializer;
+import com.uber.tchannel.schemes.ThriftSerializer;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -49,6 +50,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
             {
                 put(ArgScheme.JSON, new JSONSerializer());
+                put(ArgScheme.THRIFT, new ThriftSerializer());
             }
         }
         );

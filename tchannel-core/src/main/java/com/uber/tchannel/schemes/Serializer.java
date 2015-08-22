@@ -55,7 +55,7 @@ public class Serializer {
         return this.getSerializer(argScheme).encodeHeaders(applicationHeaders);
     }
 
-    public <T> ByteBuf encodeBody(Object body, ArgScheme argScheme) {
+    public ByteBuf encodeBody(Object body, ArgScheme argScheme) {
         return this.getSerializer(argScheme).encodeBody(body);
     }
 
