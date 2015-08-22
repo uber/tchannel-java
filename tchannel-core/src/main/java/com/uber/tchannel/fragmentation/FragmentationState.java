@@ -22,26 +22,30 @@
 
 package com.uber.tchannel.fragmentation;
 
-public enum DefragmentationState {
+public enum FragmentationState {
     /* Currently decoding Arg2 */
-    PROCESSING_ARG_1,
+    ARG1,
 
     /* Currently decoding Arg2 */
-    PROCESSING_ARG_2,
+    ARG2,
 
     /* Currently decoding Arg3 */
-    PROCESSING_ARG_3;
+    ARG3,
 
-    public static DefragmentationState nextState(DefragmentationState current) {
+    /* Done! */
+    DONE;
+
+    public static FragmentationState nextState(FragmentationState current) {
         switch (current) {
-            case PROCESSING_ARG_1:
-                return PROCESSING_ARG_2;
-            case PROCESSING_ARG_2:
-                return PROCESSING_ARG_3;
-            case PROCESSING_ARG_3:
-                return PROCESSING_ARG_3;
+            case ARG1:
+                return ARG2;
+            case ARG2:
+                return ARG3;
+            case ARG3:
+                return DONE;
+            case DONE:
             default:
-                return null;
+                return DONE;
         }
     }
 }
