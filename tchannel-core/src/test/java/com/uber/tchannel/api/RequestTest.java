@@ -74,7 +74,6 @@ public class RequestTest {
                         return Integer.class;
                     }
                 })
-                .setServerPort(8888)
                 .setLogLevel(LogLevel.INFO)
                 .build();
 
@@ -87,7 +86,7 @@ public class RequestTest {
 
         Promise<Response<Integer>> responsePromise = tchannel.callJSON(
                 tchannel.getHost(),
-                tchannel.getServerPort(),
+                tchannel.getListeningPort(),
                 request,
                 Integer.class
         );

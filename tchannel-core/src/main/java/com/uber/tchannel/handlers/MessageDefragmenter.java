@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.fragmentation.FragmentationState;
 import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.CallMessage;
@@ -32,17 +31,16 @@ import com.uber.tchannel.messages.CallResponseContinue;
 import com.uber.tchannel.schemes.RawMessage;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, RawMessage> {
+public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024;
     private static final int MAX_BUFFER_SIZE = TFrame.MAX_FRAME_LENGTH - TFrame.FRAME_HEADER_LENGTH;
@@ -59,103 +57,6 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, RawMe
 
     protected Map<Long, FragmentationState> getDefragmentationState() {
         return this.defragmentationState;
-    }
-
-    protected void writeOutbound(ChannelHandlerContext ctx,
-                                 ByteBuf buffer,
-                                 RawMessage msg,
-                                 FragmentationState state,
-                                 List<Object> out) {
-        byte flags = 0x01;
-        if (state == FragmentationState.DONE) {
-            flags = 0x00;
-        }
-
-        if (msg instanceof RawRequest) {
-            RawRequest rawRequest = (RawRequest) msg;
-
-            CallRequest callRequest = new CallRequest(
-                    rawRequest.getId(),
-                    flags,
-                    0,
-                    new Trace(0, 0, 0, (byte) 0x00),
-                    rawRequest.getService(),
-                    rawRequest.getTransportHeaders(),
-                    ChecksumType.NoChecksum,
-                    0,
-                    buffer
-            );
-
-            out.add(callRequest);
-        } else if (msg instanceof RawResponse) {
-            RawResponse rawResponse = (RawResponse) msg;
-
-            CallResponse callResponse = new CallResponse(
-                    rawResponse.getId(),
-                    flags,
-                    CallResponse.CallResponseCode.OK,
-                    new Trace(0, 0, 0, (byte) 0x00),
-                    rawResponse.getTransportHeaders(),
-                    ChecksumType.NoChecksum,
-                    0,
-                    buffer
-            );
-
-            out.add(callResponse);
-        }
-
-    }
-
-    protected FragmentationState sendOutbound(ChannelHandlerContext ctx,
-                                              RawMessage msg,
-                                              FragmentationState state,
-                                              List<Object> out) {
-
-        ByteBuf buffer = ctx.alloc().buffer(DEFAULT_BUFFER_SIZE, MAX_BUFFER_SIZE);
-
-        while (true) {
-            switch (state) {
-                case ARG1:
-                    this.writeArg(msg.getArg1(), buffer);
-                    state = FragmentationState.nextState(state);
-                    break;
-
-                case ARG2:
-                    this.writeArg(msg.getArg2(), buffer);
-                    if (msg.getArg2().readableBytes() > 0) {
-                        this.writeOutbound(ctx, buffer, msg, state, out);
-                        return state;
-                    }
-                    state = FragmentationState.nextState(state);
-                    break;
-
-                case ARG3:
-                    this.writeArg(msg.getArg3(), buffer);
-                    if (msg.getArg3().readableBytes() > 0) {
-                        this.writeOutbound(ctx, buffer, msg, state, out);
-                        return state;
-                    }
-                    state = FragmentationState.nextState(state);
-                    break;
-
-                case DONE:
-                default:
-                    writeOutbound(ctx, buffer, msg, state, out);
-                    return state;
-
-            }
-        }
-
-    }
-
-    @Override
-    protected void encode(ChannelHandlerContext ctx, RawMessage msg, List<Object> out) throws Exception {
-
-        FragmentationState state = FragmentationState.ARG1;
-        while (state != FragmentationState.DONE) {
-            state = this.sendOutbound(ctx, msg, state, out);
-        }
-
     }
 
     @Override
@@ -258,39 +159,6 @@ public class MessageMultiplexer extends MessageToMessageCodec<CallMessage, RawMe
         );
 
         this.messageMap.put(msg.getId(), updatedResponse);
-    }
-
-    /**
-     * @param arg    the arg to write to the buffer
-     * @param buffer the out buffer
-     * @return the number of bytes read from the arg and written to the buffer, not including the `argSize` header
-     */
-    protected int writeArg(ByteBuf arg, ByteBuf buffer) {
-
-        // Mark where we *should* write the `argSize` header
-        int index = buffer.writerIndex();
-
-        // zero-fill the `argSize` header bytes
-        buffer.writeZero(2);
-
-        // Actually write the contents of `arg`
-        buffer.writeBytes(arg);
-
-        // Read how many bytes were written after the `argSize` header
-        int argSize = buffer.writerIndex() - (index + 2);
-
-        if (argSize == 0) {
-            // Backtrack and reset the index because we didn't write anything.
-            buffer.writerIndex(index);
-        } else {
-            // Go back and write the size of `arg`
-            buffer.setShort(index, argSize);
-        }
-
-        // Release the arg back to the pool
-        arg.release();
-
-        return argSize;
     }
 
     protected ByteBuf readArg(CallMessage msg) {

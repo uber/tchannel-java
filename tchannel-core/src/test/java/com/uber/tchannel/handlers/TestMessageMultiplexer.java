@@ -45,7 +45,7 @@ public class TestMessageMultiplexer {
     @Test
     public void testMergeMessage() {
 
-        MessageMultiplexer mux = new MessageMultiplexer();
+        MessageDefragmenter mux = new MessageDefragmenter();
         Map<Long, RawMessage> map = mux.getMessageMap();
         EmbeddedChannel channel = new EmbeddedChannel(mux);
         long id = 42;
@@ -119,7 +119,7 @@ public class TestMessageMultiplexer {
 
     @Test
     public void testReadArgWithAllArgs() throws Exception {
-        MessageMultiplexer codec = new MessageMultiplexer();
+        MessageDefragmenter codec = new MessageDefragmenter();
         Map<Long, FragmentationState> defragmentationState = codec.getDefragmentationState();
 
         long id = 42;

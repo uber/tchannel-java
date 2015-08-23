@@ -60,6 +60,7 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
             // Get byte[] from ByteBuf
             byte[] payloadBytes = new byte[arg3.readableBytes()];
             arg3.readBytes(payloadBytes);
+            arg3.release();
 
             // Actually deserialize the payload
             TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());

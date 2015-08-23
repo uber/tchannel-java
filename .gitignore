@@ -4,3 +4,4 @@ tchannel-example/target/
 tchannel-hyperbahn/target/
 target/
 *.iml
+gen-java/
