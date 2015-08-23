@@ -73,7 +73,7 @@ public class KeyValueClient {
                 KeyValue.setValue_result.class
         );
 
-        Response<KeyValue.setValue_result> _ = setPromise.get(100, TimeUnit.MILLISECONDS);
+        setPromise.get(100, TimeUnit.MILLISECONDS);
     }
 
     public static String getValue(

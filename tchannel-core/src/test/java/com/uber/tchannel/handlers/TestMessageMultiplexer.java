@@ -22,7 +22,7 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.Fixtures;
-import com.uber.tchannel.fragmentation.DefragmentationState;
+import com.uber.tchannel.fragmentation.FragmentationState;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.schemes.RawMessage;
@@ -45,7 +45,7 @@ public class TestMessageMultiplexer {
     @Test
     public void testMergeMessage() {
 
-        MessageMultiplexer mux = new MessageMultiplexer();
+        MessageDefragmenter mux = new MessageDefragmenter();
         Map<Long, RawMessage> map = mux.getMessageMap();
         EmbeddedChannel channel = new EmbeddedChannel(mux);
         long id = 42;
@@ -119,8 +119,8 @@ public class TestMessageMultiplexer {
 
     @Test
     public void testReadArgWithAllArgs() throws Exception {
-        MessageMultiplexer codec = new MessageMultiplexer();
-        Map<Long, DefragmentationState> defragmentationState = codec.getDefragmentationState();
+        MessageDefragmenter codec = new MessageDefragmenter();
+        Map<Long, FragmentationState> defragmentationState = codec.getDefragmentationState();
 
         long id = 42;
         assertEquals(defragmentationState.get(id), null);
@@ -139,7 +139,7 @@ public class TestMessageMultiplexer {
                 }
         )));
 
-        assertEquals(defragmentationState.get(id), DefragmentationState.PROCESSING_ARG_2);
+        assertEquals(defragmentationState.get(id), FragmentationState.ARG2);
 
         codec.readArg(Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
                 new byte[]{
@@ -151,7 +151,7 @@ public class TestMessageMultiplexer {
                 }
         )));
 
-        assertEquals(defragmentationState.get(id), DefragmentationState.PROCESSING_ARG_2);
+        assertEquals(defragmentationState.get(id), FragmentationState.ARG2);
 
         codec.readArg(Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
                 new byte[]{
@@ -161,7 +161,7 @@ public class TestMessageMultiplexer {
                 }
         )));
 
-        assertEquals(defragmentationState.get(id), DefragmentationState.PROCESSING_ARG_3);
+        assertEquals(defragmentationState.get(id), FragmentationState.ARG3);
 
         codec.readArg(Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
                 new byte[]{
@@ -173,7 +173,7 @@ public class TestMessageMultiplexer {
                 }
         )));
 
-        assertEquals(defragmentationState.get(id), DefragmentationState.PROCESSING_ARG_3);
+        assertEquals(defragmentationState.get(id), FragmentationState.ARG3);
 
         codec.readArg(Fixtures.callRequestContinue(id, false, Unpooled.wrappedBuffer(
                 new byte[]{

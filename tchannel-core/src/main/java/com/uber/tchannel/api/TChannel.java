@@ -28,7 +28,8 @@ import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
 import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
-import com.uber.tchannel.handlers.MessageMultiplexer;
+import com.uber.tchannel.handlers.MessageDefragmenter;
+import com.uber.tchannel.handlers.MessageFragmenter;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
@@ -64,6 +65,7 @@ public final class TChannel {
     private final EventLoopGroup childGroup;
     private final InetAddress host;
     private final int port;
+    private int listeningPort;
 
     private TChannel(Builder builder) {
         this.service = builder.service;
@@ -76,16 +78,23 @@ public final class TChannel {
         this.port = builder.port;
     }
 
+    public int getListeningPort() {
+        return listeningPort;
+    }
+
     public InetAddress getHost() {
         return host;
     }
 
-    public int getServerPort() {
+    public int getPort() {
         return port;
     }
 
     public ChannelFuture listen() throws InterruptedException {
-        return this.serverBootstrap.bind(this.host, this.port).sync();
+        ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
+        InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
+        this.listeningPort = localAddress.getPort();
+        return f;
     }
 
     public void shutdown() throws InterruptedException {
@@ -231,7 +240,8 @@ public final class TChannel {
                     }
 
                     // Handles Call Request RPC
-                    ch.pipeline().addLast("MessageMultiplexer", new MessageMultiplexer());
+                    ch.pipeline().addLast("MessageDefragmenter", new MessageDefragmenter());
+                    ch.pipeline().addLast("MessageFragmenter", new MessageFragmenter());
 
                     // Pass RequestHandlers to the RequestRouter
                     ch.pipeline().addLast("RequestRouter", new RequestRouter(requestHandlers));
