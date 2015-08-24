@@ -90,6 +90,8 @@ public final class TChannel {
         return port;
     }
 
+    public String getServiceName() { return this.service; }
+
     public ChannelFuture listen() throws InterruptedException {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
