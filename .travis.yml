@@ -1,2 +1,6 @@
 sudo: false
 language: java
+addons:
+  apt:
+    packages:
+    - thrift-compiler
