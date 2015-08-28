@@ -30,6 +30,7 @@ import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageDefragmenter;
 import com.uber.tchannel.handlers.MessageFragmenter;
+import com.uber.tchannel.handlers.PingHandler;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
@@ -90,7 +91,9 @@ public final class TChannel {
         return port;
     }
 
-    public String getServiceName() { return this.service; }
+    public String getServiceName() {
+        return this.service;
+    }
 
     public ChannelFuture listen() throws InterruptedException {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
@@ -240,6 +243,9 @@ public final class TChannel {
                     } else {
                         ch.pipeline().addLast("InitRequestInitiator", new InitRequestInitiator());
                     }
+
+                    // Handle PingRequest
+                    ch.pipeline().addLast("PingHandler", new PingHandler());
 
                     // Handles Call Request RPC
                     ch.pipeline().addLast("MessageDefragmenter", new MessageDefragmenter());

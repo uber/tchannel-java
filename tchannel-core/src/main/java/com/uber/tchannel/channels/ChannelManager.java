@@ -51,7 +51,7 @@ public class ChannelManager {
     }
 
     public boolean remove(Channel channel) {
-        this.channelMap.remove((InetSocketAddress) channel.remoteAddress());
+        this.channelMap.remove(channel.remoteAddress());
         return this.channels.remove(channel);
     }
 
