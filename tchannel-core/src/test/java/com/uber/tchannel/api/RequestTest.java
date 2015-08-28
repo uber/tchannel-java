@@ -35,10 +35,7 @@ public class RequestTest {
 
     @Test
     public void testGetBody() throws Exception {
-        Request<String> request = new Request.Builder<>("Hello, World!")
-                .setEndpoint("some-endpoint")
-                .setService("some-service")
-                .build();
+        Request<String> request = new Request.Builder<>("Hello, World!", "some-serice", "some-endpoint").build();
         assertNotNull(request);
         assertEquals(String.class, request.getBody().getClass());
         assertEquals("Hello, World!", request.getBody());
@@ -57,8 +54,7 @@ public class RequestTest {
 
                         assertEquals(requestBody, request.getBody());
 
-                        return new Response.Builder<>(responseBody)
-                                .setEndpoint(request.getEndpoint())
+                        return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
                                 .setHeaders(request.getHeaders())
                                 .build();
 
@@ -79,10 +75,7 @@ public class RequestTest {
 
         tchannel.listen();
 
-        Request<String> request = new Request.Builder<>(requestBody)
-                .setEndpoint("endpoint")
-                .setService("ping-service")
-                .build();
+        Request<String> request = new Request.Builder<>(requestBody, "ping-service", "endpoint").build();
 
         Promise<Response<Integer>> responsePromise = tchannel.callJSON(
                 tchannel.getHost(),
@@ -109,8 +102,7 @@ public class RequestTest {
             @Override
             public Response<String> handle(Request<String> request) {
                 assertEquals(requestBody, request.getBody());
-                return new Response.Builder<>(responseBody)
-                        .setEndpoint(request.getEndpoint())
+                return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
                         .setHeaders(request.getHeaders())
                         .build();
             }
@@ -126,10 +118,7 @@ public class RequestTest {
             }
         };
 
-        Request<String> request = new Request.Builder<>(requestBody)
-                .setService("some-service")
-                .setEndpoint("some-endpoint")
-                .build();
+        Request<String> request = new Request.Builder<>(requestBody, "some-service", "some-endpoint").build();
 
         Response<String> response = requestHandler.handle(request);
 

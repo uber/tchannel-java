@@ -110,6 +110,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
 
         this.messageMap.put(msg.getId(), new RawResponse(
                 msg.getId(),
+                msg.getResponseCode(),
                 msg.getHeaders(),
                 arg1,
                 arg2,
@@ -151,6 +152,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
 
         RawResponse updatedResponse = new RawResponse(
                 partialResponse.getId(),
+                partialResponse.getResponseCode(),
                 partialResponse.getTransportHeaders(),
                 partialResponse.getArg1(),
                 Unpooled.wrappedBuffer(partialResponse.getArg2(), arg2),

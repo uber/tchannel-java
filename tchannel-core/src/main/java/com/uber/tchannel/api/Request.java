@@ -82,13 +82,10 @@ public final class Request<T> {
         private Map<String, String> headers = new HashMap<>();
         private U body;
 
-        public Builder(U body) {
+        public Builder(U body, String service, String endpoint) {
             this.body = body;
-        }
-
-        public Builder<U> setService(String service) {
             this.service = service;
-            return this;
+            this.endpoint = endpoint;
         }
 
         public Builder<U> setTransportHeader(String key, String value) {
@@ -98,11 +95,6 @@ public final class Request<T> {
 
         public Builder<U> setTransportHeaders(Map<String, String> transportHeaders) {
             this.transportHeaders.putAll(transportHeaders);
-            return this;
-        }
-
-        public Builder<U> setEndpoint(String endpoint) {
-            this.endpoint = endpoint;
             return this;
         }
 

@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.messages;
 
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
@@ -29,7 +30,7 @@ import io.netty.buffer.ByteBufHolder;
 import java.util.Map;
 
 /**
- * Very similar to {@link CallRequest}, differing only in: adds a code field, no ttl field and no service field.
+ * Very similar to {@link CallRequest}, differing only in: adds a responseCode field, no ttl field and no service field.
  * <p/>
  * All common fields have identical definition to {@link CallRequest}. It is not necessary for arg1 to have the same
  * value between the {@link CallRequest} and the {@link CallResponse}; by convention, existing implementations leave
@@ -41,18 +42,18 @@ public final class CallResponse implements Message, CallMessage {
 
     private final long id;
     private final byte flags;
-    private final CallResponseCode code;
+    private final ResponseCode responseCode;
     private final Trace tracing;
     private final Map<String, String> headers;
     private final ChecksumType checksumType;
     private final int checksum;
     private final ByteBuf payload;
 
-    public CallResponse(long id, byte flags, CallResponseCode code, Trace tracing, Map<String, String> headers,
+    public CallResponse(long id, byte flags, ResponseCode responseCode, Trace tracing, Map<String, String> headers,
                         ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
         this.flags = flags;
-        this.code = code;
+        this.responseCode = responseCode;
         this.tracing = tracing;
         this.headers = headers;
         this.checksumType = checksumType;
@@ -69,7 +70,7 @@ public final class CallResponse implements Message, CallMessage {
     }
 
     public boolean ok() {
-        return (this.code == CallResponseCode.OK);
+        return (this.responseCode == ResponseCode.OK);
     }
 
     public boolean moreFragmentsFollow() {
@@ -104,8 +105,8 @@ public final class CallResponse implements Message, CallMessage {
         return this.payload;
     }
 
-    public CallResponseCode getCode() {
-        return code;
+    public ResponseCode getResponseCode() {
+        return responseCode;
     }
 
     public ByteBuf content() {
@@ -116,7 +117,7 @@ public final class CallResponse implements Message, CallMessage {
         return new CallResponse(
                 this.id,
                 this.flags,
-                this.code,
+                this.responseCode,
                 this.tracing,
                 this.headers,
                 this.checksumType,
@@ -129,7 +130,7 @@ public final class CallResponse implements Message, CallMessage {
         return new CallResponse(
                 this.id,
                 this.flags,
-                this.code,
+                this.responseCode,
                 this.tracing,
                 this.headers,
                 this.checksumType,
@@ -168,32 +169,6 @@ public final class CallResponse implements Message, CallMessage {
 
     public boolean release(int i) {
         return this.payload.release(i);
-    }
-
-    public enum CallResponseCode {
-        OK((byte) 0x00),
-        Error((byte) 0x01);
-
-        private final byte code;
-
-        CallResponseCode(byte code) {
-            this.code = code;
-        }
-
-        public static CallResponseCode fromByte(byte code) {
-            switch (code) {
-                case 0x00:
-                    return OK;
-                case 0x01:
-                    return Error;
-                default:
-                    return null;
-            }
-        }
-
-        public byte byteValue() {
-            return this.code;
-        }
     }
 
 }

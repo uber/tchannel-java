@@ -87,8 +87,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
         ResponsePromise<?> responsePromise = this.messageMap.remove(rawResponse.getId());
 
         Response<?> response = new Response.Builder<>(
-                this.serializer.decodeBody(rawResponse, responsePromise.getPromiseType()))
-                .setEndpoint(this.serializer.decodeEndpoint(rawResponse))
+                this.serializer.decodeBody(rawResponse, responsePromise.getPromiseType()),
+                this.serializer.decodeEndpoint(rawResponse),
+                rawResponse.getResponseCode()
+        )
                 .setHeaders(this.serializer.decodeHeaders(rawResponse))
                 .build();
 

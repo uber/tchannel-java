@@ -26,6 +26,7 @@ import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.CallResponseContinue;
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 
@@ -61,7 +62,7 @@ public class Fixtures {
         return new CallResponse(
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
-                CallResponse.CallResponseCode.OK,
+                ResponseCode.OK,
                 new Trace(0, 0, 0, (byte) 0x00),
                 new HashMap<String, String>(),
                 ChecksumType.NoChecksum,
