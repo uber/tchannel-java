@@ -52,7 +52,6 @@ public class PingPongServerBenchmark {
     @Setup(Level.Trial)
     public void setup() throws Exception {
 
-        // TODO remove the hardcoded port
         this.channel = new TChannel.Builder("ping-server")
                 .register("ping", new PingRequestHandler())
                 .build();
