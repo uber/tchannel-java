@@ -43,15 +43,17 @@ import java.util.Map;
 public final class RawRequest implements RawMessage {
 
     private final long id;
+    private final long ttl;
     private final String service;
     private final Map<String, String> transportHeaders;
     private final ByteBuf arg1;
     private final ByteBuf arg2;
     private final ByteBuf arg3;
 
-    public RawRequest(long id, String service, Map<String, String> transportHeaders,
+    public RawRequest(long id, long ttl, String service, Map<String, String> transportHeaders,
                       ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
+        this.ttl = ttl;
         this.service = service;
         this.transportHeaders = transportHeaders;
         this.arg1 = arg1;
@@ -62,6 +64,10 @@ public final class RawRequest implements RawMessage {
     @Override
     public long getId() {
         return this.id;
+    }
+
+    public long getTTL() {
+        return ttl;
     }
 
     public String getService() {

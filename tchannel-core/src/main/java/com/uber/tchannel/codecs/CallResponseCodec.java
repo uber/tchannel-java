@@ -22,12 +22,12 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.CallMessage;
 import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.MessageType;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

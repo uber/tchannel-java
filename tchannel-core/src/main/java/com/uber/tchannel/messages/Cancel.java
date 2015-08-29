@@ -45,7 +45,7 @@ public final class Cancel implements Message {
         this.why = why;
     }
 
-    public long getTtl() {
+    public long getTTL() {
         return ttl;
     }
 

@@ -22,12 +22,12 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.fragmentation.FragmentationState;
 import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallResponse;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.schemes.RawMessage;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;

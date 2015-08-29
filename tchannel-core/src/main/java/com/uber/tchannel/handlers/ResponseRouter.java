@@ -68,6 +68,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
 
         RawRequest rawRequest = new RawRequest(
                 idGenerator.getAndIncrement(),
+                request.getTTL(),
                 request.getService(),
                 request.getTransportHeaders(),
                 serializer.encodeEndpoint(request.getEndpoint(), argScheme),

@@ -28,6 +28,7 @@ import java.util.Map;
 public final class Request<T> {
 
     private final String service;
+    private final long ttl;
     private final Map<String, String> transportHeaders;
     private final String endpoint;
     private final Map<String, String> headers;
@@ -35,6 +36,7 @@ public final class Request<T> {
 
     private Request(Builder<T> builder) {
         this.service = builder.service;
+        this.ttl = builder.ttl;
         this.transportHeaders = builder.transportHeaders;
         this.endpoint = builder.endpoint;
         this.headers = builder.headers;
@@ -43,6 +45,10 @@ public final class Request<T> {
 
     public String getService() {
         return service;
+    }
+
+    public long getTTL() {
+        return ttl;
     }
 
     public Map<String, String> getTransportHeaders() {
@@ -76,7 +82,10 @@ public final class Request<T> {
 
     public static class Builder<U> {
 
+        private static final long DEFAULT_TTL = 100;
+
         private String service;
+        private long ttl = DEFAULT_TTL;
         private Map<String, String> transportHeaders = new HashMap<>();
         private String endpoint;
         private Map<String, String> headers = new HashMap<>();
@@ -86,6 +95,11 @@ public final class Request<T> {
             this.body = body;
             this.service = service;
             this.endpoint = endpoint;
+        }
+
+        public Builder<U> setTTL(long ttl) {
+            this.ttl = ttl;
+            return this;
         }
 
         public Builder<U> setTransportHeader(String key, String value) {
@@ -115,6 +129,10 @@ public final class Request<T> {
 
             if (endpoint == null) {
                 throw new IllegalStateException("`endpoint` cannot be null.");
+            }
+
+            if (ttl <= 0) {
+                throw new IllegalStateException("`ttl` must be greater than 0.");
             }
 
             return this;

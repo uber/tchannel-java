@@ -51,7 +51,7 @@ public final class Claim implements Message {
         return MessageType.Claim;
     }
 
-    public long getTtl() {
+    public long getTTL() {
         return ttl;
     }
 

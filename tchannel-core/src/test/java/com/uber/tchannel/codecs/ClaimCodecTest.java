@@ -46,7 +46,7 @@ public class ClaimCodecTest {
 
         Claim newClaimMessage = channel.readInbound();
         assertEquals(newClaimMessage.getId(), claimMessage.getId());
-        assertEquals(newClaimMessage.getTtl(), claimMessage.getTtl());
+        assertEquals(newClaimMessage.getTTL(), claimMessage.getTTL());
 
     }
 

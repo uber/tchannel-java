@@ -62,6 +62,7 @@ public class MessageFragmenterTest {
 
         RawRequest rawRequest = new RawRequest(
                 0,
+                100,
                 "some-service",
                 null,
                 arg1,

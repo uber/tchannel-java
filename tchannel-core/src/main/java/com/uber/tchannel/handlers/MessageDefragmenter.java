@@ -90,6 +90,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
 
         this.messageMap.put(msg.getId(), new RawRequest(
                 msg.getId(),
+                msg.getTTL(),
                 msg.getService(),
                 msg.getHeaders(),
                 arg1,
@@ -130,6 +131,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
 
         RawRequest updatedRequest = new RawRequest(
                 partialRequest.getId(),
+                partialRequest.getTTL(),
                 partialRequest.getService(),
                 partialRequest.getTransportHeaders(),
                 partialRequest.getArg1(),

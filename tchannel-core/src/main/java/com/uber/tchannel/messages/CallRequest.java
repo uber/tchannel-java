@@ -99,7 +99,7 @@ public final class CallRequest implements Message, CallMessage {
         return MessageType.CallRequest;
     }
 
-    public long getTtl() {
+    public long getTTL() {
         return this.ttl;
     }
 

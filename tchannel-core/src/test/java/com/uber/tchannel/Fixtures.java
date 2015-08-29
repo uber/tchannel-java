@@ -21,12 +21,12 @@
  */
 package com.uber.tchannel;
 
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.CallRequestContinue;
 import com.uber.tchannel.messages.CallResponse;
 import com.uber.tchannel.messages.CallResponseContinue;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 
