@@ -47,6 +47,7 @@ public class PingPongServerBenchmark {
 
     TChannel channel;
     TChannel client;
+    int port;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
@@ -54,10 +55,10 @@ public class PingPongServerBenchmark {
         // TODO remove the hardcoded port
         this.channel = new TChannel.Builder("ping-server")
                 .register("ping", new PingRequestHandler())
-                .setServerPort(12000)
                 .build();
         this.client = new TChannel.Builder("ping-client").build();
         channel.listen();
+        this.port = this.channel.getListeningPort();
     }
 
     @Benchmark
@@ -70,8 +71,8 @@ public class PingPongServerBenchmark {
                 .build();
 
         Promise<Response<Pong>> f = this.client.callJSON(
-                InetAddress.getByName("localhost"),
-                12000,
+                InetAddress.getLocalHost(),
+                this.port,
                 request,
                 Pong.class
         );
