@@ -63,7 +63,7 @@ public class PingPongServerBenchmark {
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void basicBenchmark() throws Exception {
+    public void benchmark() throws Exception {
 
         Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"))
                 .setEndpoint("ping")
