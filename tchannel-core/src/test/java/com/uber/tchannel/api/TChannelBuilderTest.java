@@ -24,22 +24,22 @@ package com.uber.tchannel.api;
 
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
+import java.net.InetAddress;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
-public class BuilderTest {
+public class TChannelBuilderTest {
 
     @Test
-    public void testSetTTL() throws Exception {
-        long ttlInSeconds = 1;
-        Request<String> req = new Request.Builder<>("foo", "bar", "baz").setTTL(ttlInSeconds, TimeUnit.SECONDS).build();
-        assertEquals(1000, req.getTTL());
+    public void testSetServerHost() throws Exception {
 
-        long ttlInMicroseconds = 1000;
+        TChannel tchannel = new TChannel.Builder("some-service")
+                .setServerHost(InetAddress.getLoopbackAddress())
+                .build();
+        tchannel.listen();
+        assertEquals("localhost", tchannel.getHost().getCanonicalHostName());
+        tchannel.shutdown();
 
-        req = new Request.Builder<>("foo", "bar", "baz").setTTL(ttlInMicroseconds, TimeUnit.MICROSECONDS).build();
-        assertEquals(1, req.getTTL());
     }
 
 }
