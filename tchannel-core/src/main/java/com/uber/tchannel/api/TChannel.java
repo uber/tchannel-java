@@ -162,7 +162,7 @@ public final class TChannel {
 
         private final String service;
         private final ChannelManager channelManager = new ChannelManager();
-        private final InetAddress host;
+        private InetAddress host;
         private int port = 0;
         private Map<String, RequestHandler> requestHandlers = new HashMap<>();
         private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
@@ -175,6 +175,11 @@ public final class TChannel {
             }
             this.service = service;
             this.host = InetAddress.getLocalHost();
+        }
+
+        public Builder setServerHost(InetAddress host) {
+            this.host = host;
+            return this;
         }
 
         public Builder setServerPort(int port) throws UnknownHostException {
