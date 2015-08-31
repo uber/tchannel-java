@@ -24,6 +24,7 @@ package com.uber.tchannel.api;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public final class Request<T> {
 
@@ -82,10 +83,13 @@ public final class Request<T> {
 
     public static class Builder<U> {
 
-        private static final long DEFAULT_TTL = 100;
-
         private String service;
-        private long ttl = DEFAULT_TTL;
+        /*
+        * Time To Live in milliseconds. Defaults to a reasonable 100ms, as requests *cannot* be made without a TTL set.
+        *
+        * see: https://github.com/uber/tchannel/blob/master/docs/protocol.md#ttl4
+        */
+        private long ttl = 100;
         private Map<String, String> transportHeaders = new HashMap<>();
         private String endpoint;
         private Map<String, String> headers = new HashMap<>();
@@ -97,8 +101,22 @@ public final class Request<T> {
             this.endpoint = endpoint;
         }
 
+        /**
+         * @param ttl TTL in milliseconds
+         * @return Builder
+         */
         public Builder<U> setTTL(long ttl) {
             this.ttl = ttl;
+            return this;
+        }
+
+        /**
+         * @param ttl      TTL in `timeUnit` units
+         * @param timeUnit time unit for the `ttl`
+         * @return Builder
+         */
+        public Builder<U> setTTL(long ttl, TimeUnit timeUnit) {
+            this.ttl = TimeUnit.MILLISECONDS.convert(ttl, timeUnit);
             return this;
         }
 
