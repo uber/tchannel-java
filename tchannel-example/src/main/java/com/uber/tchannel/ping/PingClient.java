@@ -86,10 +86,8 @@ public class PingClient {
             }
         };
 
-        Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"))
-                .setEndpoint("ping")
+        Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"), "some-service", "ping")
                 .setHeaders(headers)
-                .setService("some-service")
                 .build();
 
         for (int i = 0; i < this.requests; i++) {

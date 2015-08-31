@@ -72,13 +72,13 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         }
 
         // arg1
-        String method = this.serializer.decodeEndpoint(rawRequest);
+        String endpoint = this.serializer.decodeEndpoint(rawRequest);
 
         // Get handler for this method
-        RequestHandler<?, ?> handler = this.requestHandlers.get(method);
+        RequestHandler<?, ?> handler = this.requestHandlers.get(endpoint);
 
         if (handler == null) {
-            throw new RuntimeException(String.format("No handler for %s", method));
+            throw new RuntimeException(String.format("No handler for %s", endpoint));
         }
 
         // arg2
@@ -88,10 +88,8 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         Object body = this.serializer.decodeBody(rawRequest, handler.getRequestType());
 
         // transform request into form the handler expects
-        Request<?> request = new Request.Builder<>(body)
-                .setEndpoint(method)
+        Request<?> request = new Request.Builder<>(body, rawRequest.getService(), endpoint)
                 .setHeaders(applicationHeaders)
-                .setService(rawRequest.getService())
                 .setTransportHeaders(rawRequest.getTransportHeaders())
                 .build();
 
@@ -100,6 +98,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
         RawResponse rawResponse = new RawResponse(
                 rawRequest.getId(),
+                response.getResponseCode(),
                 rawRequest.getTransportHeaders(),
                 this.serializer.encodeEndpoint(response.getEndpoint(), argScheme),
                 this.serializer.encodeHeaders(response.getHeaders(), argScheme),

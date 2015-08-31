@@ -25,14 +25,14 @@ package com.uber.tchannel.json;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.ResponseCode;
 
 public class JsonReqeustHandler implements RequestHandler<RequestPojo, ResponsePojo> {
     @Override
     public Response<ResponsePojo> handle(Request<RequestPojo> request) {
         System.out.println(request);
 
-        return new Response.Builder<>(new ResponsePojo(true, "hi!"))
-                .setEndpoint(request.getEndpoint())
+        return new Response.Builder<>(new ResponsePojo(true, "hi!"), request.getEndpoint(), ResponseCode.OK)
                 .setHeaders(request.getHeaders())
                 .setTransportHeaders(request.getTransportHeaders())
                 .build();

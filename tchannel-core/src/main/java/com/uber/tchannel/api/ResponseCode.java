@@ -20,32 +20,30 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.api;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.RequestHandler;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
+public enum ResponseCode {
+    OK((byte) 0x00),
+    Error((byte) 0x01);
 
-public class PingRequestHandler implements RequestHandler<Ping, Pong> {
+    private final byte code;
 
-    @Override
-    public Class<Ping> getRequestType() {
-        return Ping.class;
+    ResponseCode(byte code) {
+        this.code = code;
     }
 
-    @Override
-    public Class<Pong> getResponseType() {
-        return Pong.class;
+    public static ResponseCode fromByte(byte code) {
+        switch (code) {
+            case 0x00:
+                return OK;
+            case 0x01:
+                return Error;
+            default:
+                return null;
+        }
     }
 
-    @Override
-    public Response<Pong> handle(Request<Ping> request) {
-
-        return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
-                .setHeaders(request.getHeaders())
-                .build();
-
+    public byte byteValue() {
+        return this.code;
     }
-
 }

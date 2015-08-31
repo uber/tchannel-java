@@ -66,10 +66,7 @@ public class KeyValueClient {
         Promise<Response<KeyValue.setValue_result>> setPromise = tchannel.callThrift(
                 InetAddress.getLocalHost(),
                 8888,
-                new Request.Builder<>(setValue)
-                        .setService("keyvalue-service")
-                        .setEndpoint("KeyValue::setValue")
-                        .build(),
+                new Request.Builder<>(setValue, "keyvalue-service", "KeyValue::setValue").build(),
                 KeyValue.setValue_result.class
         );
 
@@ -86,10 +83,7 @@ public class KeyValueClient {
         Promise<Response<KeyValue.getValue_result>> getPromise = tchannel.callThrift(
                 InetAddress.getLocalHost(),
                 8888,
-                new Request.Builder<>(getValue)
-                        .setService("keyvalue-service")
-                        .setEndpoint("KeyValue::getValue")
-                        .build(),
+                new Request.Builder<>(getValue, "keyvalue-service", "KeyValue::getValue").build(),
                 KeyValue.getValue_result.class
         );
 

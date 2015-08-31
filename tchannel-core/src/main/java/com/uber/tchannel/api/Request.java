@@ -24,10 +24,12 @@ package com.uber.tchannel.api;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public final class Request<T> {
 
     private final String service;
+    private final long ttl;
     private final Map<String, String> transportHeaders;
     private final String endpoint;
     private final Map<String, String> headers;
@@ -35,6 +37,7 @@ public final class Request<T> {
 
     private Request(Builder<T> builder) {
         this.service = builder.service;
+        this.ttl = builder.ttl;
         this.transportHeaders = builder.transportHeaders;
         this.endpoint = builder.endpoint;
         this.headers = builder.headers;
@@ -43,6 +46,10 @@ public final class Request<T> {
 
     public String getService() {
         return service;
+    }
+
+    public long getTTL() {
+        return ttl;
     }
 
     public Map<String, String> getTransportHeaders() {
@@ -77,17 +84,39 @@ public final class Request<T> {
     public static class Builder<U> {
 
         private String service;
+        /*
+        * Time To Live in milliseconds. Defaults to a reasonable 100ms, as requests *cannot* be made without a TTL set.
+        *
+        * see: https://github.com/uber/tchannel/blob/master/docs/protocol.md#ttl4
+        */
+        private long ttl = 100;
         private Map<String, String> transportHeaders = new HashMap<>();
         private String endpoint;
         private Map<String, String> headers = new HashMap<>();
         private U body;
 
-        public Builder(U body) {
+        public Builder(U body, String service, String endpoint) {
             this.body = body;
+            this.service = service;
+            this.endpoint = endpoint;
         }
 
-        public Builder<U> setService(String service) {
-            this.service = service;
+        /**
+         * @param ttl TTL in milliseconds
+         * @return Builder
+         */
+        public Builder<U> setTTL(long ttl) {
+            this.ttl = ttl;
+            return this;
+        }
+
+        /**
+         * @param ttl      TTL in `timeUnit` units
+         * @param timeUnit time unit for the `ttl`
+         * @return Builder
+         */
+        public Builder<U> setTTL(long ttl, TimeUnit timeUnit) {
+            this.ttl = TimeUnit.MILLISECONDS.convert(ttl, timeUnit);
             return this;
         }
 
@@ -98,11 +127,6 @@ public final class Request<T> {
 
         public Builder<U> setTransportHeaders(Map<String, String> transportHeaders) {
             this.transportHeaders.putAll(transportHeaders);
-            return this;
-        }
-
-        public Builder<U> setEndpoint(String endpoint) {
-            this.endpoint = endpoint;
             return this;
         }
 
@@ -123,6 +147,10 @@ public final class Request<T> {
 
             if (endpoint == null) {
                 throw new IllegalStateException("`endpoint` cannot be null.");
+            }
+
+            if (ttl <= 0) {
+                throw new IllegalStateException("`ttl` must be greater than 0.");
             }
 
             return this;

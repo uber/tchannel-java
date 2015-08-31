@@ -25,6 +25,7 @@ package com.uber.tchannel.thrift;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.thrift.generated.KeyValue;
 import com.uber.tchannel.thrift.generated.NotFoundError;
 
@@ -49,8 +50,7 @@ public class GetValueHandler implements RequestHandler<KeyValue.getValue_args, K
             err = new NotFoundError(key);
         }
 
-        return new Response.Builder<>(new KeyValue.getValue_result(value, err))
-                .setEndpoint(request.getEndpoint())
+        return new Response.Builder<>(new KeyValue.getValue_result(value, err), request.getEndpoint(), ResponseCode.OK)
                 .setHeaders(request.getHeaders())
                 .setTransportHeaders(request.getTransportHeaders())
                 .build();

@@ -37,9 +37,9 @@ public class JsonClient {
         final TChannel tchannel = new TChannel.Builder("json-server").build();
 
         Promise<Response<ResponsePojo>> p = tchannel.callJSON(InetAddress.getLocalHost(), 8888, new Request.Builder<>(
-                        new RequestPojo(0, "hello?"))
-                        .setService("json-service")
-                        .setEndpoint("json-endpoint")
+                        new RequestPojo(0, "hello?"),
+                        "json-service",
+                        "json-endpoint")
                         .setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme())
                         .build(),
                 ResponsePojo.class

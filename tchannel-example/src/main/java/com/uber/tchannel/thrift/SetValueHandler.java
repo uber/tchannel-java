@@ -25,6 +25,7 @@ package com.uber.tchannel.thrift;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.thrift.generated.KeyValue;
 
 import java.util.Map;
@@ -45,8 +46,7 @@ public class SetValueHandler implements RequestHandler<KeyValue.setValue_args, K
 
         this.keyValueStore.put(key, value);
 
-        return new Response.Builder<>(new KeyValue.setValue_result())
-                .setEndpoint(request.getEndpoint())
+        return new Response.Builder<>(new KeyValue.setValue_result(), request.getEndpoint(), ResponseCode.OK)
                 .setHeaders(request.getHeaders())
                 .setTransportHeaders(request.getTransportHeaders())
                 .build();

@@ -20,32 +20,26 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.api;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.RequestHandler;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
+import org.junit.Test;
 
-public class PingRequestHandler implements RequestHandler<Ping, Pong> {
+import java.util.concurrent.TimeUnit;
 
-    @Override
-    public Class<Ping> getRequestType() {
-        return Ping.class;
-    }
+import static junit.framework.TestCase.assertEquals;
 
-    @Override
-    public Class<Pong> getResponseType() {
-        return Pong.class;
-    }
+public class BuilderTest {
 
-    @Override
-    public Response<Pong> handle(Request<Ping> request) {
+    @Test
+    public void testSetTTL() throws Exception {
+        long ttlInSeconds = 1;
+        Request<String> req = new Request.Builder<>("foo", "bar", "baz").setTTL(ttlInSeconds, TimeUnit.SECONDS).build();
+        assertEquals(1000, req.getTTL());
 
-        return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
-                .setHeaders(request.getHeaders())
-                .build();
+        long ttlInMicroseconds = 1000;
 
+        req = new Request.Builder<>("foo", "bar", "baz").setTTL(ttlInMicroseconds, TimeUnit.MICROSECONDS).build();
+        assertEquals(1, req.getTTL());
     }
 
 }

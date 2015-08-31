@@ -37,7 +37,7 @@ public class CancelCodec extends MessageToMessageCodec<TFrame, Cancel> {
         ByteBuf buffer = ctx.alloc().buffer();
 
         // ttl:4
-        buffer.writeInt((int) msg.getTtl());
+        buffer.writeInt((int) msg.getTTL());
 
         // tracing:25
         CodecUtils.encodeTrace(msg.getTracing(), buffer);

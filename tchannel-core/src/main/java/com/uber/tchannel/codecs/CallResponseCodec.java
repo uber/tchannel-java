@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.framing.TFrame;
 import com.uber.tchannel.messages.CallMessage;
@@ -51,7 +52,7 @@ public final class CallResponseCodec extends MessageToMessageCodec<TFrame, CallR
         buffer.writeByte(msg.getFlags());
 
         // code:1
-        buffer.writeByte(msg.getCode().byteValue());
+        buffer.writeByte(msg.getResponseCode().byteValue());
 
         // tracing:25
         CodecUtils.encodeTrace(msg.getTracing(), buffer);
@@ -86,7 +87,7 @@ public final class CallResponseCodec extends MessageToMessageCodec<TFrame, CallR
         byte flags = frame.payload.readByte();
 
         // code:1
-        CallResponse.CallResponseCode code = CallResponse.CallResponseCode.fromByte(frame.payload.readByte());
+        ResponseCode code = ResponseCode.fromByte(frame.payload.readByte());
 
         // tracing:25
         Trace trace = CodecUtils.decodeTrace(frame.payload);

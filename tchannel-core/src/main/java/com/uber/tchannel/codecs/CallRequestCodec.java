@@ -50,7 +50,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
         buffer.writeByte(msg.getFlags());
 
         // ttl:4
-        buffer.writeInt((int) msg.getTtl());
+        buffer.writeInt((int) msg.getTTL());
 
         // tracing:25
         CodecUtils.encodeTrace(msg.getTracing(), buffer);

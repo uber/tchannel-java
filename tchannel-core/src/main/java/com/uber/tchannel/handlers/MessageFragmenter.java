@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.fragmentation.FragmentationState;
 import com.uber.tchannel.framing.TFrame;
@@ -84,7 +85,7 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
             CallResponse callResponse = new CallResponse(
                     rawResponse.getId(),
                     flags,
-                    CallResponse.CallResponseCode.OK,
+                    ResponseCode.OK,
                     new Trace(0, 0, 0, (byte) 0x00),
                     rawResponse.getTransportHeaders(),
                     ChecksumType.NoChecksum,
