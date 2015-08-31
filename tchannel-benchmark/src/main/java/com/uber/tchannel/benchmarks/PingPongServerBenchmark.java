@@ -25,15 +25,16 @@ package com.uber.tchannel.benchmarks;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.TChannel;
 import io.netty.util.concurrent.Promise;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.Level;
-import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -48,6 +49,16 @@ public class PingPongServerBenchmark {
     TChannel channel;
     TChannel client;
     int port;
+
+    public static void main(String[] args) throws RunnerException {
+        Options options = new OptionsBuilder()
+                .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
+                .warmupIterations(5)
+                .measurementIterations(10)
+                .forks(1)
+                .build();
+        new Runner(options).run();
+    }
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
@@ -64,10 +75,7 @@ public class PingPongServerBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void benchmark() throws Exception {
 
-        Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"))
-                .setEndpoint("ping")
-                .setService("some-service")
-                .build();
+        Request<Ping> request = new Request.Builder<>(new Ping("ping?"), "some-service", "ping").build();
 
         Promise<Response<Pong>> f = this.client.callJSON(
                 InetAddress.getLocalHost(),
@@ -86,16 +94,6 @@ public class PingPongServerBenchmark {
         this.channel.shutdown();
     }
 
-    public static void main(String[] args) throws RunnerException {
-        Options options = new OptionsBuilder()
-                .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
-                .warmupIterations(5)
-                .measurementIterations(10)
-                .forks(1)
-                .build();
-        new Runner(options).run();
-    }
-
     public class Ping {
         private final String request;
 
@@ -107,7 +105,9 @@ public class PingPongServerBenchmark {
     public class Pong {
         private final String response;
 
-        public Pong(String response) { this.response = response; }
+        public Pong(String response) {
+            this.response = response;
+        }
     }
 
     public class PingRequestHandler implements RequestHandler<Ping, Pong> {
@@ -125,10 +125,7 @@ public class PingPongServerBenchmark {
         @Override
         public Response<Pong> handle(Request<Ping> request) {
 
-            return new Response.Builder<>(new Pong("pong!"))
-                    .setEndpoint(request.getEndpoint())
-                    .setHeaders(request.getHeaders())
-                    .build();
+            return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK).build();
 
         }
 
