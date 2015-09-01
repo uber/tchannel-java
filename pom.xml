@@ -26,11 +26,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.uber.tchannel</groupId>
-    <artifactId>tchannel-java</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <artifactId>tchannel</artifactId>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>tchannel-java</name>
+    <name>tchannel</name>
     <description>Network multiplexing and framing protocol for RPC</description>
     <url>https://github.com/uber/tchannel-java</url>
 
@@ -43,8 +43,8 @@
 
     <developers>
         <developer>
-            <name>Will Salisbury</name>
-            <email>wjs@uber.com</email>
+            <name>Uber</name>
+            <email>dev@uber.com</email>
             <organization>Uber Technologies, Inc.</organization>
             <organizationUrl>https://uber.github.io</organizationUrl>
         </developer>
