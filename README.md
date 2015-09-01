@@ -56,13 +56,13 @@ System.out.println(response);
 #### PingServer
 ```bash
 mvn package
-java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingServer -p 8888
+java -cp tchannel-example/target/tchannel-example-0.1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingServer -p 8888
 ```
 
 #### PingClient
 ```bash
 mvn package
-java -cp tchannel-example/target/tchannel-example-1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingClient -h localhost -p 8888 -n 1000
+java -cp tchannel-example/target/tchannel-example-0.1.0-SNAPSHOT.jar com.uber.tchannel.ping.PingClient -h localhost -p 8888 -n 1000
 ```
 
 ## Contributing
