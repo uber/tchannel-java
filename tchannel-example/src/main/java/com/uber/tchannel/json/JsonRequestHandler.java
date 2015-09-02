@@ -27,7 +27,7 @@ import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
 
-public class JsonReqeustHandler implements RequestHandler<RequestPojo, ResponsePojo> {
+public class JsonRequestHandler implements RequestHandler<RequestPojo, ResponsePojo> {
     @Override
     public Response<ResponsePojo> handle(Request<RequestPojo> request) {
         System.out.println(request);
