@@ -32,6 +32,7 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -43,12 +44,17 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.net.InetAddress;
 
+import static java.lang.Thread.sleep;
+
 @State(Scope.Thread)
 public class PingPongServerBenchmark {
 
     TChannel channel;
     TChannel client;
     int port;
+
+    @Param({ "0", "1", "10" })
+    private int sleepTime;
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
@@ -83,9 +89,6 @@ public class PingPongServerBenchmark {
                 request,
                 Pong.class
         );
-
-        f.get();
-
     }
 
     @TearDown(Level.Trial)
@@ -124,7 +127,11 @@ public class PingPongServerBenchmark {
 
         @Override
         public Response<Pong> handle(Request<Ping> request) {
+            try {
+                sleep(sleepTime);
+            } catch (InterruptedException ex) {
 
+            }
             return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK).build();
 
         }
