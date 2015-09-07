@@ -23,7 +23,7 @@
 package com.uber.tchannel.benchmarks;
 
 import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.TChannel;
@@ -74,7 +74,7 @@ public class PingPongServerBenchmark {
     public void setup() throws Exception {
 
         this.channel = new TChannel.Builder("ping-server")
-                .register("ping", new PingRequestHandler())
+                .register("ping", new PingDefaultRequestHandler())
                 .build();
         this.client = new TChannel.Builder("ping-client").build();
         channel.listen();
@@ -124,17 +124,7 @@ public class PingPongServerBenchmark {
         }
     }
 
-    public class PingRequestHandler implements RequestHandler<Ping, Pong> {
-
-        @Override
-        public Class<Ping> getRequestType() {
-            return Ping.class;
-        }
-
-        @Override
-        public Class<Pong> getResponseType() {
-            return Pong.class;
-        }
+    public class PingDefaultRequestHandler extends DefaultRequestHandler<Ping, Pong> {
 
         @Override
         public Response<Pong> handle(Request<Ping> request) {

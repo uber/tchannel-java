@@ -38,8 +38,8 @@ public class KeyValueServer {
         TChannel tchannel = new TChannel.Builder("keyvalue-service")
                 .setServerPort(8888)
                 .setLogLevel(LogLevel.INFO)
-                .register("KeyValue::getValue", new GetValueHandler(keyValueStore))
-                .register("KeyValue::setValue", new SetValueHandler(keyValueStore))
+                .register("KeyValue::getValue", new GetValueHandlerDefault(keyValueStore))
+                .register("KeyValue::setValue", new SetValueHandlerDefault(keyValueStore))
                 .build();
 
         tchannel.listen().channel().closeFuture().sync();

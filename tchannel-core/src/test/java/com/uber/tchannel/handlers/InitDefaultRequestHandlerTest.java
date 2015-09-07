@@ -41,7 +41,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
-public class InitRequestHandlerTest {
+public class InitDefaultRequestHandlerTest {
 
     @Rule
     public final ExpectedException expectedClosedChannelException = ExpectedException.none();

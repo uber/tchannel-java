@@ -20,32 +20,29 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.util;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.RequestHandler;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
+import org.junit.Test;
 
-public class PingRequestHandler implements RequestHandler<Ping, Pong> {
+import static org.junit.Assert.*;
 
-    @Override
-    public Class<Ping> getRequestType() {
-        return Ping.class;
+public class ReflectionUtilsTest {
+
+    @Test
+    public void testGetTypeArguments() throws Exception {
+
+        abstract class A<T> {
+
+            public Class<T> getType() {
+                return  (Class<T>) ReflectionUtils.getTypeArguments(A.class, getClass()).get(0);
+            }
+        }
+
+        class B extends A<String> {
+
+        }
+
+        B b = new B();
+        assertEquals(b.getType(), String.class);
     }
-
-    @Override
-    public Class<Pong> getResponseType() {
-        return Pong.class;
-    }
-
-    @Override
-    public Response<Pong> handle(Request<Ping> request) {
-
-        return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
-                .setHeaders(request.getHeaders())
-                .build();
-
-    }
-
 }

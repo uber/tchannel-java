@@ -20,22 +20,19 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.json;
+package com.uber.tchannel.api;
 
-import com.uber.tchannel.api.TChannel;
-import io.netty.channel.ChannelFuture;
+import com.uber.tchannel.util.ReflectionUtils;
 
-public class JsonServer {
-    public static void main(String[] args) throws Exception {
-        final TChannel tchannel = new TChannel.Builder("json-server")
-                .register("json-endpoint", new JsonDefaultRequestHandler())
-                .setServerPort(8888)
-                .build();
+public abstract class DefaultRequestHandler<T, U> implements RequestHandler<T, U> {
 
-        ChannelFuture f = tchannel.listen();
+    @Override
+    public Class<T> getRequestType() {
+        return  (Class<T>) ReflectionUtils.getTypeArguments(DefaultRequestHandler.class, getClass()).get(0);
+    }
 
-        f.channel().closeFuture().sync();
-
-        tchannel.shutdown();
+    @Override
+    public Class<U> getResponseType() {
+        return  (Class<U>) ReflectionUtils.getTypeArguments(DefaultRequestHandler.class, getClass()).get(1);
     }
 }

@@ -48,7 +48,7 @@ public class RequestTest {
         final int responseBody = 10;
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
-                .register("endpoint", new RequestHandler<String, Integer>() {
+                .register("endpoint", new DefaultRequestHandler<String, Integer>() {
                     @Override
                     public Response<Integer> handle(Request<String> request) {
 
@@ -58,16 +58,6 @@ public class RequestTest {
                                 .setHeaders(request.getHeaders())
                                 .build();
 
-                    }
-
-                    @Override
-                    public Class<String> getRequestType() {
-                        return String.class;
-                    }
-
-                    @Override
-                    public Class<Integer> getResponseType() {
-                        return Integer.class;
                     }
                 })
                 .setLogLevel(LogLevel.INFO)
@@ -98,23 +88,13 @@ public class RequestTest {
         final String requestBody = "ping?";
         final String responseBody = "pong!";
 
-        RequestHandler<String, String> requestHandler = new RequestHandler<String, String>() {
+        DefaultRequestHandler<String, String> requestHandler = new DefaultRequestHandler<String, String>() {
             @Override
             public Response<String> handle(Request<String> request) {
                 assertEquals(requestBody, request.getBody());
                 return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
                         .setHeaders(request.getHeaders())
                         .build();
-            }
-
-            @Override
-            public Class<String> getRequestType() {
-                return String.class;
-            }
-
-            @Override
-            public Class<String> getResponseType() {
-                return String.class;
             }
         };
 

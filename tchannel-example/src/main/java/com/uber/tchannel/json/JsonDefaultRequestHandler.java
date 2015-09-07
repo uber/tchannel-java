@@ -20,49 +20,21 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.thrift;
+package com.uber.tchannel.json;
 
 import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.thrift.generated.KeyValue;
-import com.uber.tchannel.thrift.generated.NotFoundError;
 
-import java.util.Map;
-
-public class GetValueHandler implements RequestHandler<KeyValue.getValue_args, KeyValue.getValue_result> {
-
-    protected final Map<String, String> keyValueStore;
-
-    public GetValueHandler(Map<String, String> keyValueStore) {
-        this.keyValueStore = keyValueStore;
-    }
-
+public class JsonDefaultRequestHandler extends DefaultRequestHandler<RequestPojo, ResponsePojo> {
     @Override
-    public Response<KeyValue.getValue_result> handle(Request<KeyValue.getValue_args> request) {
-        String key = request.getBody().getKey();
+    public Response<ResponsePojo> handle(Request<RequestPojo> request) {
+        System.out.println(request);
 
-        String value = this.keyValueStore.get(key);
-
-        NotFoundError err = null;
-        if (value == null) {
-            err = new NotFoundError(key);
-        }
-
-        return new Response.Builder<>(new KeyValue.getValue_result(value, err), request.getEndpoint(), ResponseCode.OK)
+        return new Response.Builder<>(new ResponsePojo(true, "hi!"), request.getEndpoint(), ResponseCode.OK)
                 .setHeaders(request.getHeaders())
                 .setTransportHeaders(request.getTransportHeaders())
                 .build();
-    }
-
-    @Override
-    public Class<KeyValue.getValue_args> getRequestType() {
-        return KeyValue.getValue_args.class;
-    }
-
-    @Override
-    public Class<KeyValue.getValue_result> getResponseType() {
-        return KeyValue.getValue_result.class;
     }
 }
