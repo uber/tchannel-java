@@ -7,7 +7,7 @@ Running the Benchmarks
 ```bash
 cd tchannel-benchmarks/
 mvn clean install
-java -jar target/tchannel-benchmark.jar
+java -cp "target/*" com.uber.tchannel.benchmarks.PingPongServerBenchmark.benchmark
 ```
 
 ## MIT Licenced
