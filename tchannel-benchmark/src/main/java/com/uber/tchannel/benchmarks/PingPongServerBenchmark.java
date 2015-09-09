@@ -27,7 +27,10 @@ import com.uber.tchannel.api.RequestHandler;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.TChannel;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
+import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -43,6 +46,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Thread.sleep;
 
@@ -79,7 +83,7 @@ public class PingPongServerBenchmark {
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void benchmark() throws Exception {
+    public void benchmark(final AdditionalCounters counters) throws Exception {
 
         Request<Ping> request = new Request.Builder<>(new Ping("ping?"), "some-service", "ping").build();
 
@@ -89,6 +93,13 @@ public class PingPongServerBenchmark {
                 request,
                 Pong.class
         );
+        f.addListener(new GenericFutureListener<Future<Response<Pong>>>() {
+            @Override
+            public void operationComplete(Future<Response<Pong>> future) throws Exception {
+                Response<Pong> pongResponse = future.get();
+                counters.actualQPS.incrementAndGet();
+            }
+        });
     }
 
     @TearDown(Level.Trial)
@@ -136,5 +147,20 @@ public class PingPongServerBenchmark {
 
         }
 
+    }
+
+    @AuxCounters
+    @State(Scope.Thread)
+    public static class AdditionalCounters {
+        public AtomicInteger actualQPS = new AtomicInteger(0);
+
+        @Setup(Level.Iteration)
+        public void clean() {
+            actualQPS.set(0);
+        }
+
+        public int actualQPS() {
+            return actualQPS.get();
+        }
     }
 }
