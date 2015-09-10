@@ -29,6 +29,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
+import java.net.InetAddress;
+
 public class PingServer {
 
     private int port;
@@ -51,7 +53,7 @@ public class PingServer {
             return;
         }
 
-        int port = Integer.parseInt(cmd.getOptionValue("p", "0"));
+        int port = Integer.parseInt(cmd.getOptionValue("p", "8888"));
 
         System.out.println(String.format("Starting server on port: %d", port));
         new PingServer(port).run();
@@ -60,7 +62,8 @@ public class PingServer {
 
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-server")
-                .register("ping", new PingRequestHandler())
+                .register("ping", new PingDefaultRequestHandler())
+                .setServerHost(InetAddress.getLoopbackAddress())
                 .setServerPort(this.port)
                 .build();
 

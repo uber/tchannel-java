@@ -164,7 +164,7 @@ public final class TChannel {
         private final ChannelManager channelManager = new ChannelManager();
         private InetAddress host;
         private int port = 0;
-        private Map<String, RequestHandler> requestHandlers = new HashMap<>();
+        private Map<String, DefaultRequestHandler> requestHandlers = new HashMap<>();
         private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         private EventLoopGroup childGroup = new NioEventLoopGroup();
         private LogLevel logLevel = LogLevel.INFO;
@@ -187,7 +187,7 @@ public final class TChannel {
             return this;
         }
 
-        public Builder register(String endpoint, RequestHandler requestHandler) {
+        public Builder register(String endpoint, DefaultRequestHandler requestHandler) {
             requestHandlers.put(endpoint, requestHandler);
             return this;
         }

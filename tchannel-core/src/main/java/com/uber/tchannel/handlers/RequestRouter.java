@@ -23,7 +23,7 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.RequestHandler;
+import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.errors.BadRequestError;
 import com.uber.tchannel.headers.ArgScheme;
@@ -42,10 +42,10 @@ import java.util.Map;
 
 public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
-    private final Map<String, ? extends RequestHandler> requestHandlers;
+    private final Map<String, ? extends DefaultRequestHandler> requestHandlers;
     private final Serializer serializer;
 
-    public RequestRouter(Map<String, RequestHandler> requestHandlers) {
+    public RequestRouter(Map<String, DefaultRequestHandler> requestHandlers) {
         this.requestHandlers = requestHandlers;
         this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
             {
@@ -75,7 +75,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         String endpoint = this.serializer.decodeEndpoint(rawRequest);
 
         // Get handler for this method
-        RequestHandler<?, ?> handler = this.requestHandlers.get(endpoint);
+        DefaultRequestHandler<?, ?> handler = this.requestHandlers.get(endpoint);
 
         if (handler == null) {
             throw new RuntimeException(String.format("No handler for %s", endpoint));
