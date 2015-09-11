@@ -22,17 +22,20 @@
 
 package com.uber.tchannel.api;
 
-import com.uber.tchannel.util.ReflectionUtils;
+import com.google.common.reflect.TypeToken;
 
 public abstract class DefaultRequestHandler<T, U> implements RequestHandler<T, U> {
 
+    private TypeToken<T> requestType = new TypeToken<T>(getClass()) { };
+    private TypeToken<U> responseType = new TypeToken<U>(getClass()) { };
+
     @Override
     public Class<T> getRequestType() {
-        return  (Class<T>) ReflectionUtils.getTypeArguments(DefaultRequestHandler.class, getClass()).get(0);
+        return (Class<T>) requestType.getRawType();
     }
 
     @Override
     public Class<U> getResponseType() {
-        return  (Class<U>) ReflectionUtils.getTypeArguments(DefaultRequestHandler.class, getClass()).get(1);
+        return (Class<U>) responseType.getRawType();
     }
 }
