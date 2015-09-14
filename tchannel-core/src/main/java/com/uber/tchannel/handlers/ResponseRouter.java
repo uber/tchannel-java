@@ -39,11 +39,12 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
 
-    private final Map<Long, ResponsePromise> messageMap = new HashMap<>();
+    private final Map<Long, ResponsePromise> messageMap = new ConcurrentHashMap<>();
     private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
             put(ArgScheme.JSON, new JSONSerializer());
@@ -78,7 +79,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
 
         Promise<Response<T>> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
         this.messageMap.put(rawRequest.getId(), new ResponsePromise<>(responsePromise, responseType));
-        ctx.writeAndFlush(rawRequest).await();
+        ctx.writeAndFlush(rawRequest);
         return responsePromise;
     }
 

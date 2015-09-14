@@ -5,7 +5,7 @@ Running the Benchmarks
 ----------------------
 
 ```bash
-cd tchannel-benchmarks/
+cd tchannel-benchmark/
 mvn clean install
 java -cp "target/*" com.uber.tchannel.benchmarks.PingPongServerBenchmark
 ```
