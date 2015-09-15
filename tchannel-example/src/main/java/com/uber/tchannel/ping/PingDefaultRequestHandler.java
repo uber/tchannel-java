@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.DefaultRequestHandler;
+import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
 

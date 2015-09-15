@@ -223,6 +223,9 @@
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                                <configuration>
+                                    <excludePackageNames>*.generated.*</excludePackageNames>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
