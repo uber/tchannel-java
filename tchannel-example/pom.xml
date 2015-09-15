@@ -20,13 +20,11 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   ~ THE SOFTWARE.
   -->
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>tchannel</artifactId>
         <groupId>com.uber.tchannel</groupId>
-        <version>0.1.1-SNAPSHOT</version>
+        <version>0.1.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -41,7 +39,7 @@
         <dependency>
             <groupId>com.uber.tchannel</groupId>
             <artifactId>tchannel-core</artifactId>
-            <version>0.1.1-SNAPSHOT</version>
+            <version>0.1.1</version>
         </dependency>
     </dependencies>
 
@@ -71,16 +69,16 @@
                         <phase>generate-sources</phase>
                         <configuration>
                             <tasks>
-                                <mkdir dir="${project.build.directory}/generated-sources/thrift/gen-java"/>
+                                <mkdir dir="${project.build.directory}/generated-sources/thrift/gen-java" />
                                 <exec executable="${thrift.executable}" failonerror="true">
-                                    <arg value="--gen"/>
-                                    <arg value="java:private-members"/>
-                                    <arg value="--out"/>
-                                    <arg value="${project.build.directory}/generated-sources/thrift/gen-java"/>
-                                    <arg value="src/main/thrift/keyvalue.thrift"/>
+                                    <arg value="--gen" />
+                                    <arg value="java:private-members" />
+                                    <arg value="--out" />
+                                    <arg value="${project.build.directory}/generated-sources/thrift/gen-java" />
+                                    <arg value="src/main/thrift/keyvalue.thrift" />
                                 </exec>
                                 <copy todir="src/main/gen-java" overwrite="true">
-                                    <fileset dir="target/generated-sources/thrift/gen-java"/>
+                                    <fileset dir="target/generated-sources/thrift/gen-java" />
                                 </copy>
                             </tasks>
                         </configuration>
