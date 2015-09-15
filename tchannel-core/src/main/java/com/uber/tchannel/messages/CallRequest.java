@@ -31,15 +31,15 @@ import java.util.Map;
 /**
  * This is the primary RPC mechanism. The triple of (arg1, arg2, arg3) is sent to "service" via the remote end
  * of this connection.
- * <p/>
+ * <p>
  * Whether connecting directly to a service or through a service router, the service name is always specified.
  * This supports an explicit router model as well as peers electing to delegate some requests to another service.
- * <p/>
+ * <p>
  * A forwarding intermediary can relay payloads without understanding the contents of the args triple.
- * <p/>
+ * <p>
  * A {@link CallRequest} may be fragmented across multiple frames. If so, the first frame is a {@link CallRequest},
  * and all subsequent frames are {@link CallRequestContinue} frames.
- * <p/>
+ * <p>
  * The size of arg1 is at most 16KiB.
  */
 public final class CallRequest implements Message, CallMessage {
