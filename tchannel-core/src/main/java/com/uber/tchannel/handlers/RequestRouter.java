@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.errors.BadRequestError;
 import com.uber.tchannel.headers.ArgScheme;

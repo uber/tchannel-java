@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.benchmarks;
 
-import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.TChannel;
@@ -57,11 +57,7 @@ public class PingPongServerBenchmark {
     TChannel client;
     int port;
 
-    @Param({
-            "0",
-            "1",
-            "10"
-    })
+    @Param({ "0", "1", "10" })
     private int sleepTime;
 
     public static void main(String[] args) throws RunnerException {
@@ -112,21 +108,6 @@ public class PingPongServerBenchmark {
         this.channel.shutdown();
     }
 
-    @AuxCounters
-    @State(Scope.Thread)
-    public static class AdditionalCounters {
-        public AtomicInteger actualQPS = new AtomicInteger(0);
-
-        @Setup(Level.Iteration)
-        public void clean() {
-            actualQPS.set(0);
-        }
-
-        public int actualQPS() {
-            return actualQPS.get();
-        }
-    }
-
     public class Ping {
         private final String request;
 
@@ -156,5 +137,20 @@ public class PingPongServerBenchmark {
 
         }
 
+    }
+
+    @AuxCounters
+    @State(Scope.Thread)
+    public static class AdditionalCounters {
+        public AtomicInteger actualQPS = new AtomicInteger(0);
+
+        @Setup(Level.Iteration)
+        public void clean() {
+            actualQPS.set(0);
+        }
+
+        public int actualQPS() {
+            return actualQPS.get();
+        }
     }
 }

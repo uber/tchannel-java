@@ -26,10 +26,8 @@ import com.google.common.reflect.TypeToken;
 
 public abstract class DefaultRequestHandler<T, U> implements RequestHandler<T, U> {
 
-    private TypeToken<T> requestType = new TypeToken<T>(getClass()) {
-    };
-    private TypeToken<U> responseType = new TypeToken<U>(getClass()) {
-    };
+    private TypeToken<T> requestType = new TypeToken<T>(getClass()) { };
+    private TypeToken<U> responseType = new TypeToken<U>(getClass()) { };
 
     @Override
     public Class<T> getRequestType() {
