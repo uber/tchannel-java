@@ -20,9 +20,7 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   ~ THE SOFTWARE.
   -->
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>tchannel</artifactId>
         <groupId>com.uber.tchannel</groupId>
@@ -55,16 +53,16 @@
                         <phase>generate-sources</phase>
                         <configuration>
                             <tasks>
-                                <mkdir dir="${project.build.directory}/generated-sources/thrift/gen-java"/>
+                                <mkdir dir="${project.build.directory}/generated-sources/thrift/gen-java" />
                                 <exec executable="${thrift.executable}" failonerror="true">
-                                    <arg value="--gen"/>
-                                    <arg value="java:private-members"/>
-                                    <arg value="--out"/>
-                                    <arg value="${project.build.directory}/generated-sources/thrift/gen-java"/>
-                                    <arg value="src/test/thrift/example.thrift"/>
+                                    <arg value="--gen" />
+                                    <arg value="java:private-members" />
+                                    <arg value="--out" />
+                                    <arg value="${project.build.directory}/generated-sources/thrift/gen-java" />
+                                    <arg value="src/test/thrift/example.thrift" />
                                 </exec>
                                 <copy todir="src/test/gen-java" overwrite="true">
-                                    <fileset dir="target/generated-sources/thrift/gen-java"/>
+                                    <fileset dir="target/generated-sources/thrift/gen-java" />
                                 </copy>
                             </tasks>
                         </configuration>

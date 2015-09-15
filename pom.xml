@@ -20,8 +20,7 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   ~ THE SOFTWARE.
   -->
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -54,6 +53,7 @@
         <connection>scm:git:git@github.com:uber/tchannel-java.git</connection>
         <developerConnection>scm:git:git@github.com:uber/tchannel-java.git</developerConnection>
         <url>git@github.com:uber/tchannel-java.git</url>
+        <tag>HEAD</tag>
     </scm>
 
     <modules>
@@ -121,29 +121,26 @@
 
     <profiles>
         <profile>
-            <id>deploy</id>
+            <id>uber</id>
+
             <build>
                 <plugins>
-                    <!--
-                    http://central.sonatype.org/pages/apache-maven.html
-                    Distribution Management and Authentication
-                    -->
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.3</version>
-                        <extensions>true</extensions>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <version>2.5</version>
                         <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                            <useReleaseProfile>false</useReleaseProfile>
+                            <releaseProfiles>release</releaseProfiles>
+                            <goals>deploy</goals>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
         </profile>
         <profile>
-            <id>release</id>
+            <id>ossrh</id>
+
             <build>
                 <plugins>
                     <!--
@@ -223,6 +220,9 @@
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                                <configuration>
+                                    <excludePackageNames>*.generated.*</excludePackageNames>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -250,21 +250,6 @@
             <version>1.3.1</version>
         </dependency>
     </dependencies>
-
-    <!--
-    http://central.sonatype.org/pages/apache-maven.html
-    Distribution Management and Authentication
-    -->
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
 
 </project>

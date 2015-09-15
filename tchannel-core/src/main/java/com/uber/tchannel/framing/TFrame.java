@@ -48,7 +48,7 @@ public class TFrame implements ByteBufHolder {
 
     /**
      * Payload size
-     * <p/>
+     * <p>
      * Does *not* include the 16 bytes for the frame header
      */
     public final int size;

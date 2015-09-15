@@ -29,13 +29,13 @@ import java.util.Map;
 
 /**
  * Represents a TChannel request message with `raw` arg scheme encoding.
- * <p/>
+ * <p>
  * All RPC messages over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
  * about the contents of these messages. In order to make sense of these arg payloads, TChannel has the notion of
  * `arg schemes` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
  * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response messages will be built
  * on top of {@link RawRequest} and {@link RawResponse} messages.
- * <p/>
+ * <p>
  * <h3>From the Docs</h3>
  * The `raw` encoding is intended for any custom encodings you want to do that
  * are not part of TChannel but are application specific.

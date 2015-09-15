@@ -39,7 +39,7 @@ public interface InitMessage extends Message {
 
     /**
      * There are a variable number of key/value pairs. For version 2, the following are required:
-     * <p/>
+     * <p>
      * host_port: where this process can be reached. format: address:port
      * process_name: additional identifier for this instance, used for logging. format: arbitrary string
      *
@@ -49,7 +49,7 @@ public interface InitMessage extends Message {
 
     /**
      * Where the sending process can be reached.
-     * <p/>
+     * <p>
      * Key: host_port
      * Format: address:port
      * Protocol Description: where this process can be reached
@@ -60,7 +60,7 @@ public interface InitMessage extends Message {
 
     /**
      * An additional process identifier for the sending process, used for logging.
-     * <p/>
+     * <p>
      * Key: process_name
      * Format: arbitrary string
      * Protocol Description: additional identifier for this instance, used for logging
