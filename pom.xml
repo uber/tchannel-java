@@ -20,12 +20,13 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   ~ THE SOFTWARE.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.uber.tchannel</groupId>
     <artifactId>tchannel</artifactId>
-    <version>0.1.2-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>tchannel</name>
@@ -52,8 +53,8 @@
         <connection>scm:git:git@github.com:uber/tchannel-java.git</connection>
         <developerConnection>scm:git:git@github.com:uber/tchannel-java.git</developerConnection>
         <url>git@github.com:uber/tchannel-java.git</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <modules>
         <module>tchannel-core</module>
@@ -122,17 +123,6 @@
         <profile>
             <id>uber</id>
 
-            <distributionManagement>
-                <repository>
-                    <id>central</id>
-                    <url>http://artifactory.uber.internal:4587/artifactory/libs-release-local/</url>
-                </repository>
-                <snapshotRepository>
-                    <id>snapshots</id>
-                    <url>http://artifactory.uber.internal:4587/artifactory/libs-snapshot-local/</url>
-                </snapshotRepository>
-            </distributionManagement>
-
             <build>
                 <plugins>
                     <plugin>
@@ -150,21 +140,6 @@
         </profile>
         <profile>
             <id>ossrh</id>
-
-            <!--
-            http://central.sonatype.org/pages/apache-maven.html
-            Distribution Management and Authentication
-            -->
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-                <repository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
 
             <build>
                 <plugins>
