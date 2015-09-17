@@ -12,13 +12,23 @@ A Java implementation of the [TChannel](https://github.com/uber/tchannel) protoc
 
 ## In Progress
 - Tracing
+- Performance
+- Final API design and implementation
 
 ## TODO
-- Final API design and implementation
 - Message Canceling
 - Message Claiming
 - Handling Errors properly
-- Performance
+
+## Building
+```bash
+mvn clean package
+```
+
+## Running Tests
+```bash
+mvn clean test
+```
 
 ## Example Usage
 
