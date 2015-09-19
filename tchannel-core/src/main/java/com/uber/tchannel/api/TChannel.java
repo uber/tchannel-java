@@ -55,6 +55,8 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 
 public final class TChannel {
 
@@ -67,9 +69,12 @@ public final class TChannel {
     private final InetAddress host;
     private final int port;
     private int listeningPort;
+    private ExecutorService exectorService;
+    private final int maxQueuedRequests;
 
     private TChannel(Builder builder) {
         this.service = builder.service;
+        this.exectorService = builder.executorService;
         this.serverBootstrap = builder.serverBootstrap();
         this.clientBootstrap = builder.bootstrap();
         this.channelManager = builder.channelManager;
@@ -77,6 +82,7 @@ public final class TChannel {
         this.childGroup = builder.childGroup;
         this.host = builder.host;
         this.port = builder.port;
+        this.maxQueuedRequests = builder.maxQueuedRequests;
     }
 
     public int getListeningPort() {
@@ -162,6 +168,8 @@ public final class TChannel {
 
         private final String service;
         private final ChannelManager channelManager = new ChannelManager();
+        private ExecutorService executorService = new ForkJoinPool();
+        private int maxQueuedRequests = Runtime.getRuntime().availableProcessors() * 5;
         private InetAddress host;
         private int port = 0;
         private Map<String, DefaultRequestHandler> requestHandlers = new HashMap<>();
@@ -175,6 +183,16 @@ public final class TChannel {
             }
             this.service = service;
             this.host = InetAddress.getLocalHost();
+        }
+
+        public Builder setExecutorService(ExecutorService executorService) {
+            this.executorService = executorService;
+            return this;
+        }
+
+        public Builder setMaxQueuedRequests(int maxQueuedRequests) {
+            this.maxQueuedRequests = maxQueuedRequests;
+            return this;
         }
 
         public Builder setServerHost(InetAddress host) {
@@ -257,7 +275,8 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageFragmenter", new MessageFragmenter());
 
                     // Pass RequestHandlers to the RequestRouter
-                    ch.pipeline().addLast("RequestRouter", new RequestRouter(requestHandlers));
+                    ch.pipeline().addLast("RequestRouter", new RequestRouter(
+                            requestHandlers, executorService, maxQueuedRequests));
 
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter());
 
