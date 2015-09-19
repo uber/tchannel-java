@@ -75,6 +75,7 @@ public class PingPongServerBenchmark {
 
         this.channel = new TChannel.Builder("ping-server")
                 .register("ping", new PingDefaultRequestHandler())
+                .setMaxQueuedRequests(20000000)
                 .build();
         this.client = new TChannel.Builder("ping-client").build();
         channel.listen();
