@@ -12,6 +12,7 @@ A Java implementation of the [TChannel](https://github.com/uber/tchannel) protoc
 
 ## In Progress
 - Tracing
+- Error Handling
 - Performance
 - Final API design and implementation
 
