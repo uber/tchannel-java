@@ -22,35 +22,21 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.JSONSerializer;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Serializer;
-import com.uber.tchannel.schemes.ThriftSerializer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.DefaultPromise;
-import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.concurrent.Promise;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
 
-    private final Map<Long, ResponsePromise> messageMap = new ConcurrentHashMap<>();
-    private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
-        {
-            put(ArgScheme.JSON, new JSONSerializer());
-            put(ArgScheme.THRIFT, new ThriftSerializer());
-        }
-    });
+    private final Map<Long, SettableFuture<RawResponse>> messageMap = new ConcurrentHashMap<>();
+
     private final AtomicInteger idGenerator = new AtomicInteger(0);
     private ChannelHandlerContext ctx;
 
@@ -60,62 +46,19 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
         this.ctx = ctx;
     }
 
-    public <T, U> Promise<Response<T>> expectResponse(Request<U> request,
-                                                      Class<T> responseType) throws InterruptedException {
-
-        String as = request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY);
-
-        ArgScheme argScheme = ArgScheme.toScheme(as);
-
-        RawRequest rawRequest = new RawRequest(
-                idGenerator.getAndIncrement(),
-                request.getTTL(),
-                request.getService(),
-                request.getTransportHeaders(),
-                serializer.encodeEndpoint(request.getEndpoint(), argScheme),
-                serializer.encodeHeaders(request.getHeaders(), argScheme),
-                serializer.encodeBody(request.getBody(), argScheme)
-        );
-
-        Promise<Response<T>> responsePromise = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
-        this.messageMap.put(rawRequest.getId(), new ResponsePromise<>(responsePromise, responseType));
-        ctx.writeAndFlush(rawRequest);
-        return responsePromise;
+    public ListenableFuture<RawResponse> expectResponse(RawRequest request) throws InterruptedException {
+        int messageId = idGenerator.incrementAndGet();
+        request.setId(messageId);
+        SettableFuture<RawResponse> future = SettableFuture.create();
+        this.messageMap.put(request.getId(), future);
+        ctx.writeAndFlush(request);
+        return future;
     }
 
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, RawResponse rawResponse) throws Exception {
-
-        ResponsePromise<?> responsePromise = this.messageMap.remove(rawResponse.getId());
-
-        Response<?> response = new Response.Builder<>(
-                this.serializer.decodeBody(rawResponse, responsePromise.getPromiseType()),
-                this.serializer.decodeEndpoint(rawResponse),
-                rawResponse.getResponseCode()
-        )
-                .setHeaders(this.serializer.decodeHeaders(rawResponse))
-                .build();
-
-        responsePromise.getPromise().setSuccess((Response) response);
+        SettableFuture<RawResponse> future = this.messageMap.remove(rawResponse.getId());
+        future.set(rawResponse);
 
     }
-
-    private class ResponsePromise<T> {
-        private final Promise<Response<T>> promise;
-        private final Class<T> promiseType;
-
-        public ResponsePromise(Promise<Response<T>> promise, Class<T> promiseType) {
-            this.promise = promise;
-            this.promiseType = promiseType;
-        }
-
-        public Promise<Response<T>> getPromise() {
-            return promise;
-        }
-
-        public Class<T> getPromiseType() {
-            return promiseType;
-        }
-    }
-
 }

@@ -22,8 +22,10 @@
 
 package com.uber.tchannel.api;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.api.handlers.RequestHandler;
 import io.netty.handler.logging.LogLevel;
-import io.netty.util.concurrent.Promise;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -48,16 +50,11 @@ public class RequestTest {
         final int responseBody = 10;
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
-                .register("endpoint", new DefaultRequestHandler<String, Integer>() {
-                    @Override
-                    public Response<Integer> handle(Request<String> request) {
+                .register("endpoint", new JSONRequestHandler<String, Integer>() {
+                    public Integer handleImpl(String request) {
 
-                        assertEquals(requestBody, request.getBody());
-
-                        return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
-                                .setHeaders(request.getHeaders())
-                                .build();
-
+                        assertEquals(requestBody, request);
+                        return responseBody;
                     }
                 })
                 .setLogLevel(LogLevel.INFO)
@@ -67,7 +64,7 @@ public class RequestTest {
 
         Request<String> request = new Request.Builder<>(requestBody, "ping-service", "endpoint").build();
 
-        Promise<Response<Integer>> responsePromise = tchannel.callJSON(
+        ListenableFuture<Response<Integer>> responsePromise = tchannel.callJSON(
                 tchannel.getHost(),
                 tchannel.getListeningPort(),
                 request,
@@ -88,20 +85,18 @@ public class RequestTest {
         final String requestBody = "ping?";
         final String responseBody = "pong!";
 
-        DefaultRequestHandler<String, String> requestHandler = new DefaultRequestHandler<String, String>() {
-            @Override
-            public Response<String> handle(Request<String> request) {
-                assertEquals(requestBody, request.getBody());
-                return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
-                        .setHeaders(request.getHeaders())
-                        .build();
+        JSONRequestHandler<String, String> requestHandler = new JSONRequestHandler<String, String>() {
+
+            public String handleImpl(String request) {
+                assertEquals(requestBody, request);
+                return responseBody;
             }
         };
 
         Request<String> request = new Request.Builder<>(requestBody, "some-service", "some-endpoint").build();
 
-        Response<String> response = requestHandler.handle(request);
+        String response = requestHandler.handleImpl(requestBody);
 
-        assertEquals(responseBody, response.getBody());
+        assertEquals(responseBody, response);
     }
 }
