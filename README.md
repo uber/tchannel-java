@@ -49,7 +49,7 @@ Request<Ping> request = new Request.Builder<>(new Ping("ping?"))
 	.build();
 
 // Make an asynchronous request
-Promise<Response<Pong>> responseFuture = tchannel.callJSON(
+ListenableFuture<Response<Pong>> responseFuture = tchannel.callJSON(
 	tchannel.getHost(),
 	tchannel.getListeningPort(),
 	"service",

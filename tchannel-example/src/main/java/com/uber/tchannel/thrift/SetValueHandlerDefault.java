@@ -22,15 +22,12 @@
 
 package com.uber.tchannel.thrift;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.DefaultRequestHandler;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.api.handlers.ThriftRequestHandler;
 import com.uber.tchannel.thrift.generated.KeyValue;
 
 import java.util.Map;
 
-public class SetValueHandlerDefault extends DefaultRequestHandler<KeyValue.setValue_args, KeyValue.setValue_result> {
+public class SetValueHandlerDefault extends ThriftRequestHandler<KeyValue.setValue_args, KeyValue.setValue_result> {
 
     private final Map<String, String> keyValueStore;
 
@@ -38,17 +35,13 @@ public class SetValueHandlerDefault extends DefaultRequestHandler<KeyValue.setVa
         this.keyValueStore = keyValueStore;
     }
 
-    @Override
-    public Response<KeyValue.setValue_result> handle(Request<KeyValue.setValue_args> request) {
+    public KeyValue.setValue_result handleImpl(KeyValue.setValue_args setValueArgs) {
 
-        String key = request.getBody().getKey();
-        String value = request.getBody().getValue();
+        String key = setValueArgs.getKey();
+        String value = setValueArgs.getValue();
 
         this.keyValueStore.put(key, value);
 
-        return new Response.Builder<>(new KeyValue.setValue_result(), request.getEndpoint(), ResponseCode.OK)
-                .setHeaders(request.getHeaders())
-                .setTransportHeaders(request.getTransportHeaders())
-                .build();
+        return new KeyValue.setValue_result();
     }
 }

@@ -43,7 +43,7 @@ import java.util.Map;
  */
 public final class RawRequest implements RawMessage {
 
-    private final long id;
+    private long id;
     private final long ttl;
     private final String service;
     private final Map<String, String> transportHeaders;
@@ -67,12 +67,20 @@ public final class RawRequest implements RawMessage {
         return this.id;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public long getTTL() {
         return ttl;
     }
 
     public String getService() {
         return this.service;
+    }
+
+    public void setTransportHeader(String header, String value) {
+        this.transportHeaders.put(header, value);
     }
 
     @Override

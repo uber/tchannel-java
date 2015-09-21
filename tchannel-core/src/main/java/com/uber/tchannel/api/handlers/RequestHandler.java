@@ -20,22 +20,12 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.api.handlers;
 
-import com.google.common.reflect.TypeToken;
+import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.RawResponse;
 
-public abstract class DefaultRequestHandler<T, U> implements RequestHandler<T, U> {
+public interface RequestHandler {
+    RawResponse handle(RawRequest request);
 
-    private TypeToken<T> requestType = new TypeToken<T>(getClass()) { };
-    private TypeToken<U> responseType = new TypeToken<U>(getClass()) { };
-
-    @Override
-    public Class<T> getRequestType() {
-        return (Class<T>) requestType.getRawType();
-    }
-
-    @Override
-    public Class<U> getResponseType() {
-        return (Class<U>) responseType.getRawType();
-    }
 }
