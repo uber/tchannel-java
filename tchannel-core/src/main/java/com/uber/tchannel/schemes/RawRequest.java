@@ -25,6 +25,7 @@ package com.uber.tchannel.schemes;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -55,7 +56,7 @@ public final class RawRequest implements RawMessage {
         this.id = id;
         this.ttl = ttl;
         this.service = service;
-        this.transportHeaders = transportHeaders;
+        this.transportHeaders = transportHeaders != null ? transportHeaders : new HashMap<String, String>();
         this.arg1 = arg1;
         this.arg2 = arg2;
         this.arg3 = arg3;

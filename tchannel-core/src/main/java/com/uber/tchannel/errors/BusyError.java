@@ -20,44 +20,34 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.headers;
+package com.uber.tchannel.errors;
 
-public enum ArgScheme {
-    RAW("raw"),
-    JSON("json"),
-    HTTP("http"),
-    THRIFT("thrift"),
-    STREAMING_THRIFT("sthrift");
+import com.uber.tchannel.tracing.Trace;
 
-    private final String scheme;
+public class BusyError extends ProtocolError {
+    private static final ErrorType errorType = ErrorType.Busy;
+    private final Trace trace;
+    private final long id;
 
-    ArgScheme(String scheme) {
-
-        this.scheme = scheme;
+    public BusyError(String message, Trace trace, long id) {
+        super(message);
+        this.trace = trace;
+        this.id = id;
     }
 
-    public static ArgScheme toScheme(String argScheme) {
-        if (argScheme == null) {
-            return null;
-        }
-
-        switch (argScheme) {
-            case "raw":
-                return RAW;
-            case "json":
-                return JSON;
-            case "http":
-                return HTTP;
-            case "thrift":
-                return THRIFT;
-            case "sthrift":
-                return STREAMING_THRIFT;
-            default:
-                return null;
-        }
+    @Override
+    public long getId() {
+        return id;
     }
 
-    public String getScheme() {
-        return scheme;
+    @Override
+    public ErrorType getErrorType() {
+        return errorType;
     }
+
+    @Override
+    public Trace getTrace() {
+        return trace;
+    }
+
 }
