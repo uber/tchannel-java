@@ -22,8 +22,9 @@
 
 package com.uber.tchannel.api;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import io.netty.handler.logging.LogLevel;
-import io.netty.util.concurrent.Promise;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -48,16 +49,13 @@ public class RequestTest {
         final int responseBody = 10;
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
-                .register("endpoint", new DefaultRequestHandler<String, Integer>() {
-                    @Override
-                    public Response<Integer> handle(Request<String> request) {
+                .register("endpoint", new JSONRequestHandler<String, Integer>() {
+                    public Response<Integer> handleImpl(Request<String> request) {
 
                         assertEquals(requestBody, request.getBody());
-
                         return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
-                                .setHeaders(request.getHeaders())
+                                .setTransportHeaders(request.getTransportHeaders())
                                 .build();
-
                     }
                 })
                 .setLogLevel(LogLevel.INFO)
@@ -65,16 +63,17 @@ public class RequestTest {
 
         tchannel.listen();
 
-        Request<String> request = new Request.Builder<>(requestBody, "ping-service", "endpoint").build();
+        Request<String> request = new Request.Builder<>(requestBody, "ping-service", "endpoint")
+                .build();
 
-        Promise<Response<Integer>> responsePromise = tchannel.callJSON(
+        ListenableFuture<Response<Integer>> responsePromise = tchannel.callJSON(
                 tchannel.getHost(),
                 tchannel.getListeningPort(),
                 request,
                 Integer.class
         );
 
-        Response<Integer> response = responsePromise.get(1000, TimeUnit.MILLISECONDS);
+        Response<Integer> response = responsePromise.get(200000, TimeUnit.MILLISECONDS);
 
         assertEquals(responseBody, (int) response.getBody());
 
@@ -88,19 +87,17 @@ public class RequestTest {
         final String requestBody = "ping?";
         final String responseBody = "pong!";
 
-        DefaultRequestHandler<String, String> requestHandler = new DefaultRequestHandler<String, String>() {
-            @Override
-            public Response<String> handle(Request<String> request) {
+        JSONRequestHandler<String, String> requestHandler = new JSONRequestHandler<String, String>() {
+
+            public Response<String> handleImpl(Request<String> request) {
                 assertEquals(requestBody, request.getBody());
-                return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
-                        .setHeaders(request.getHeaders())
-                        .build();
+                return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK).build();
             }
         };
 
         Request<String> request = new Request.Builder<>(requestBody, "some-service", "some-endpoint").build();
 
-        Response<String> response = requestHandler.handle(request);
+        Response<String> response = requestHandler.handleImpl(request);
 
         assertEquals(responseBody, response.getBody());
     }

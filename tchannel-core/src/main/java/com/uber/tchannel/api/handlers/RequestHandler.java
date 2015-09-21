@@ -20,11 +20,12 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.api.handlers;
 
-public interface RequestHandler<T, U> {
-    Response<U> handle(Request<T> request);
-    Class<T> getRequestType();
-    Class<U> getResponseType();
+import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.RawResponse;
+
+public interface RequestHandler {
+    RawResponse handle(RawRequest request);
 
 }
