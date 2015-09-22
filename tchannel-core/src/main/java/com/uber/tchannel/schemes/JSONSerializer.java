@@ -29,6 +29,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 public final class JSONSerializer implements Serializer.SerializerInterface {
@@ -47,7 +48,8 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
         String headerJSON = arg2.toString(CharsetUtil.UTF_8);
         arg2.release();
-        return new Gson().fromJson(headerJSON, HEADER_TYPE);
+        Map<String, String> headers = new Gson().fromJson(headerJSON, HEADER_TYPE);
+        return (headers == null) ? new HashMap<String, String>() : headers;
     }
 
     @Override

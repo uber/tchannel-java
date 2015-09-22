@@ -92,6 +92,7 @@ public class HyperbahnClient {
                 HYPERBAHN_SERVICE_NAME,
                 HYPERBAHN_ADVERTISE_ENDPOINT
         )
+                .setTTL(1, TimeUnit.SECONDS)
                 .build();
 
         final InetSocketAddress router = this.routers.get(new Random().nextInt(this.routers.size()));
@@ -103,9 +104,7 @@ public class HyperbahnClient {
                 AdvertiseResponse.class
         );
 
-        Response<AdvertiseResponse> response = responseFuture.get(1000, TimeUnit.MILLISECONDS);
-
-        return response;
+        return responseFuture.get(2, TimeUnit.SECONDS);
 
     }
 
