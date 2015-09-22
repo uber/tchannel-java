@@ -20,22 +20,38 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.json;
+package com.uber.tchannel.thrift;
 
-import com.uber.tchannel.api.TChannel;
-import io.netty.channel.ChannelFuture;
+import java.util.Map;
 
-public class JsonServer {
-    public static void main(String[] args) throws Exception {
-        final TChannel tchannel = new TChannel.Builder("json-server")
-                .register("json-endpoint", new JsonRequestHandler())
-                .setServerPort(8888)
-                .build();
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.api.handlers.ThriftRequestHandler;
+import com.uber.tchannel.thrift.generated.KeyValue;
+import com.uber.tchannel.thrift.generated.NotFoundError;
 
-        ChannelFuture f = tchannel.listen();
+public class GetValueRequestHandler extends ThriftRequestHandler<KeyValue.getValue_args, KeyValue.getValue_result> {
 
-        f.channel().closeFuture().sync();
+    protected final Map<String, String> keyValueStore;
 
-        tchannel.shutdown();
+    public GetValueRequestHandler(Map<String, String> keyValueStore) {
+        this.keyValueStore = keyValueStore;
+    }
+
+    @Override
+    public Response<KeyValue.getValue_result> handleImpl(Request<KeyValue.getValue_args> request) {
+        String key = request.getBody().getKey();
+
+        String value = this.keyValueStore.get(key);
+
+        NotFoundError err = null;
+        if (value == null) {
+            err = new NotFoundError(key);
+        }
+
+        return new Response.Builder<>(
+            new KeyValue.getValue_result(value, err), request.getEndpoint(), ResponseCode.OK)
+            .build();
     }
 }

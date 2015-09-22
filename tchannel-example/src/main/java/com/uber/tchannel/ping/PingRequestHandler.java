@@ -20,37 +20,26 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.thrift;
+package com.uber.tchannel.ping;
 
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.api.handlers.ThriftRequestHandler;
-import com.uber.tchannel.thrift.generated.KeyValue;
-import com.uber.tchannel.thrift.generated.NotFoundError;
+import com.uber.tchannel.api.handlers.JSONRequestHandler;
 
-import java.util.Map;
+public class PingRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
-public class GetValueHandlerDefault extends ThriftRequestHandler<KeyValue.getValue_args, KeyValue.getValue_result> {
-
-    protected final Map<String, String> keyValueStore;
-
-    public GetValueHandlerDefault(Map<String, String> keyValueStore) {
-        this.keyValueStore = keyValueStore;
-    }
-
-    public Response<KeyValue.getValue_result> handleImpl(Request<KeyValue.getValue_args> request) {
-        String key = request.getBody().getKey();
-
-        String value = this.keyValueStore.get(key);
-
-        NotFoundError err = null;
-        if (value == null) {
-            err = new NotFoundError(key);
-        }
+    @Override
+    public Response<Pong> handleImpl(Request<Ping> request) {
 
         return new Response.Builder<>(
-                new KeyValue.getValue_result(value, err), request.getEndpoint(), ResponseCode.OK)
-                .build();
+            new Pong("pong!"),
+            request.getEndpoint(),
+            ResponseCode.OK
+        )
+            .setHeaders(request.getHeaders())
+            .setTransportHeaders(request.getTransportHeaders())
+            .build();
     }
+
 }

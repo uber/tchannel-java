@@ -50,8 +50,8 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
         String headerJSON = arg2.toString(CharsetUtil.UTF_8);
         arg2.release();
-        Map<String, String> headers = GSON.fromJson(headerJSON, HEADER_TYPE);
-        return (headers != null) ? headers : new HashMap<String, String>();
+        Map<String, String> headers = new Gson().fromJson(headerJSON, HEADER_TYPE);
+        return (headers == null) ? new HashMap<String, String>() : headers;
     }
 
     @Override

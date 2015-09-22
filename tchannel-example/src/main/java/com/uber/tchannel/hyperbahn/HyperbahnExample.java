@@ -19,20 +19,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.uber.tchannel.hyperbahn;
 
-package com.uber.tchannel.ping;
+import java.util.concurrent.TimeUnit;
 
-import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import com.uber.tchannel.ping.PingRequestHandler;
 
-public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
+public class HyperbahnExample {
+    public static void main(String[] args) throws Exception {
+        TChannel tchannel = new TChannel.Builder("hyperbahn-example")
+            .register("ping", new PingRequestHandler())
+            .build();
 
-    public Response<Pong> handleImpl(Request<Ping> request) {
-        return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
-                .setHeaders(request.getHeaders())
-                .build();
+        tchannel.listen();
+
+        HyperbahnClient hyperbahn = new HyperbahnClient(tchannel);
+
+        Response<AdvertiseResponse> response = hyperbahn.advertise(tchannel.getServiceName(), 0);
+
+        System.err.println(response);
+
+        Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
+
+        hyperbahn.shutdown();
     }
-
 }

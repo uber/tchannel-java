@@ -20,31 +20,17 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.thrift;
+package com.uber.tchannel.hyperbahn.api;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.api.handlers.ThriftRequestHandler;
-import com.uber.tchannel.thrift.generated.KeyValue;
+import com.uber.tchannel.api.TChannel;
 
-import java.util.Map;
+public class HyperbahnClientTest {
 
-public class SetValueHandlerDefault extends ThriftRequestHandler<KeyValue.setValue_args, KeyValue.setValue_result> {
+    @org.junit.Test
+    public void testAdvertise() throws Exception {
+        TChannel tchannel = new TChannel.Builder("hyperbahn-service").build();
 
-    private final Map<String, String> keyValueStore;
+        HyperbahnClient hyperbahnClient = new HyperbahnClient(tchannel);
 
-    public SetValueHandlerDefault(Map<String, String> keyValueStore) {
-        this.keyValueStore = keyValueStore;
-    }
-
-    public Response<KeyValue.setValue_result> handleImpl(Request<KeyValue.setValue_args> request) {
-
-        String key = request.getBody().getKey();
-        String value = request.getBody().getValue();
-
-        this.keyValueStore.put(key, value);
-
-        return new Response.Builder<>(new KeyValue.setValue_result(), request.getEndpoint(), ResponseCode.OK).build();
     }
 }
