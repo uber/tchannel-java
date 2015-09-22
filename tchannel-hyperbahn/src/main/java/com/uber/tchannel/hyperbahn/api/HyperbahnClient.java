@@ -22,20 +22,27 @@
 
 package com.uber.tchannel.hyperbahn.api;
 
+import com.google.gson.Gson;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import io.netty.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.net.InetSocketAddress;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 public class HyperbahnClient {
 
@@ -44,16 +51,31 @@ public class HyperbahnClient {
     private static final String HYPERBAHN_ADVERTISE_ENDPOINT = "ad";
 
     private final TChannel tchannel;
-    private final List<InetSocketAddress> routers;
     private final Logger logger = LoggerFactory.getLogger(HyperbahnClient.class);
+    private List<InetSocketAddress> routers;
 
-    public HyperbahnClient(TChannel tchannel) {
+    public HyperbahnClient(TChannel tchannel) throws IOException {
         this.tchannel = tchannel;
         this.routers = HyperbahnClient.loadRouters();
     }
 
-    private static List<InetSocketAddress> loadRouters() {
+    private static List<InetSocketAddress> loadRouters() throws IOException {
 
+        List<String> hostPorts;
+        try (Reader reader = new FileReader(HyperbahnClient.HOSTS_FILE_PATH)) {
+            hostPorts = new Gson().fromJson(reader, List.class);
+        }
+
+        List<InetSocketAddress> routers = new LinkedList<>();
+        for (String hostPort : hostPorts) {
+            String[] hostPortPair = hostPort.split(Pattern.quote(":"));
+            String host = hostPortPair[0];
+            int port = Integer.parseInt(hostPortPair[1]);
+            InetSocketAddress router = new InetSocketAddress(host, port);
+            routers.add(router);
+        }
+
+        return routers;
 
     }
 
@@ -72,11 +94,11 @@ public class HyperbahnClient {
         )
                 .build();
 
-        final InetSocketAddress router = this.
+        final InetSocketAddress router = this.routers.get(new Random().nextInt(this.routers.size()));
 
-                Future < Response < AdvertiseResponse >> responseFuture = this.tchannel.callJSON(
-                InetAddress.getLoopbackAddress(),
-                21300,
+        Future<Response<AdvertiseResponse>> responseFuture = this.tchannel.callJSON(
+                router.getAddress(),
+                router.getPort(),
                 request,
                 AdvertiseResponse.class
         );
@@ -85,6 +107,18 @@ public class HyperbahnClient {
 
         return response;
 
+    }
+
+    public void stopAdvertising() {
+
+    }
+
+    public void shutdown() throws InterruptedException {
+        this.logger.info("Shutting down HyperbahnClient and TChannel.");
+        this.stopAdvertising();
+        this.tchannel.shutdown();
+        this.routers.clear();
+        this.logger.info("HyperbahnClient shutdown complete.");
     }
 
 }

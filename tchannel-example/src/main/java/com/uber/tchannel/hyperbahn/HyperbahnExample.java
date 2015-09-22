@@ -27,17 +27,12 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 
-import java.net.UnknownHostException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
 public class HyperbahnExample {
-    public static void main(String[] args) throws UnknownHostException, InterruptedException, ExecutionException,
-            TimeoutException {
+    public static void main(String[] args) throws Exception {
         TChannel tchannel = new TChannel.Builder("hyperbahn-example").build();
         HyperbahnClient hyperbahn = new HyperbahnClient(tchannel);
         Response<AdvertiseResponse> response = hyperbahn.advertise(tchannel.getServiceName(), 0);
         System.err.println(response);
-
+        hyperbahn.shutdown();
     }
 }
