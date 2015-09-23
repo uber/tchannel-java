@@ -26,18 +26,26 @@ import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
-import io.netty.channel.ChannelFuture;
+import com.uber.tchannel.ping.PingRequestHandler;
 
 import java.util.concurrent.TimeUnit;
 
 public class HyperbahnExample {
     public static void main(String[] args) throws Exception {
-        TChannel tchannel = new TChannel.Builder("hyperbahn-example").build();
-        ChannelFuture f = tchannel.listen();
-        final HyperbahnClient hyperbahn = new HyperbahnClient(tchannel);
+        TChannel tchannel = new TChannel.Builder("hyperbahn-example")
+                .register("ping", new PingRequestHandler())
+                .build();
+
+        tchannel.listen();
+
+        HyperbahnClient hyperbahn = new HyperbahnClient(tchannel);
+
         Response<AdvertiseResponse> response = hyperbahn.advertise(tchannel.getServiceName(), 0);
+
         System.err.println(response);
+
         Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
+
         hyperbahn.shutdown();
     }
 }

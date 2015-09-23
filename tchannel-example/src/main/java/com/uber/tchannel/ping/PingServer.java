@@ -62,7 +62,7 @@ public class PingServer {
 
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-server")
-                .register("ping", new PingDefaultRequestHandler())
+                .register("ping", new PingRequestHandler())
                 .setServerHost(InetAddress.getLoopbackAddress())
                 .setServerPort(this.port)
                 .build();
