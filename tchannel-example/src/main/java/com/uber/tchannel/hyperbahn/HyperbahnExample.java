@@ -20,21 +20,32 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.json;
+package com.uber.tchannel.hyperbahn;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import com.uber.tchannel.ping.PingRequestHandler;
 
-public class JsonDefaultRequestHandler extends DefaultRequestHandler<RequestPojo, ResponsePojo> {
-    @Override
-    public Response<ResponsePojo> handle(Request<RequestPojo> request) {
-        System.out.println(request);
+import java.util.concurrent.TimeUnit;
 
-        return new Response.Builder<>(new ResponsePojo(true, "hi!"), request.getEndpoint(), ResponseCode.OK)
-                .setHeaders(request.getHeaders())
-                .setTransportHeaders(request.getTransportHeaders())
+public class HyperbahnExample {
+    public static void main(String[] args) throws Exception {
+        TChannel tchannel = new TChannel.Builder("hyperbahn-example")
+                .register("ping", new PingRequestHandler())
                 .build();
+
+        tchannel.listen();
+
+        HyperbahnClient hyperbahn = new HyperbahnClient(tchannel);
+
+        Response<AdvertiseResponse> response = hyperbahn.advertise(tchannel.getServiceName(), 0);
+
+        System.err.println(response);
+
+        Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
+
+        hyperbahn.shutdown();
     }
 }

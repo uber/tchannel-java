@@ -20,22 +20,17 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.ping;
+package com.uber.tchannel.hyperbahn.api;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.DefaultRequestHandler;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.api.TChannel;
 
-public class PingDefaultRequestHandler extends DefaultRequestHandler<Ping, Pong> {
+public class HyperbahnClientTest {
 
-    @Override
-    public Response<Pong> handle(Request<Ping> request) {
+    @org.junit.Test
+    public void testAdvertise() throws Exception {
+        TChannel tchannel = new TChannel.Builder("hyperbahn-service").build();
 
-        return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
-                .setHeaders(request.getHeaders())
-                .build();
+        HyperbahnClient hyperbahnClient = new HyperbahnClient(tchannel);
 
     }
-
 }

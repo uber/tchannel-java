@@ -28,4 +28,14 @@ public class AdvertiseResponse {
     public AdvertiseResponse(int connectionCount) {
         this.connectionCount = connectionCount;
     }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s connectionCount=%d>",
+                this.getClass().getSimpleName(),
+                this.connectionCount
+        );
+    }
+
 }

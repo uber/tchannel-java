@@ -41,6 +41,15 @@ public class AdvertiseRequest {
         services.add(new Service(serviceName, cost));
     }
 
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s services=%s>",
+                this.getClass().getSimpleName(),
+                this.services
+        );
+    }
+
     // Inner class representing a service object in a hyperbahn message.
     public class Service {
         private final String serviceName;
@@ -49,6 +58,16 @@ public class AdvertiseRequest {
         public Service(String serviceName, int cost) {
             this.serviceName = serviceName;
             this.cost = cost;
+        }
+
+        @Override
+        public String toString() {
+            return String.format(
+                    "<%s serviceName=%s cost=%d>",
+                    this.getClass().getSimpleName(),
+                    this.serviceName,
+                    this.cost
+            );
         }
     }
 }

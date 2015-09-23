@@ -20,35 +20,27 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.thrift;
+package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.DefaultRequestHandler;
+import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.thrift.generated.KeyValue;
 
-import java.util.Map;
-
-public class SetValueHandlerDefault extends DefaultRequestHandler<KeyValue.setValue_args, KeyValue.setValue_result> {
-
-    private final Map<String, String> keyValueStore;
-
-    public SetValueHandlerDefault(Map<String, String> keyValueStore) {
-        this.keyValueStore = keyValueStore;
-    }
+public class PingRequestHandler extends DefaultRequestHandler<Ping, Pong> {
 
     @Override
-    public Response<KeyValue.setValue_result> handle(Request<KeyValue.setValue_args> request) {
+    public Response<Pong> handle(Request<Ping> request) {
 
-        String key = request.getBody().getKey();
-        String value = request.getBody().getValue();
-
-        this.keyValueStore.put(key, value);
-
-        return new Response.Builder<>(new KeyValue.setValue_result(), request.getEndpoint(), ResponseCode.OK)
+        return new Response.Builder<>(
+                new Pong("pong!"),
+                request.getEndpoint(),
+                ResponseCode.OK
+        )
                 .setHeaders(request.getHeaders())
                 .setTransportHeaders(request.getTransportHeaders())
                 .build();
+
     }
+
 }
