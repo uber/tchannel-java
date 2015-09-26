@@ -21,6 +21,10 @@
  */
 package com.uber.tchannel.api;
 
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
+import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.ChannelManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.MessageCodec;
@@ -35,6 +39,11 @@ import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.schemes.JSONSerializer;
+import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.Serializer;
+import com.uber.tchannel.schemes.ThriftSerializer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -48,7 +57,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.concurrent.Promise;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -57,6 +65,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+
+import static com.google.common.util.concurrent.Futures.transform;
 
 public final class TChannel {
 
@@ -72,6 +82,13 @@ public final class TChannel {
     private ExecutorService exectorService;
     private final int maxQueuedRequests;
 
+    private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
+        {
+            put(ArgScheme.JSON, new JSONSerializer());
+            put(ArgScheme.THRIFT, new ThriftSerializer());
+        }
+    });
+
     private TChannel(Builder builder) {
         this.service = builder.service;
         this.exectorService = builder.executorService;
@@ -83,6 +100,44 @@ public final class TChannel {
         this.host = builder.host;
         this.port = builder.port;
         this.maxQueuedRequests = builder.maxQueuedRequests;
+    }
+
+    private <T, U> ListenableFuture<Response<T>> callWithEncoding(
+            InetAddress host,
+            int port,
+            Request<U> request,
+            final Class<T> responseType,
+            ArgScheme scheme
+    ) throws InterruptedException {
+
+        RawRequest rawRequest = new RawRequest(
+                request.getTTL(),
+                request.getService(),
+                request.getTransportHeaders(),
+                serializer.encodeEndpoint(request.getEndpoint(), scheme),
+                serializer.encodeHeaders(request.getHeaders(), scheme),
+                serializer.encodeBody(request.getBody(), scheme)
+        );
+
+        // Set the 'cn' header
+        rawRequest.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.service);
+        rawRequest.setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, scheme.getScheme());
+
+        ListenableFuture<RawResponse> future = this.call(host, port, rawRequest);
+        return transform(future, new AsyncFunction<RawResponse, Response<T>>() {
+            @Override
+            public ListenableFuture<Response<T>> apply(RawResponse rawResponse) {
+                SettableFuture<Response<T>> settableFuture = SettableFuture.create();
+                Response<T> response = new Response.Builder<>(
+                        serializer.decodeBody(rawResponse, responseType),
+                        serializer.decodeEndpoint(rawResponse),
+                        rawResponse.getResponseCode())
+                        .setHeaders(serializer.decodeHeaders(rawResponse))
+                        .build();
+                settableFuture.set(response);
+                return settableFuture;
+            }
+        });
     }
 
     public int getListeningPort() {
@@ -114,44 +169,35 @@ public final class TChannel {
         this.childGroup.shutdownGracefully();
     }
 
-    public <T, U> Promise<Response<T>> callThrift(
+    public <T, U> ListenableFuture<Response<T>> callThrift(
             InetAddress host,
             int port,
             Request<U> request,
-            Class<T> responseType
+            final Class<T> responseType
     ) throws InterruptedException {
-        return this.call(host, port, request, responseType, ArgScheme.THRIFT);
+        return callWithEncoding(host, port, request, responseType, ArgScheme.THRIFT);
     }
 
-    public <T, U> Promise<Response<T>> callJSON(
+    public <T, U> ListenableFuture<Response<T>> callJSON(
             InetAddress host,
             int port,
             Request<U> request,
-            Class<T> responseType
+            final Class<T> responseType
     ) throws InterruptedException {
-        return this.call(host, port, request, responseType, ArgScheme.JSON);
+        return callWithEncoding(host, port, request, responseType, ArgScheme.JSON);
     }
 
-    public <T, U> Promise<Response<T>> callRaw(
+    public ListenableFuture<RawResponse> call(
             InetAddress host,
             int port,
-            Request<U> request,
-            Class<T> responseType
-    ) throws InterruptedException {
-        return this.call(host, port, request, responseType, ArgScheme.RAW);
-    }
-
-    public <T, U> Promise<Response<T>> call(
-            InetAddress host,
-            int port,
-            Request<U> request,
-            Class<T> responseType,
-            ArgScheme argScheme
+            RawRequest request
     ) throws InterruptedException {
 
-        // Set the 'cn' header
-        request.getTransportHeaders().put(TransportHeaders.CALLER_NAME_KEY, this.service);
-        request.getTransportHeaders().put(TransportHeaders.ARG_SCHEME_KEY, argScheme.getScheme());
+        // Set the ArgScheme as RAW if its not set
+        Map<String, String> transportHeaders = request.getTransportHeaders();
+        if (!transportHeaders.containsKey(TransportHeaders.ARG_SCHEME_KEY)) {
+            request.setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
+        }
 
         // Get an outbound channel
         Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
@@ -160,8 +206,7 @@ public final class TChannel {
         ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
 
         // Ask the router to make a call on our behalf, and return its promise
-        return responseRouter.expectResponse(request, responseType);
-
+        return responseRouter.expectResponse(request);
     }
 
     public static class Builder {
@@ -172,7 +217,7 @@ public final class TChannel {
         private int maxQueuedRequests = Runtime.getRuntime().availableProcessors() * 5;
         private InetAddress host;
         private int port = 0;
-        private Map<String, DefaultRequestHandler> requestHandlers = new HashMap<>();
+        private Map<String, RequestHandler> requestHandlers = new HashMap<>();
         private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         private EventLoopGroup childGroup = new NioEventLoopGroup();
         private LogLevel logLevel = LogLevel.INFO;
@@ -205,7 +250,7 @@ public final class TChannel {
             return this;
         }
 
-        public Builder register(String endpoint, DefaultRequestHandler requestHandler) {
+        public Builder register(String endpoint, RequestHandler requestHandler) {
             requestHandlers.put(endpoint, requestHandler);
             return this;
         }

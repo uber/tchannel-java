@@ -22,12 +22,12 @@
 
 package com.uber.tchannel.ping;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-import io.netty.util.concurrent.Promise;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -37,7 +37,6 @@ import org.apache.commons.cli.Options;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class PingClient {
 
@@ -91,7 +90,7 @@ public class PingClient {
                 .build();
 
         for (int i = 0; i < this.requests; i++) {
-            Promise<Response<Pong>> f = tchannel.callJSON(
+            ListenableFuture<Response<Pong>> f = tchannel.callJSON(
                     InetAddress.getByName(this.host),
                     this.port,
                     request,
@@ -99,17 +98,19 @@ public class PingClient {
             );
 
             final int iteration = i;
-            f.addListener(new GenericFutureListener<Future<? super Response<Pong>>>() {
+            Futures.addCallback(f, new FutureCallback<Response<Pong>>() {
                 @Override
-                public void operationComplete(Future<? super Response<Pong>> future) throws Exception {
-                    Response<?> response = (Response<?>) future.get(100, TimeUnit.MILLISECONDS);
+                public void onSuccess(Response<Pong> pongResponse) {
                     if (iteration % 1000 == 0) {
-                        System.out.println(response);
+                        System.out.println(pongResponse);
                     }
                 }
 
-            });
+                @Override
+                public void onFailure(Throwable throwable) {
 
+                }
+            });
         }
 
         tchannel.shutdown();

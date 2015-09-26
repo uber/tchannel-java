@@ -20,22 +20,8 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.api;
+package com.uber.tchannel.api.handlers;
 
-import com.google.common.reflect.TypeToken;
+import com.uber.tchannel.schemes.ThriftSerializer;
 
-public abstract class DefaultRequestHandler<T, U> implements RequestHandler<T, U> {
-
-    private TypeToken<T> requestType = new TypeToken<T>(getClass()) { };
-    private TypeToken<U> responseType = new TypeToken<U>(getClass()) { };
-
-    @Override
-    public Class<T> getRequestType() {
-        return (Class<T>) requestType.getRawType();
-    }
-
-    @Override
-    public Class<U> getResponseType() {
-        return (Class<U>) responseType.getRawType();
-    }
-}
+public abstract class ThriftRequestHandler<T, U> extends DefaultTypedRequestHandler<T, U, ThriftSerializer> { }

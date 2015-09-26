@@ -27,9 +27,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.DefaultRequestHandler;
-import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.BadRequestError;
 import com.uber.tchannel.errors.BusyError;
 import com.uber.tchannel.headers.ArgScheme;
@@ -42,6 +40,7 @@ import com.uber.tchannel.schemes.ThriftSerializer;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -51,13 +50,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
-    private final Map<String, ? extends DefaultRequestHandler> requestHandlers;
+    private final Map<String, ? extends RequestHandler> requestHandlers;
     private final Serializer serializer;
     private final AtomicInteger queuedRequests = new AtomicInteger(0);
     private final int maxQueuedRequests;
     private final ListeningExecutorService listeningExecutorService;
 
-    public RequestRouter(Map<String, DefaultRequestHandler> requestHandlers,
+    public RequestRouter(Map<String, RequestHandler> requestHandlers,
                          ExecutorService executorService, int maxQueuedRequests) {
         this.requestHandlers = requestHandlers;
         this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
@@ -98,52 +97,31 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
             );
         }
 
-        // Increment the number of queued requests.
-        queuedRequests.getAndIncrement();
-
-        // arg1
-        String endpoint = this.serializer.decodeEndpoint(rawRequest);
+        // Get the endpoint. The assumption over here is that endpoints are
+        // always going to to utf-8 encoded.
+        String endpoint = rawRequest.getArg1().toString(CharsetUtil.UTF_8);
 
         // Get handler for this method
-        DefaultRequestHandler<?, ?> handler = this.requestHandlers.get(endpoint);
+        RequestHandler handler = this.requestHandlers.get(endpoint);
 
         if (handler == null) {
             throw new RuntimeException(String.format("No handler for %s", endpoint));
         }
 
-        // arg2
-        Map<String, String> applicationHeaders = this.serializer.decodeHeaders(rawRequest);
-
-        // arg3
-        Object body = this.serializer.decodeBody(rawRequest, handler.getRequestType());
-
-        // transform request into form the handler expects
-        Request<?> request = new Request.Builder<>(body, rawRequest.getService(), endpoint)
-                .setHeaders(applicationHeaders)
-                .setTransportHeaders(rawRequest.getTransportHeaders())
-                .build();
+        // Increment the number of queued requests.
+        queuedRequests.getAndIncrement();
 
         // Handle the request in a separate thread and get a future to it
-        ListenableFuture<Response<?>> responseFuture = listeningExecutorService.submit(
-                new CallableHandler(handler, request));
+        ListenableFuture<RawResponse> responseFuture = listeningExecutorService.submit(
+                new CallableHandler(handler, rawRequest));
 
-        Futures.addCallback(responseFuture, new FutureCallback<Response<?>>() {
+        Futures.addCallback(responseFuture, new FutureCallback<RawResponse>() {
             @Override
-            public void onSuccess(Response<?> response) {
+            public void onSuccess(RawResponse response) {
 
                 // Since the request was handled, decrement the queued requests count
                 queuedRequests.decrementAndGet();
-
-                RawResponse rawResponse = new RawResponse(
-                        rawRequest.getId(),
-                        response.getResponseCode(),
-                        rawRequest.getTransportHeaders(),
-                        serializer.encodeEndpoint(response.getEndpoint(), argScheme),
-                        serializer.encodeHeaders(response.getHeaders(), argScheme),
-                        serializer.encodeBody(response.getBody(), argScheme)
-                );
-
-                ctx.writeAndFlush(rawResponse);
+                ctx.writeAndFlush(response);
             }
 
             @Override
@@ -153,18 +131,18 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         });
     }
 
-    private class CallableHandler implements Callable<Response<?>> {
-        private final Request<?> request;
-        private final DefaultRequestHandler<?, ?> handler;
+    private class CallableHandler implements Callable<RawResponse> {
+        private final RawRequest request;
+        private final RequestHandler handler;
 
-        public CallableHandler(DefaultRequestHandler<?, ?> handler, Request<?> request) {
+        public CallableHandler(RequestHandler handler, RawRequest request) {
             this.handler = handler;
             this.request = request;
         }
 
         @Override
-        public Response<?> call() throws Exception {
-            Response<?> response = handler.handle((Request) request);
+        public RawResponse call() throws Exception {
+            RawResponse response = handler.handle(request);
             return response;
         }
     }

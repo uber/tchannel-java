@@ -20,18 +20,8 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.json;
+package com.uber.tchannel.api.handlers;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.schemes.JSONSerializer;
 
-public class JsonDefaultRequestHandler extends JSONRequestHandler<RequestPojo, ResponsePojo> {
-
-    public Response<ResponsePojo> handleImpl(Request<RequestPojo> request) {
-        System.out.println(request);
-
-        return new Response.Builder<>(new ResponsePojo(true, "hi!"), request.getEndpoint(), ResponseCode.OK).build();
-    }
-}
+public abstract class JSONRequestHandler<T, U> extends DefaultTypedRequestHandler<T, U, JSONSerializer> { }

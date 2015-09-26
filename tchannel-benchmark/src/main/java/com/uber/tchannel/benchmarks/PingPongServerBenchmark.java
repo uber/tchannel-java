@@ -22,14 +22,14 @@
 
 package com.uber.tchannel.benchmarks;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.DefaultRequestHandler;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.TChannel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-import io.netty.util.concurrent.Promise;
+import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -88,17 +88,21 @@ public class PingPongServerBenchmark {
 
         Request<Ping> request = new Request.Builder<>(new Ping("ping?"), "some-service", "ping").build();
 
-        Promise<Response<Pong>> f = this.client.callJSON(
+        ListenableFuture<Response<Pong>> future = this.client.callJSON(
                 InetAddress.getLocalHost(),
                 this.port,
                 request,
                 Pong.class
         );
-        f.addListener(new GenericFutureListener<Future<Response<Pong>>>() {
+        Futures.addCallback(future, new FutureCallback<Response<Pong>>() {
             @Override
-            public void operationComplete(Future<Response<Pong>> future) throws Exception {
-                Response<Pong> pongResponse = future.get();
+            public void onSuccess(Response<Pong> pongResponse) {
                 counters.actualQPS.incrementAndGet();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+
             }
         });
     }
@@ -125,17 +129,16 @@ public class PingPongServerBenchmark {
         }
     }
 
-    public class PingDefaultRequestHandler extends DefaultRequestHandler<Ping, Pong> {
+    public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
-        @Override
-        public Response<Pong> handle(Request<Ping> request) {
+        public Response<Pong> handleImpl(Request<Ping> request) {
             try {
                 sleep(sleepTime);
             } catch (InterruptedException ex) {
 
             }
-            return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK).build();
-
+            return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
+                    .build();
         }
 
     }

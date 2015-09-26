@@ -69,7 +69,7 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
             CallRequest callRequest = new CallRequest(
                     rawRequest.getId(),
                     flags,
-                    0,
+                    rawRequest.getTTL(),
                     new Trace(0, 0, 0, (byte) 0x00),
                     rawRequest.getService(),
                     rawRequest.getTransportHeaders(),

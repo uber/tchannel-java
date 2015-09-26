@@ -22,12 +22,12 @@
 
 package com.uber.tchannel.thrift;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.thrift.generated.KeyValue;
 import com.uber.tchannel.thrift.generated.NotFoundError;
-import io.netty.util.concurrent.Promise;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -63,14 +63,14 @@ public class KeyValueClient {
     public static void setValue(TChannel tchannel, String key, String value) throws Exception {
         KeyValue.setValue_args setValue = new KeyValue.setValue_args(key, value);
 
-        Promise<Response<KeyValue.setValue_result>> setPromise = tchannel.callThrift(
+        ListenableFuture<Response<KeyValue.setValue_result>> future = tchannel.callThrift(
                 InetAddress.getLocalHost(),
                 8888,
                 new Request.Builder<>(setValue, "keyvalue-service", "KeyValue::setValue").build(),
                 KeyValue.setValue_result.class
         );
 
-        setPromise.get(100, TimeUnit.MILLISECONDS);
+        future.get(100, TimeUnit.MILLISECONDS);
     }
 
     public static String getValue(
@@ -80,14 +80,14 @@ public class KeyValueClient {
 
         KeyValue.getValue_args getValue = new KeyValue.getValue_args(key);
 
-        Promise<Response<KeyValue.getValue_result>> getPromise = tchannel.callThrift(
+        ListenableFuture<Response<KeyValue.getValue_result>> future = tchannel.callThrift(
                 InetAddress.getLocalHost(),
                 8888,
                 new Request.Builder<>(getValue, "keyvalue-service", "KeyValue::getValue").build(),
                 KeyValue.getValue_result.class
         );
 
-        Response<KeyValue.getValue_result> getResult = getPromise.get(100, TimeUnit.MILLISECONDS);
+        Response<KeyValue.getValue_result> getResult = future.get(100, TimeUnit.MILLISECONDS);
 
         String value = getResult.getBody().getSuccess();
         NotFoundError err = getResult.getBody().getNotFound();
