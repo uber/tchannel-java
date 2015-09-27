@@ -126,6 +126,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
             @Override
             public void onFailure(Throwable throwable) {
+                queuedRequests.decrementAndGet();
                 // TODO handle the failure case
             }
         });
