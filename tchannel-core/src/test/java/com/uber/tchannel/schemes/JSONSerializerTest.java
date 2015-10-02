@@ -23,6 +23,10 @@
 package com.uber.tchannel.schemes;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -34,7 +38,7 @@ public class JSONSerializerTest {
 
     private Serializer.SerializerInterface serializer;
 
-    @org.junit.Before
+    @Before
     public void setUp() throws Exception {
         this.serializer = new JSONSerializer();
     }
@@ -58,11 +62,27 @@ public class JSONSerializerTest {
     }
 
     @Test
+    public void testDecodeEmptyHeaders() throws Exception {
+        Map<String, String> emptyHeaders = new HashMap<>();
+        Map<String, String> decodedHeaders = serializer.decodeHeaders(Unpooled.EMPTY_BUFFER);
+        assertEquals(emptyHeaders, decodedHeaders);
+    }
+
+    @Test
+    public void testEncodeEmptyHeaders() throws Exception {
+
+        Map<String, String> emptyHeaders = new HashMap<>();
+        ByteBuf encodedHeaders = serializer.encodeHeaders(emptyHeaders);
+        assertEquals("{}", encodedHeaders.toString(CharsetUtil.UTF_8));
+
+    }
+
+    @Test
     public void testEncodeDecodeBody() throws Exception {
 
     }
 
-    @org.junit.After
+    @After
     public void tearDown() throws Exception {
         this.serializer = null;
     }

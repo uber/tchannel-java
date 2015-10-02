@@ -29,12 +29,15 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 public final class JSONSerializer implements Serializer.SerializerInterface {
     private static final Type HEADER_TYPE = (new TypeToken<Map<String, String>>() {
 
     }).getType();
+
+    private static final Gson GSON = new Gson();
 
     @Override
     public String decodeEndpoint(ByteBuf arg1) {
@@ -47,14 +50,15 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
         String headerJSON = arg2.toString(CharsetUtil.UTF_8);
         arg2.release();
-        return new Gson().fromJson(headerJSON, HEADER_TYPE);
+        Map<String, String> headers = GSON.fromJson(headerJSON, HEADER_TYPE);
+        return (headers != null) ? headers : new HashMap<String, String>();
     }
 
     @Override
     public <T> T decodeBody(ByteBuf arg3, Class<T> bodyType) {
         String bodyJSON = arg3.toString(CharsetUtil.UTF_8);
         arg3.release();
-        return new Gson().fromJson(bodyJSON, bodyType);
+        return GSON.fromJson(bodyJSON, bodyType);
     }
 
     @Override
@@ -64,12 +68,12 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
 
     @Override
     public ByteBuf encodeHeaders(Map<String, String> applicationHeaders) {
-        return Unpooled.wrappedBuffer(new Gson().toJson(applicationHeaders, HEADER_TYPE).getBytes());
+        return Unpooled.wrappedBuffer(GSON.toJson(applicationHeaders, HEADER_TYPE).getBytes());
     }
 
     @Override
     public ByteBuf encodeBody(Object body) {
-        return Unpooled.wrappedBuffer(new Gson().toJson(body).getBytes());
+        return Unpooled.wrappedBuffer(GSON.toJson(body).getBytes());
     }
 
 }

@@ -69,6 +69,14 @@ public class ThriftSerializerTest {
     }
 
     @Test
+    public void testEncodeDecodeEmptyHeaders() {
+        Map<String, String> emptyHeaders = new HashMap<>();
+        ByteBuf binaryHeaders = serializer.encodeHeaders(emptyHeaders);
+        Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
+        assertEquals(emptyHeaders, decodedHeaders);
+    }
+
+    @Test
     public void testEncodeDecodeBody() throws Exception {
 
         // Given
