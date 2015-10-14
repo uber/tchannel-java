@@ -40,6 +40,7 @@ import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.JSONSerializer;
+import com.uber.tchannel.schemes.RawSerializer;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.schemes.Serializer;
@@ -86,6 +87,7 @@ public final class TChannel {
         {
             put(ArgScheme.JSON, new JSONSerializer());
             put(ArgScheme.THRIFT, new ThriftSerializer());
+            put(ArgScheme.RAW, new RawSerializer());
         }
     });
 
@@ -167,6 +169,14 @@ public final class TChannel {
         this.channelManager.close();
         this.bossGroup.shutdownGracefully();
         this.childGroup.shutdownGracefully();
+    }
+
+    public ListenableFuture<Response<String>> callRaw(
+            InetAddress host,
+            int port,
+            Request<String> request
+    ) throws InterruptedException {
+        return callWithEncoding(host, port, request, String.class, ArgScheme.RAW);
     }
 
     public <T, U> ListenableFuture<Response<T>> callThrift(
