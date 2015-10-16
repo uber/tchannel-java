@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.channels.ChannelManager;
 import com.uber.tchannel.errors.FatalProtocolError;
 import com.uber.tchannel.errors.ProtocolError;
 import com.uber.tchannel.errors.ProtocolErrorProcessor;
@@ -36,6 +37,12 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
 
+    private final ChannelManager channelManager;
+
+    public InitRequestHandler(ChannelManager channelManager) {
+        this.channelManager = channelManager;
+    }
+
     @Override
     public void messageReceived(ChannelHandlerContext ctx, Message message) throws Exception {
 
@@ -46,14 +53,19 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
                 InitRequest initRequestMessage = (InitRequest) message;
 
                 if (initRequestMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
-                    ChannelFuture f = ctx.writeAndFlush(new InitResponse(
+                    InitResponse initResponse = new InitResponse(
                             initRequestMessage.getId(),
-                            InitMessage.DEFAULT_VERSION,
-                            initRequestMessage.getHeaders()
-                    ));
+                            InitMessage.DEFAULT_VERSION
+                    );
+                    initResponse.setHostPort(this.channelManager.getHostPort());
+                    // TODO: figure out what to put here
+                    initResponse.setProcessName("java-process");
+                    ChannelFuture f = ctx.writeAndFlush(initResponse);
                     f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                     ctx.pipeline().remove(this);
+                    channelManager.setIdentified(ctx.channel(), initRequestMessage.getHeaders());
                 } else {
+                    // TODO: response ProtocolError
                     throw new FatalProtocolError(
                             String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION),
                             new Trace(0, 0, 0, (byte) 0x00)
@@ -64,6 +76,7 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
 
             default:
 
+                // TODO: should send back BadRequest
                 throw new FatalProtocolError(
                         "Must not send any data until receiving Init Request",
                         new Trace(0, 0, 0, (byte) 0x00)

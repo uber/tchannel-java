@@ -22,25 +22,28 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.channels.ChannelManager;
 import com.uber.tchannel.errors.FatalProtocolError;
 import com.uber.tchannel.errors.ProtocolError;
 import com.uber.tchannel.errors.ProtocolErrorProcessor;
 import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
 import com.uber.tchannel.messages.Message;
 import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.util.HashMap;
-
 public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
+
+    private final ChannelManager channelManager;
+
+    public InitRequestInitiator(ChannelManager channelManager) {
+        this.channelManager = channelManager;
+    }
 
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, Message message) throws ProtocolError {
+
         switch (message.getMessageType()) {
 
             case InitResponse:
@@ -49,6 +52,7 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
 
                 if (initResponseMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
                     ctx.pipeline().remove(this);
+                    channelManager.setIdentified(ctx.channel(), initResponseMessage.getHeaders());
                 } else {
                     throw new FatalProtocolError(
                             String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION),
@@ -66,23 +70,6 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
                 );
 
         }
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
-        InitRequest initRequest = new InitRequest(0,
-                InitMessage.DEFAULT_VERSION,
-                new HashMap<String, String>() {
-                    {
-                        put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                        put(InitMessage.PROCESS_NAME_KEY, "test-process");
-                    }
-                }
-        );
-        ChannelFuture f = ctx.writeAndFlush(initRequest);
-        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-
     }
 
     @Override

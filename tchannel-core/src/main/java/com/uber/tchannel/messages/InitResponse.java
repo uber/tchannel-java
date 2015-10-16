@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.messages;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -33,6 +34,12 @@ public final class InitResponse implements InitMessage, Message {
     private final long id;
     private final int version;
     private final Map<String, String> headers;
+
+    public InitResponse(long id, int version) {
+        this.id = id;
+        this.version = version;
+        this.headers = new HashMap<>();
+    }
 
     public InitResponse(long id, int version, Map<String, String> headers) {
         this.id = id;
@@ -60,8 +67,14 @@ public final class InitResponse implements InitMessage, Message {
         return this.headers.get(HOST_PORT_KEY);
     }
 
+    public void setHostPort(String hostPort) { this.headers.put(HOST_PORT_KEY, hostPort); }
+
     public String getProcessName() {
         return this.headers.get(PROCESS_NAME_KEY);
+    }
+
+    public void setProcessName(String processName) {
+        this.headers.put(PROCESS_NAME_KEY, processName);
     }
 
     @Override
