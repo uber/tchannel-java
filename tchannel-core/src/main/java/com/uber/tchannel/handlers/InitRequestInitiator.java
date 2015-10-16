@@ -22,7 +22,7 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.channels.ChannelManager;
+import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.errors.FatalProtocolError;
 import com.uber.tchannel.errors.ProtocolError;
 import com.uber.tchannel.errors.ProtocolErrorProcessor;
@@ -35,10 +35,10 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
 
-    private final ChannelManager channelManager;
+    private final PeerManager peerManager;
 
-    public InitRequestInitiator(ChannelManager channelManager) {
-        this.channelManager = channelManager;
+    public InitRequestInitiator(PeerManager peerManager) {
+        this.peerManager = peerManager;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
 
                 if (initResponseMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
                     ctx.pipeline().remove(this);
-                    channelManager.setIdentified(ctx.channel(), initResponseMessage.getHeaders());
+                    peerManager.setIdentified(ctx.channel(), initResponseMessage.getHeaders());
                 } else {
                     throw new FatalProtocolError(
                             String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION),

@@ -21,7 +21,7 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.channels.ChannelManager;
+import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.errors.FatalProtocolError;
 import com.uber.tchannel.errors.ProtocolError;
 import com.uber.tchannel.errors.ProtocolErrorProcessor;
@@ -37,10 +37,10 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
 
-    private final ChannelManager channelManager;
+    private final PeerManager peerManager;
 
-    public InitRequestHandler(ChannelManager channelManager) {
-        this.channelManager = channelManager;
+    public InitRequestHandler(PeerManager peerManager) {
+        this.peerManager = peerManager;
     }
 
     @Override
@@ -57,13 +57,13 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
                             initRequestMessage.getId(),
                             InitMessage.DEFAULT_VERSION
                     );
-                    initResponse.setHostPort(this.channelManager.getHostPort());
+                    initResponse.setHostPort(this.peerManager.getHostPort());
                     // TODO: figure out what to put here
                     initResponse.setProcessName("java-process");
                     ChannelFuture f = ctx.writeAndFlush(initResponse);
                     f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                     ctx.pipeline().remove(this);
-                    channelManager.setIdentified(ctx.channel(), initRequestMessage.getHeaders());
+                    peerManager.setIdentified(ctx.channel(), initRequestMessage.getHeaders());
                 } else {
                     // TODO: response ProtocolError
                     throw new FatalProtocolError(
@@ -76,7 +76,7 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
 
             default:
 
-                // TODO: should send back BadRequest
+                // TODO: should send back ProtocolError
                 throw new FatalProtocolError(
                         "Must not send any data until receiving Init Request",
                         new Trace(0, 0, 0, (byte) 0x00)

@@ -30,10 +30,11 @@ import java.util.Map;
  * Connection represents a connection to a remote address
  */
 public class Connection {
-    public Channel channel;
-    public String remoteAddress = null;
     public Direction direction = Direction.NONE;
     public ConnectionState state = ConnectionState.UNCONNECTED;
+
+    private final Channel channel;
+    private String remoteAddress = null;
 
     public Connection(Channel channel, Direction direction) {
         this.channel = channel;
@@ -41,6 +42,10 @@ public class Connection {
         if (channel.isActive() && this.state == ConnectionState.UNCONNECTED) {
             this.state = ConnectionState.CONNECTED;
         }
+    }
+
+    public Channel channel() {
+        return this.channel;
     }
 
     public synchronized boolean satisfy(ConnectionState preferedState) {
@@ -80,7 +85,7 @@ public class Connection {
         return this.remoteAddress.equals("0.0.0.0:0");
     }
 
-    public static String[] sliptHostPort(String hostPort) {
+    public static String[] splitHostPort(String hostPort) {
         String[] strs = hostPort.split(":");
         if (strs.length != 2) {
             strs = new String[2];

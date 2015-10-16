@@ -32,13 +32,9 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * ChannelManager keeps track of open channels, and provides a way to lookup Channels by their Remote Address.
- * <p>
- * ChannelManager} maintains both a ChannelGroup of open connections and a Map of InetSocketAddress to ChannelId so that
- * connections can be reused if a request is going to the same remote. The ChannelManager also provides a convenient
- * entry point for shutting down all active Channels.
+ * PeerManager manages peers, a abstract presentation of a channel to a host_port.
  */
-public class ChannelManager {
+public class PeerManager {
     private final Map<SocketAddress, Peer> peers = new Hashtable<>();
     private String host = "0.0.0.0";
     private int port = 0;
@@ -80,15 +76,14 @@ public class ChannelManager {
             }
         }
 
-        return peer.handleActiveConnection(ctx, getDirection(ctx)).channel;
-    }
-
-    public static Connection.Direction getDirection(ChannelHandlerContext ctx) {
+        // Direction only matters for the init path when the
+        // init handler hasn't been removed
+        Connection.Direction direction = Connection.Direction.OUT;
         if (ctx.pipeline().names().contains("InitRequestHandler")) {
-            return Connection.Direction.IN;
-        } else {
-            return Connection.Direction.OUT;
+            direction = Connection.Direction.IN;
         }
+
+        return peer.handleActiveConnection(ctx, direction).channel();
     }
 
     public void remove(Channel channel) throws InterruptedException {

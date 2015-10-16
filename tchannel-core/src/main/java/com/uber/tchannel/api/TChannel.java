@@ -27,7 +27,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.handlers.RequestHandler;
-import com.uber.tchannel.channels.ChannelManager;
+import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
@@ -75,7 +75,7 @@ public final class TChannel {
     private final String service;
     private final ServerBootstrap serverBootstrap;
     private final Bootstrap clientBootstrap;
-    private final ChannelManager channelManager;
+    private final PeerManager peerManager;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup childGroup;
     private final InetAddress host;
@@ -98,7 +98,7 @@ public final class TChannel {
         this.exectorService = builder.executorService;
         this.serverBootstrap = builder.serverBootstrap();
         this.clientBootstrap = builder.bootstrap();
-        this.channelManager = builder.channelManager;
+        this.peerManager = builder.peerManager;
         this.bossGroup = builder.bossGroup;
         this.childGroup = builder.childGroup;
         this.host = builder.host;
@@ -166,12 +166,12 @@ public final class TChannel {
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
         this.listeningPort = localAddress.getPort();
         this.listeningHost = localAddress.getHostName();
-        this.channelManager.setHostPort(this.listeningHost, this.listeningPort);
+        this.peerManager.setHostPort(this.listeningHost, this.listeningPort);
         return f;
     }
 
     public void shutdown() throws InterruptedException {
-        this.channelManager.close();
+        this.peerManager.close();
         this.bossGroup.shutdownGracefully();
         this.childGroup.shutdownGracefully();
     }
@@ -207,9 +207,9 @@ public final class TChannel {
         }
 
         // Get an outbound channel
-        Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap).channel;
+        Channel ch = this.peerManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap).channel();
 
-        if (!this.channelManager.waitForIdentified(ch, this.initTimeout)) {
+        if (!this.peerManager.waitForIdentified(ch, this.initTimeout)) {
             throw new TChannelConnectionTimeout();
         }
 
@@ -223,7 +223,7 @@ public final class TChannel {
     public static class Builder {
 
         private final String service;
-        private final ChannelManager channelManager = new ChannelManager();
+        private final PeerManager peerManager = new PeerManager();
         private ExecutorService executorService = new ForkJoinPool();
         private int maxQueuedRequests = Runtime.getRuntime().availableProcessors() * 5;
         private InetAddress host;
@@ -324,9 +324,9 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageCodec", new MessageCodec());
 
                     if (isServer) {
-                        ch.pipeline().addLast("InitRequestHandler", new InitRequestHandler(channelManager));
+                        ch.pipeline().addLast("InitRequestHandler", new InitRequestHandler(peerManager));
                     } else {
-                        ch.pipeline().addLast("InitRequestInitiator", new InitRequestInitiator(channelManager));
+                        ch.pipeline().addLast("InitRequestInitiator", new InitRequestInitiator(peerManager));
                     }
 
                     // Handle PingRequest
@@ -343,7 +343,7 @@ public final class TChannel {
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter());
 
                     // Register Channels as they are created.
-                    ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(channelManager));
+                    ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(peerManager));
 
                 }
             };

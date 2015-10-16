@@ -22,14 +22,12 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.channels.ChannelManager;
+import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
-
-import javax.sound.midi.SysexMessage;
 
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
@@ -40,7 +38,7 @@ public class InitRequestInitiatorTest {
     @Test
     public void testValidInitResponse() throws Exception {
         // Given
-        ChannelManager manager = new ChannelManager();
+        PeerManager manager = new PeerManager();
         manager.setHostPort("127.0.0.1", 8888);
         EmbeddedChannel channel = new EmbeddedChannel(
                 new ChannelRegistrar(manager)

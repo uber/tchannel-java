@@ -26,26 +26,26 @@ import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Simple ChannelHandlerAdapter that is responsible solely for registering new Channels with the ChannelManager
+ * Simple ChannelHandlerAdapter that is responsible solely for registering new Channels with the PeerManager
  * and de-registering Channels when the go inactive.
  */
 public class ChannelRegistrar extends ChannelHandlerAdapter {
 
-    private final ChannelManager channelManager;
+    private final PeerManager peerManager;
 
-    public ChannelRegistrar(ChannelManager channelManager) {
-        this.channelManager = channelManager;
+    public ChannelRegistrar(PeerManager peerManager) {
+        this.peerManager = peerManager;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        this.channelManager.add(ctx);
+        this.peerManager.add(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
-        this.channelManager.remove(ctx.channel());
+        this.peerManager.remove(ctx.channel());
     }
 }

@@ -38,23 +38,24 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Peer keeps track of open channels, and provides a way to lookup Channels by their Remote Address.
+ * Peer manages connections to/from the same host_port. It provides a way to choose connections based on
+ * their current status, e.g., connected, identified, etc.
  */
 public class Peer {
     public ArrayList<Connection> connections = new ArrayList<>();
     public Map<ChannelId, Connection> maps = new Hashtable<>();
     public SocketAddress remoteAddress = null;
 
-    private ChannelManager manager;
+    private PeerManager manager;
 
-    public Peer(ChannelManager manager, SocketAddress remoteAddress) {
+    public Peer(PeerManager manager, SocketAddress remoteAddress) {
         this.manager = manager;
         this.remoteAddress = remoteAddress;
     }
 
     public synchronized Connection add(Connection connection) {
-        if (!maps.containsKey(connection.channel.id())) {
-            maps.put(connection.channel.id(), connection);
+        if (!maps.containsKey(connection.channel().id())) {
+            maps.put(connection.channel().id(), connection);
             connections.add(connection);
         }
 
@@ -95,7 +96,7 @@ public class Peer {
 
     public synchronized void remove(Connection connection) {
         connections.remove(connection);
-        maps.remove(connection.channel.id());
+        maps.remove(connection.channel().id());
     }
 
     public synchronized Connection remove(Channel channel) {
