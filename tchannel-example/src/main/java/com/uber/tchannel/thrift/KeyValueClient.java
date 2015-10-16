@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.thrift.generated.KeyValue;
 import com.uber.tchannel.thrift.generated.NotFoundError;
 
@@ -76,7 +77,8 @@ public class KeyValueClient {
     public static String getValue(
             TChannel tchannel,
             String key
-    ) throws NotFoundError, UnknownHostException, TimeoutException, ExecutionException, InterruptedException {
+    ) throws NotFoundError, UnknownHostException, TimeoutException,
+            ExecutionException, InterruptedException, TChannelError {
 
         KeyValue.getValue_args getValue = new KeyValue.getValue_args(key);
 
