@@ -24,6 +24,8 @@ package com.uber.tchannel.api;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.uber.tchannel.api.errors.TChannelError;
+import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.ChannelManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
@@ -78,9 +80,11 @@ public final class TChannel {
     private final EventLoopGroup childGroup;
     private final InetAddress host;
     private final int port;
+    private String listeningHost = "0.0.0.0";
     private int listeningPort;
     private ExecutorService exectorService;
     private final int maxQueuedRequests;
+    private final int initTimeout;
 
     private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
@@ -100,6 +104,7 @@ public final class TChannel {
         this.host = builder.host;
         this.port = builder.port;
         this.maxQueuedRequests = builder.maxQueuedRequests;
+        this.initTimeout = builder.initTimeout;
     }
 
     private <T, U> ListenableFuture<Response<T>> callWithEncoding(
@@ -108,7 +113,7 @@ public final class TChannel {
             Request<U> request,
             final Class<T> responseType,
             ArgScheme scheme
-    ) throws InterruptedException {
+    ) throws InterruptedException, TChannelError {
 
         RawRequest rawRequest = new RawRequest(
                 request.getTTL(),
@@ -160,6 +165,8 @@ public final class TChannel {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
         this.listeningPort = localAddress.getPort();
+        this.listeningHost = localAddress.getHostName();
+        this.channelManager.setHostPort(this.listeningHost, this.listeningPort);
         return f;
     }
 
@@ -174,7 +181,7 @@ public final class TChannel {
             int port,
             Request<U> request,
             final Class<T> responseType
-    ) throws InterruptedException {
+    ) throws InterruptedException, TChannelError {
         return callWithEncoding(host, port, request, responseType, ArgScheme.THRIFT);
     }
 
@@ -183,7 +190,7 @@ public final class TChannel {
             int port,
             Request<U> request,
             final Class<T> responseType
-    ) throws InterruptedException {
+    ) throws InterruptedException, TChannelError {
         return callWithEncoding(host, port, request, responseType, ArgScheme.JSON);
     }
 
@@ -191,7 +198,7 @@ public final class TChannel {
             InetAddress host,
             int port,
             RawRequest request
-    ) throws InterruptedException {
+    ) throws InterruptedException, TChannelError {
 
         // Set the ArgScheme as RAW if its not set
         Map<String, String> transportHeaders = request.getTransportHeaders();
@@ -200,7 +207,11 @@ public final class TChannel {
         }
 
         // Get an outbound channel
-        Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
+        Channel ch = this.channelManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap).channel;
+
+        if (!this.channelManager.waitForIdentified(ch, this.initTimeout)) {
+            throw new TChannelConnectionTimeout();
+        }
 
         // Get a response router for our outbound channel
         ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
@@ -221,6 +232,7 @@ public final class TChannel {
         private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         private EventLoopGroup childGroup = new NioEventLoopGroup();
         private LogLevel logLevel = LogLevel.INFO;
+        private int initTimeout = 2000;
 
         public Builder(String service) throws UnknownHostException {
             if (service == null) {
@@ -270,6 +282,11 @@ public final class TChannel {
             return this;
         }
 
+        public Builder setInitTimeout(int initTimeout) {
+            this.initTimeout = initTimeout;
+            return this;
+        }
+
         public TChannel build() {
             return new TChannel(this);
         }
@@ -307,9 +324,9 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageCodec", new MessageCodec());
 
                     if (isServer) {
-                        ch.pipeline().addLast("InitRequestHandler", new InitRequestHandler());
+                        ch.pipeline().addLast("InitRequestHandler", new InitRequestHandler(channelManager));
                     } else {
-                        ch.pipeline().addLast("InitRequestInitiator", new InitRequestInitiator());
+                        ch.pipeline().addLast("InitRequestInitiator", new InitRequestInitiator(channelManager));
                     }
 
                     // Handle PingRequest
