@@ -24,13 +24,11 @@ package com.uber.tchannel.channels;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelId;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.channel.ChannelHandlerContext;
 
-import java.net.InetSocketAddress;
-import java.util.HashMap;
+import java.net.SocketAddress;
+import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -41,47 +39,102 @@ import java.util.Map;
  * entry point for shutting down all active Channels.
  */
 public class ChannelManager {
+    private final Map<SocketAddress, Peer> peers = new Hashtable<>();
+    private String host = "0.0.0.0";
+    private int port = 0;
 
-    private final Map<InetSocketAddress, ChannelId> channelMap = new HashMap<>();
-    private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-
-    public boolean add(Channel channel) {
-        this.channelMap.put((InetSocketAddress) channel.remoteAddress(), channel.id());
-        return this.channels.add(channel);
-    }
-
-    public boolean remove(Channel channel) {
-        this.channelMap.remove(channel.remoteAddress());
-        return this.channels.remove(channel);
-    }
-
-    public Channel findOrNew(InetSocketAddress address, Bootstrap bootstrap) throws InterruptedException {
-        Channel channel = this.find(address);
-
-        if (channel == null) {
-            channel = this.newChannel(address, bootstrap);
+    public Connection findOrNew(SocketAddress address, Bootstrap bootstrap) throws InterruptedException {
+        Peer peer = peers.get(address);
+        if (peer == null) {
+            synchronized (peers) {
+                peer = new Peer(this, address);
+                peer.connect(bootstrap);
+                peers.put(address, peer);
+            }
         }
 
-        return channel;
+        Connection conn = peer.getConnection(ConnectionState.IDENTIFIED);
+        return conn;
+    }
+
+    public Connection get(Channel channel) {
+        SocketAddress address = channel.remoteAddress();
+        Peer peer = peers.get(address);
+        if (peer != null) {
+            return peer.getConnection(channel.id());
+        }
+
+        return null;
+    }
+
+    public Channel add(ChannelHandlerContext ctx) {
+        Channel channel = ctx.channel();
+        System.out.println("Connection is active to " + channel.remoteAddress().toString());
+
+        SocketAddress address = channel.remoteAddress();
+        Peer peer = peers.get(address);
+        if (peer == null) {
+            synchronized (peers) {
+                peer = new Peer(this, address);
+                peers.put(address, peer);
+            }
+        }
+
+        return peer.handleActiveConnection(ctx, getDirection(ctx)).channel;
+    }
+
+    public static Connection.Direction getDirection(ChannelHandlerContext ctx) {
+        if (ctx.pipeline().names().contains("InitRequestHandler")) {
+            return Connection.Direction.IN;
+        } else {
+            return Connection.Direction.OUT;
+        }
+    }
+
+    public void remove(Channel channel) throws InterruptedException {
+        SocketAddress address = channel.remoteAddress();
+        Peer peer = peers.get(address);
+        if (peer != null) {
+            peer.remove(channel);
+        }
+
+        // TODO: clean up when conneciton count drops to 0
+    }
+
+    public void setIdentified(Channel channel, Map<String, String> headers) {
+        Connection conn = get(channel);
+        if (conn != null) {
+            conn.setIndentified(headers);
+        }
+    }
+
+    public boolean waitForIdentified(Channel channel, long timeout) {
+        Connection conn = get(channel);
+        if (conn != null) {
+            return conn.waitForIdentified(timeout);
+        }
+
+        return false;
     }
 
     public void close() throws InterruptedException {
-        this.channels.close().sync();
-        this.channels.clear();
-        this.channelMap.clear();
-    }
+        synchronized (peers) {
+            Iterator it = peers.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                ((Peer) pair.getValue()).close();
+            }
 
-    public Channel find(InetSocketAddress address) {
-        ChannelId channelId = this.channelMap.get(address);
-        if (channelId == null) {
-            return null;
+            peers.clear();
         }
-        return this.channels.find(channelId);
     }
 
-    public Channel newChannel(InetSocketAddress address, Bootstrap bootstrap) throws InterruptedException {
-        Channel channel = bootstrap.connect(address).sync().channel();
-        this.add(channel);
-        return channel;
+    public synchronized void setHostPort(String host, int port) {
+        this.host = host;
+        this.port = port;
+    }
+
+    public synchronized String getHostPort() {
+        return String.format("%s:%d", this.host, this.port);
     }
 }

@@ -22,30 +22,38 @@
 
 package com.uber.tchannel.channels;
 
-import io.netty.channel.ChannelHandlerAdapter;
-import io.netty.channel.ChannelHandlerContext;
+public enum ConnectionState {
+    UNCONNECTED("unconnected"),
+    CONNECTED("connected"),
+    IDENTIFIED("identified"),
+    DESTROYED("destroyed");
 
-/**
- * Simple ChannelHandlerAdapter that is responsible solely for registering new Channels with the ChannelManager
- * and de-registering Channels when the go inactive.
- */
-public class ChannelRegistrar extends ChannelHandlerAdapter {
+    private final String state;
 
-    private final ChannelManager channelManager;
-
-    public ChannelRegistrar(ChannelManager channelManager) {
-        this.channelManager = channelManager;
+    ConnectionState(String state) {
+        this.state = state;
     }
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
-        this.channelManager.add(ctx);
+    public static ConnectionState toState(String state) {
+        if (state == null) {
+            return null;
+        }
+
+        switch (state) {
+            case "unconnected":
+                return UNCONNECTED;
+            case "connected":
+                return CONNECTED;
+            case "identified":
+                return IDENTIFIED;
+            case "destroyed":
+                return DESTROYED;
+            default:
+                return null;
+        }
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
-        this.channelManager.remove(ctx.channel());
+    public String getState() {
+        return state;
     }
 }
