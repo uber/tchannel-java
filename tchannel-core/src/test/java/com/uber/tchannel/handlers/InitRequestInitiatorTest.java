@@ -53,7 +53,8 @@ public class InitRequestInitiatorTest {
         // Assert
         assertNotNull(initRequest);
         // Headers as expected
-        assertEquals(initRequest.getHeaders().toString(), "{host_port=127.0.0.1:8888, process_name=java-process}");
+        assertEquals(initRequest.getHeaders().get("host_port"), "127.0.0.1:8888");
+        assertEquals(initRequest.getHeaders().get("process_name"), "java-process");
 
         channel.writeInbound(new InitResponse(
                 initRequest.getId(),
