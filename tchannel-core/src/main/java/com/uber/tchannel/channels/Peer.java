@@ -22,10 +22,8 @@
 
 package com.uber.tchannel.channels;
 
-import java.util.ArrayList;
 import java.net.SocketAddress;
-import java.util.Map;
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
 
 import com.uber.tchannel.messages.InitMessage;
@@ -42,8 +40,7 @@ import io.netty.channel.ChannelHandlerContext;
  * their current status, e.g., connected, identified, etc.
  */
 public class Peer {
-    public ArrayList<Connection> connections = new ArrayList<>();
-    public Map<ChannelId, Connection> maps = new Hashtable<>();
+    public ConcurrentHashMap<ChannelId, Connection> connections = new ConcurrentHashMap<>();
     public SocketAddress remoteAddress = null;
 
     private PeerManager manager;
@@ -53,29 +50,27 @@ public class Peer {
         this.remoteAddress = remoteAddress;
     }
 
-    public synchronized Connection add(Connection connection) {
-        if (!maps.containsKey(connection.channel().id())) {
-            maps.put(connection.channel().id(), connection);
-            connections.add(connection);
+    public Connection add(Connection connection) {
+        Connection conn = connections.putIfAbsent(connection.channel().id(), connection);
+        if (conn != null) {
+            return conn;
         }
 
         return connection;
     }
 
-    public synchronized Connection add(Channel channel, Connection.Direction direction) {
-        Connection conn = maps.get(channel.id());
-        if (conn == null) {
-            conn = new Connection(channel, direction);
-            add(conn);
+    public Connection add(Channel channel, Connection.Direction direction) {
+        Connection conn = connections.get(channel.id());
+        if (conn != null) {
+            return conn;
         }
 
-        return conn;
+        return add(new Connection(channel, direction));
     }
 
-    public synchronized Connection handleActiveConnection(ChannelHandlerContext ctx, Connection.Direction direction) {
+    public Connection handleActiveConnection(ChannelHandlerContext ctx, Connection.Direction direction) {
         Channel channel = ctx.channel();
-        Connection conn;
-        conn = add(channel, direction);
+        Connection conn = add(channel, direction);
 
         if (conn.direction == Connection.Direction.OUT) {
             // Sending out the init request
@@ -94,22 +89,16 @@ public class Peer {
         return conn;
     }
 
-    public synchronized void remove(Connection connection) {
-        connections.remove(connection);
-        maps.remove(connection.channel().id());
+    public void remove(Connection connection) {
+        connections.remove(connection.channel().id());
     }
 
-    public synchronized Connection remove(Channel channel) {
-        Connection conn = maps.get(channel.id());
-        if (conn != null) {
-            maps.remove(channel.id());
-            connections.remove(connections);
-        }
-
+    public Connection remove(Channel channel) {
+        Connection conn = connections.remove(channel.id());
         return conn;
     }
 
-    public synchronized Connection connect(Bootstrap bootstrap) throws InterruptedException {
+    public Connection connect(Bootstrap bootstrap) throws InterruptedException {
         Connection conn = getConnection(ConnectionState.IDENTIFIED);
         if (conn != null) {
             return conn;
@@ -119,10 +108,10 @@ public class Peer {
         return add(channel, Connection.Direction.OUT);
     }
 
-    public synchronized Connection getConnection(ConnectionState preferedState) {
+    public Connection getConnection(ConnectionState preferedState) {
         Connection conn = null;
-        for (int i = 0; i < connections.size(); i++) {
-            conn = connections.get(i);
+        for (ChannelId id : connections.keySet()) {
+            conn = connections.get(id);
             if (conn.satisfy(preferedState)) {
                 break;
             }
@@ -131,16 +120,18 @@ public class Peer {
         return conn;
     }
 
-    public synchronized Connection getConnection(ChannelId channelId) {
-        return maps.get(channelId);
+    public Connection getConnection(ChannelId channelId) {
+        return connections.get(channelId);
     }
 
-    public synchronized void close() throws InterruptedException {
-        for (int i = 0; i < connections.size(); i++) {
-            connections.get(i).close();
+    public void close() throws InterruptedException {
+        for (ChannelId id : connections.keySet()) {
+            Connection conn = connections.get(id);
+            if (conn != null) {
+                conn.close();
+            }
         }
 
         this.connections.clear();
-        this.maps.clear();
     }
 }

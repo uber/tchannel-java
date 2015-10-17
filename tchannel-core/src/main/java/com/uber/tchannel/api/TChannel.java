@@ -166,7 +166,7 @@ public final class TChannel {
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
         this.listeningPort = localAddress.getPort();
         this.listeningHost = localAddress.getHostName();
-        this.peerManager.setHostPort(this.listeningHost, this.listeningPort);
+        this.peerManager.setHostPort(String.format("%s:%d", this.listeningHost, this.listeningPort));
         return f;
     }
 

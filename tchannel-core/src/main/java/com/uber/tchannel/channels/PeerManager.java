@@ -27,30 +27,25 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.net.SocketAddress;
-import java.util.Hashtable;
-import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
 /**
  * PeerManager manages peers, a abstract presentation of a channel to a host_port.
  */
 public class PeerManager {
-    private final Map<SocketAddress, Peer> peers = new Hashtable<>();
-    private String host = "0.0.0.0";
-    private int port = 0;
+    private final ConcurrentHashMap<SocketAddress, Peer> peers = new ConcurrentHashMap<>();
+    private String hostPort = "0.0.0.0:0";
 
     public Connection findOrNew(SocketAddress address, Bootstrap bootstrap) throws InterruptedException {
         Peer peer = peers.get(address);
         if (peer == null) {
-            synchronized (peers) {
-                peer = new Peer(this, address);
-                peer.connect(bootstrap);
-                peers.put(address, peer);
-            }
+            peer = new Peer(this, address);
+            peers.putIfAbsent(address, peer);
+            peer = peers.get(address);
         }
 
-        Connection conn = peer.getConnection(ConnectionState.IDENTIFIED);
-        return conn;
+        return peer.connect(bootstrap);
     }
 
     public Connection get(Channel channel) {
@@ -65,15 +60,13 @@ public class PeerManager {
 
     public Channel add(ChannelHandlerContext ctx) {
         Channel channel = ctx.channel();
-        System.out.println("Connection is active to " + channel.remoteAddress().toString());
 
         SocketAddress address = channel.remoteAddress();
         Peer peer = peers.get(address);
         if (peer == null) {
-            synchronized (peers) {
-                peer = new Peer(this, address);
-                peers.put(address, peer);
-            }
+            peer = new Peer(this, address);
+            peers.putIfAbsent(address, peer);
+            peer = peers.get(address);
         }
 
         // Direction only matters for the init path when the
@@ -113,23 +106,18 @@ public class PeerManager {
     }
 
     public void close() throws InterruptedException {
-        synchronized (peers) {
-            Iterator it = peers.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry) it.next();
-                ((Peer) pair.getValue()).close();
-            }
-
-            peers.clear();
+        for (SocketAddress addr : peers.keySet()) {
+            peers.get(addr).close();
         }
+
+        peers.clear();
     }
 
-    public synchronized void setHostPort(String host, int port) {
-        this.host = host;
-        this.port = port;
+    public void setHostPort(String hostPort) {
+        this.hostPort = hostPort;
     }
 
-    public synchronized String getHostPort() {
-        return String.format("%s:%d", this.host, this.port);
+    public String getHostPort() {
+        return this.hostPort;
     }
 }

@@ -39,7 +39,7 @@ public class InitRequestInitiatorTest {
     public void testValidInitResponse() throws Exception {
         // Given
         PeerManager manager = new PeerManager();
-        manager.setHostPort("127.0.0.1", 8888);
+        manager.setHostPort(String.format("%s:%d", "127.0.0.1", 8888));
         EmbeddedChannel channel = new EmbeddedChannel(
                 new ChannelRegistrar(manager)
         );
