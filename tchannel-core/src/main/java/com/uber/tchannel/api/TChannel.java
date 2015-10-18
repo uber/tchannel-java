@@ -161,6 +161,10 @@ public final class TChannel {
         return this.service;
     }
 
+    public PeerManager getPeerManager() {
+        return this.peerManager;
+    }
+
     public ChannelFuture listen() throws InterruptedException {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();

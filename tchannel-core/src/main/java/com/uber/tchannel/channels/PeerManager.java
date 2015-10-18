@@ -27,6 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.net.SocketAddress;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
@@ -119,5 +120,20 @@ public class PeerManager {
 
     public String getHostPort() {
         return this.hostPort;
+    }
+
+    public Map<String, Integer> getStats() {
+        int in = 0;
+        int out = 0;
+        for (SocketAddress addr : peers.keySet()) {
+            Map<String, Integer> connStats = peers.get(addr).getStats();
+            in += connStats.get("connections.in");
+            out += connStats.get("connections.out");
+        }
+
+        Map<String, Integer> result = new HashMap<>();
+        result.put("connections.in", in);
+        result.put("connections.out", out);
+        return result;
     }
 }

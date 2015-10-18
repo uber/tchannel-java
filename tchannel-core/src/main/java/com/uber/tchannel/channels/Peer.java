@@ -23,6 +23,7 @@
 package com.uber.tchannel.channels;
 
 import java.net.SocketAddress;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
 
@@ -133,5 +134,25 @@ public class Peer {
         }
 
         this.connections.clear();
+    }
+
+    public Map<String, Integer> getStats() {
+        int in = 0;
+        int out = 0;
+        for (ChannelId id : connections.keySet()) {
+            Connection conn = connections.get(id);
+            if (conn == null) {
+                continue;
+            } else if (conn.direction == Connection.Direction.OUT) {
+                out++;
+            } else {
+                in++;
+            }
+        }
+
+        Map<String, Integer> result = new HashMap<>();
+        result.put("connections.in", in);
+        result.put("connections.out", out);
+        return result;
     }
 }
