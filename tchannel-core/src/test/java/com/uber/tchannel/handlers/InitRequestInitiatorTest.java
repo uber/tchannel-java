@@ -22,6 +22,8 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.channels.PeerManager;
+import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.messages.InitRequest;
 import com.uber.tchannel.messages.InitResponse;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -36,16 +38,23 @@ public class InitRequestInitiatorTest {
     @Test
     public void testValidInitResponse() throws Exception {
         // Given
+        PeerManager manager = new PeerManager();
+        manager.setHostPort(String.format("%s:%d", "127.0.0.1", 8888));
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestInitiator()
+                new ChannelRegistrar(manager)
         );
-        assertEquals(3, channel.pipeline().names().size());
+
+        channel.pipeline().addFirst("InitRequestInitiator", new InitRequestInitiator(manager));
+        assertEquals(4, channel.pipeline().names().size());
 
         // Then
         InitRequest initRequest = channel.readOutbound();
 
         // Assert
         assertNotNull(initRequest);
+        // Headers as expected
+        assertEquals(initRequest.getHeaders().get("host_port"), "127.0.0.1:8888");
+        assertEquals(initRequest.getHeaders().get("process_name"), "java-process");
 
         channel.writeInbound(new InitResponse(
                 initRequest.getId(),
@@ -56,7 +65,7 @@ public class InitRequestInitiatorTest {
         Object obj = channel.readOutbound();
         assertNull(obj);
 
-        assertEquals(2, channel.pipeline().names().size());
+        assertEquals(3, channel.pipeline().names().size());
 
     }
 }

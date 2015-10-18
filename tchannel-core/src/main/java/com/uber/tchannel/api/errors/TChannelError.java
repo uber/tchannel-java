@@ -20,32 +20,23 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.channels;
+package com.uber.tchannel.api.errors;
 
-import io.netty.channel.ChannelHandlerAdapter;
-import io.netty.channel.ChannelHandlerContext;
+public class TChannelError extends Exception {
+    public static final String ERROR_INIT_TIMEOUT = "tchannel.connection.timeout";
 
-/**
- * Simple ChannelHandlerAdapter that is responsible solely for registering new Channels with the PeerManager
- * and de-registering Channels when the go inactive.
- */
-public class ChannelRegistrar extends ChannelHandlerAdapter {
+    public final String type;
+    public final Exception subError;
 
-    private final PeerManager peerManager;
-
-    public ChannelRegistrar(PeerManager peerManager) {
-        this.peerManager = peerManager;
+    public TChannelError(String message, String type, Exception subError) {
+        super(message);
+        this.type = type;
+        this.subError = subError;
     }
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
-        this.peerManager.add(ctx);
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
-        this.peerManager.remove(ctx.channel());
+    public TChannelError(String message, String type) {
+        super(message);
+        this.type = type;
+        this.subError = null;
     }
 }

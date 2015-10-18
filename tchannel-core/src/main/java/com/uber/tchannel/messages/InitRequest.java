@@ -60,8 +60,16 @@ public final class InitRequest implements Message, InitMessage {
         return this.headers.get(HOST_PORT_KEY);
     }
 
+    public void setHostPort(String hostPort) {
+        this.headers.put(HOST_PORT_KEY, hostPort);
+    }
+
     public String getProcessName() {
         return this.headers.get(PROCESS_NAME_KEY);
+    }
+
+    public void setProcessName(String processName) {
+        this.headers.put(PROCESS_NAME_KEY, processName);
     }
 
     @Override

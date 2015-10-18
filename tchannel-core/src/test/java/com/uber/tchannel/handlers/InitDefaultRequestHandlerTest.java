@@ -22,6 +22,7 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.CallRequest;
 import com.uber.tchannel.messages.ErrorMessage;
@@ -51,7 +52,7 @@ public class InitDefaultRequestHandlerTest {
 
         // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestHandler()
+                new InitRequestHandler(new PeerManager())
         );
 
         assertEquals(3, channel.pipeline().names().size());
@@ -95,7 +96,7 @@ public class InitDefaultRequestHandlerTest {
 
         // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestHandler()
+                new InitRequestHandler(new PeerManager())
         );
 
         InitRequest initRequest = new InitRequest(42,
@@ -124,7 +125,7 @@ public class InitDefaultRequestHandlerTest {
     public void testInvalidCallBeforeInitRequest() throws Exception {
         // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestHandler()
+                new InitRequestHandler(new PeerManager())
         );
 
         CallRequest callRequest = Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER);
@@ -142,7 +143,7 @@ public class InitDefaultRequestHandlerTest {
     public void testIncorrectProtocolVersion() throws Exception {
         // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestHandler()
+                new InitRequestHandler(new PeerManager())
         );
 
         InitRequest initRequest = new InitRequest(42,

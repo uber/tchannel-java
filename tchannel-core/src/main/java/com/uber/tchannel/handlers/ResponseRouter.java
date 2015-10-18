@@ -59,6 +59,5 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
     protected void messageReceived(ChannelHandlerContext ctx, RawResponse rawResponse) throws Exception {
         SettableFuture<RawResponse> future = this.messageMap.remove(rawResponse.getId());
         future.set(rawResponse);
-
     }
 }

@@ -23,6 +23,7 @@
 package com.uber.tchannel.schemes;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
 import java.util.HashMap;
@@ -70,6 +71,14 @@ public final class RawRequest implements RawMessage {
         this.arg1 = arg1;
         this.arg2 = arg2;
         this.arg3 = arg3;
+    }
+
+    public RawRequest(long ttl, String service, Map<String, String> transportHeaders,
+                      String arg1, String arg2, String arg3) {
+        this(ttl, service, transportHeaders,
+                Unpooled.wrappedBuffer(arg1.getBytes()),
+                Unpooled.wrappedBuffer(arg2.getBytes()),
+                Unpooled.wrappedBuffer(arg3.getBytes()));
     }
 
     @Override
