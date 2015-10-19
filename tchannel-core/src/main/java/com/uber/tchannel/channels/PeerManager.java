@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.channels;
 
+import com.uber.tchannel.api.errors.TChannelError;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -38,7 +39,7 @@ public class PeerManager {
     private final ConcurrentHashMap<SocketAddress, Peer> peers = new ConcurrentHashMap<>();
     private String hostPort = "0.0.0.0:0";
 
-    public Connection findOrNew(SocketAddress address, Bootstrap bootstrap) throws InterruptedException {
+    public Connection findOrNew(SocketAddress address, Bootstrap bootstrap) throws TChannelError {
         Peer peer = peers.get(address);
         if (peer == null) {
             peer = new Peer(this, address);

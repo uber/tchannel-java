@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.handlers.RequestHandler;
+import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.MessageCodec;
@@ -48,7 +49,6 @@ import com.uber.tchannel.schemes.Serializer;
 import com.uber.tchannel.schemes.ThriftSerializer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -211,14 +211,18 @@ public final class TChannel {
         }
 
         // Get an outbound channel
-        Channel ch = this.peerManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap).channel();
+        Connection conn = this.peerManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
 
-        if (!this.peerManager.waitForIdentified(ch, this.initTimeout)) {
-            throw new TChannelConnectionTimeout();
+        if (!conn.waitForIdentified(this.initTimeout)) {
+            if (conn.lastError() != null) {
+                throw conn.lastError();
+            } else {
+                throw new TChannelConnectionTimeout();
+            }
         }
 
         // Get a response router for our outbound channel
-        ResponseRouter responseRouter = ch.pipeline().get(ResponseRouter.class);
+        ResponseRouter responseRouter = conn.channel().pipeline().get(ResponseRouter.class);
 
         // Ask the router to make a call on our behalf, and return its promise
         return responseRouter.expectResponse(request);
