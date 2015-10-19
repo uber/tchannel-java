@@ -50,6 +50,10 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
         String headerJSON = arg2.toString(CharsetUtil.UTF_8);
         arg2.release();
+        if (headerJSON == null || headerJSON.isEmpty() || headerJSON.equals("\"\"")) {
+            headerJSON = "{}";
+        }
+
         Map<String, String> headers = new Gson().fromJson(headerJSON, HEADER_TYPE);
         return (headers == null) ? new HashMap<String, String>() : headers;
     }
