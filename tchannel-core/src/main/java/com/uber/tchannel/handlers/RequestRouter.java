@@ -30,8 +30,10 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.BadRequestError;
 import com.uber.tchannel.errors.BusyError;
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.messages.ErrorMessage;
 import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
@@ -127,7 +129,14 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
             @Override
             public void onFailure(Throwable throwable) {
                 queuedRequests.decrementAndGet();
-                // TODO handle the failure case
+
+                // TODO better interface for sending errors
+                ErrorMessage error = new ErrorMessage(
+                        rawRequest.getId(),
+                        ErrorType.BadRequest,
+                        new Trace(0, 0, 0, (byte) 0x00),
+                        throwable.getMessage());
+                ctx.writeAndFlush(error);
             }
         });
     }
