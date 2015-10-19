@@ -21,30 +21,77 @@
  */
 package com.uber.tchannel.hyperbahn;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 import com.uber.tchannel.ping.PingRequestHandler;
 
+// Instructions:
+//      1. run Hyperbahn: node server.js --port 21300 2>&1 | jq .
+//      2. run HyperbahnExample.java
+//      3. tcurl -p 127.0.0.1:21300 javaServer ping -j -2 "{}" -3 '{"request":"hello"}' | jq .
+
 public class HyperbahnExample {
     public static void main(String[] args) throws Exception {
-        TChannel tchannel = new TChannel.Builder("hyperbahn-example")
-            .register("ping", new PingRequestHandler())
-            .build();
+        TChannel tchannel = new TChannel.Builder("javaServer")
+                .register("ping", new PingRequestHandler())
+                .setServerHost(InetAddress.getByName("127.0.0.1"))
+                .setServerPort(8888)
+                .build();
 
         tchannel.listen();
 
-        HyperbahnClient hyperbahn = new HyperbahnClient(tchannel);
+        List<InetSocketAddress> routers = new ArrayList<InetSocketAddress>() {
+            {
+                add(new InetSocketAddress("127.0.0.1", 21300));
+            }
+        };
 
-        Response<AdvertiseResponse> response = hyperbahn.advertise(tchannel.getServiceName(), 0);
+        HyperbahnClient hyperbahn = new HyperbahnClient.Builder(tchannel.getServiceName(), tchannel)
+                .setRouters(routers)
+                .build();
 
-        System.err.println(response);
+        final ListenableFuture<Response<AdvertiseResponse>> responseFuture;
 
-        Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
+        try {
+            responseFuture = hyperbahn.advertise();
+        } catch (TChannelError ex) {
+            System.out.println("Advertise failure: " + ex.toString());
+            tchannel.shutdown();
+            hyperbahn.shutdown();
+            return;
+        }
 
+        responseFuture.addListener(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Response<AdvertiseResponse> response = responseFuture.get();
+                    System.out.println("Got response. All set: " + response.getBody().toString());
+                } catch (Exception ex) {
+                    System.out.println("Error happened: " + ex.getMessage());
+                }
+            }
+        }, new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                command.run();
+            }
+        });
+
+        Thread.sleep(TimeUnit.MILLISECONDS.convert(600, TimeUnit.SECONDS));
+
+        tchannel.shutdown();
         hyperbahn.shutdown();
     }
 }

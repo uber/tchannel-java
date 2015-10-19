@@ -26,12 +26,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -39,89 +41,187 @@ import com.google.gson.Gson;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HyperbahnClient {
-
-    private static final String HOSTS_FILE_PATH = "/etc/uber/hyperbahn/hosts.json";
+public final class HyperbahnClient {
     private static final String HYPERBAHN_SERVICE_NAME = "hyperbahn";
     private static final String HYPERBAHN_ADVERTISE_ENDPOINT = "ad";
-
-    private final TChannel tchannel;
+    public AtomicBoolean destroyed = new AtomicBoolean(false);
     private final Logger logger = LoggerFactory.getLogger(HyperbahnClient.class);
-    private List<InetSocketAddress> routers;
 
-    public HyperbahnClient(TChannel tchannel) throws IOException {
-        this(tchannel, HOSTS_FILE_PATH);
+    private final String service;
+    private final TChannel tchannel;
+    private final List<InetSocketAddress> routers;
+    private final long advertiseTimeout;
+    private final long advertiseInterval;
+
+    private Timer advertiseTimer = new Timer(true);
+
+    private HyperbahnClient(Builder builder) {
+        this.service = builder.service;
+        this.tchannel = builder.channel;
+        this.routers = builder.routers;
+        this.advertiseTimeout = builder.advertiseTimeout;
+        this.advertiseInterval = builder.advertiseInterval;
     }
 
-    public HyperbahnClient(TChannel tchannel, String hostsFilePath) throws IOException {
-        this.tchannel = tchannel;
-        this.routers = HyperbahnClient.loadRouters(hostsFilePath);
-    }
-
-    private static List<InetSocketAddress> loadRouters(String hostsFilePath) throws IOException {
-
-        List<String> hostPorts;
-        try (Reader reader = new FileReader(hostsFilePath)) {
-            hostPorts = new Gson().fromJson(reader, List.class);
-        }
-
-        List<InetSocketAddress> routers = new LinkedList<>();
-        for (String hostPort : hostPorts) {
-            String[] hostPortPair = hostPort.split(Pattern.quote(":"));
-            String host = hostPortPair[0];
-            int port = Integer.parseInt(hostPortPair[1]);
-            InetSocketAddress router = new InetSocketAddress(host, port);
-            routers.add(router);
-        }
-
-        return routers;
-
-    }
-
-    public Response<AdvertiseResponse> advertise(
-        String service,
-        int cost
-    ) throws InterruptedException, TimeoutException, ExecutionException {
+    public ListenableFuture<Response<AdvertiseResponse>> advertise()
+        throws InterruptedException, TChannelError {
 
         final AdvertiseRequest advertiseRequest = new AdvertiseRequest();
-        advertiseRequest.addService(service, cost);
+        advertiseRequest.addService(service, 0);
 
+        // TODO: options for timeout, hard fail, etc.
         final Request<AdvertiseRequest> request = new Request.Builder<>(
             advertiseRequest,
             HYPERBAHN_SERVICE_NAME,
             HYPERBAHN_ADVERTISE_ENDPOINT
         )
-            .setTTL(1, TimeUnit.SECONDS)
+            .setTTL(advertiseTimeout, TimeUnit.SECONDS)
             .build();
 
+        // TODO: should be part of tchannel peer selection
         final InetSocketAddress router = this.routers.get(new Random().nextInt(this.routers.size()));
+        ListenableFuture<Response<AdvertiseResponse>> responseFuture = null;
+        try {
+            responseFuture = this.tchannel.callJSON(
+                    router.getAddress(),
+                    router.getPort(),
+                    request,
+                    AdvertiseResponse.class
+            );
+        } catch (TChannelError ex) {
+            // TODO: should be moved into tchanne as retry ...
+            this.logger.error("Advertise failure: " + ex.toString());
 
-        ListenableFuture<Response<AdvertiseResponse>> responseFuture = this.tchannel.callJSON(
-            router.getAddress(),
-            router.getPort(),
-            request,
-            AdvertiseResponse.class
-        );
+            // re-throw for now
+            // TODO: should really handle internally
+            throw ex;
+        }
 
-        return responseFuture.get(2, TimeUnit.SECONDS);
+        responseFuture.addListener(new Runnable() {
+            @Override
+            public void run() {
+                if (destroyed.get()) {
+                    return;
+                }
 
+                scheduleAdvertise();
+            }
+        }, new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                command.run();
+            }
+        });
+
+        return responseFuture;
+
+    }
+
+    private void scheduleAdvertise() {
+        if (destroyed.get()) {
+            return;
+        }
+
+        advertiseTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    ListenableFuture<Response<AdvertiseResponse>> responseFuture = advertise();
+                } catch (Exception ex) {
+                    logger.error(service + " failed to advertise. " + ex.getMessage());
+                }
+            }
+        }, advertiseInterval);
     }
 
     public void stopAdvertising() {
-
+        advertiseTimer.cancel();
     }
 
     public void shutdown() throws InterruptedException {
+        if (!destroyed.compareAndSet(false, true)) {
+            return;
+        }
+
         this.logger.info("Shutting down HyperbahnClient and TChannel.");
         this.stopAdvertising();
         this.tchannel.shutdown();
         this.routers.clear();
         this.logger.info("HyperbahnClient shutdown complete.");
+    }
+
+    public static class Builder {
+
+        private final String service;
+        private final TChannel channel;
+
+        private List<InetSocketAddress> routers;
+        private long advertiseTimeout = 5000;
+        private long advertiseInterval = 60 * 1000;
+
+        public Builder(String service, TChannel channel) {
+            if (service == null) {
+                throw new NullPointerException("`service` cannot be null");
+            }
+
+            if (channel == null) {
+                throw new NullPointerException("`channel` cannot be null");
+            }
+
+            this.service = service;
+            this.channel = channel;
+        }
+
+        public Builder setAdvertiseTimeout(long advertiseTimeout) {
+            this.advertiseTimeout = advertiseTimeout;
+            return this;
+        }
+
+        public Builder advertiseInterval(long advertiseInterval) {
+            this.advertiseInterval = advertiseInterval;
+            return this;
+        }
+
+        public Builder setRouters(List<InetSocketAddress> routers) {
+            this.routers = routers;
+            return this;
+        }
+
+        public Builder setRouterFile(String routerFile) throws IOException {
+            this.routers = loadRouters(routerFile);
+            return this;
+        }
+
+        private static List<InetSocketAddress> loadRouters(String hostsFilePath) throws IOException {
+
+            List<String> hostPorts;
+            try (Reader reader = new FileReader(hostsFilePath)) {
+                hostPorts = new Gson().fromJson(reader, List.class);
+            }
+
+            List<InetSocketAddress> routers = new ArrayList<>();
+            for (String hostPort : hostPorts) {
+                String[] hostPortPair = hostPort.split(Pattern.quote(":"));
+                String host = hostPortPair[0];
+                int port = Integer.parseInt(hostPortPair[1]);
+                InetSocketAddress router = new InetSocketAddress(host, port);
+                routers.add(router);
+            }
+
+            return routers;
+
+        }
+
+        public HyperbahnClient build() {
+            return new HyperbahnClient(this);
+        }
+
     }
 
 }

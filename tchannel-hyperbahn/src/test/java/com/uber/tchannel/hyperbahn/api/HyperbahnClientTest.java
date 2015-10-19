@@ -22,15 +22,72 @@
 
 package com.uber.tchannel.hyperbahn.api;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import io.netty.channel.ChannelFuture;
+import org.junit.Test;
+
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class HyperbahnClientTest {
 
-    @org.junit.Test
+    @Test
     public void testAdvertise() throws Exception {
+        AdvertiseResponseHandler responseHandler = new AdvertiseResponseHandler();
+        TChannel server = createMockHyperbahn(responseHandler);
+
         TChannel tchannel = new TChannel.Builder("hyperbahn-service").build();
 
-        HyperbahnClient hyperbahnClient = new HyperbahnClient(tchannel);
+        List<InetSocketAddress> routers = new ArrayList<InetSocketAddress>() {{
+            add(new InetSocketAddress("127.0.0.1", 8888));
+        }};
 
+        HyperbahnClient hyperbahnClient = new HyperbahnClient.Builder("service", tchannel)
+                .setRouters(routers)
+                .build();
+        ListenableFuture<Response<AdvertiseResponse>> responseFuture = hyperbahnClient.advertise();
+
+        Response<AdvertiseResponse> response = responseFuture.get(1000, TimeUnit.MILLISECONDS);
+
+        assertNotNull(response);
+        assertEquals(responseHandler.requestReceived, true);
+
+        tchannel.shutdown();
+        server.shutdown();
+    }
+
+    public static TChannel createMockHyperbahn(AdvertiseResponseHandler adHandler) throws Exception {
+        final TChannel server = new TChannel.Builder("autobahn")
+                .register("ad", adHandler)
+                .setServerHost(InetAddress.getByName("127.0.0.1"))
+                .setServerPort(8888)
+                .build();
+
+        ChannelFuture f = server.listen();
+        return server;
+    }
+
+    public class AdvertiseResponseHandler extends JSONRequestHandler<AdvertiseRequest, AdvertiseResponse> {
+        public boolean requestReceived = false;
+
+        @Override
+        public Response<AdvertiseResponse> handleImpl(Request<AdvertiseRequest> request) {
+            requestReceived = true;
+            return new Response.Builder<>(new AdvertiseResponse(10), request.getEndpoint(), ResponseCode.OK).build();
+        }
     }
 }
