@@ -27,12 +27,15 @@ import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 
-public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
+public class PingRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
+    @Override
     public Response<Pong> handleImpl(Request<Ping> request) {
+
         return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
-                .setHeaders(request.getHeaders())
-                .build();
+            .setHeaders(request.getHeaders())
+            .setTransportHeaders(request.getTransportHeaders())
+            .build();
     }
 
 }

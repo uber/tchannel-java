@@ -20,18 +20,32 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.json;
+package com.uber.tchannel.thrift;
+
+import java.util.Map;
 
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.api.handlers.ThriftRequestHandler;
+import com.uber.tchannel.thrift.generated.KeyValue;
 
-public class JsonDefaultRequestHandler extends JSONRequestHandler<RequestPojo, ResponsePojo> {
+public class SetValueRequestHandler extends ThriftRequestHandler<KeyValue.setValue_args, KeyValue.setValue_result> {
 
-    public Response<ResponsePojo> handleImpl(Request<RequestPojo> request) {
-        System.out.println(request);
+    private final Map<String, String> keyValueStore;
 
-        return new Response.Builder<>(new ResponsePojo(true, "hi!"), request.getEndpoint(), ResponseCode.OK).build();
+    public SetValueRequestHandler(Map<String, String> keyValueStore) {
+        this.keyValueStore = keyValueStore;
+    }
+
+    @Override
+    public Response<KeyValue.setValue_result> handleImpl(Request<KeyValue.setValue_args> request) {
+
+        String key = request.getBody().getKey();
+        String value = request.getBody().getValue();
+
+        this.keyValueStore.put(key, value);
+
+        return new Response.Builder<>(new KeyValue.setValue_result(), request.getEndpoint(), ResponseCode.OK).build();
     }
 }

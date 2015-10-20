@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
 
+import com.uber.tchannel.api.errors.TChannelConnectionFailure;
+import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.messages.InitMessage;
 import com.uber.tchannel.messages.InitRequest;
 import io.netty.bootstrap.Bootstrap;
@@ -99,14 +101,27 @@ public class Peer {
         return conn;
     }
 
-    public Connection connect(Bootstrap bootstrap) throws InterruptedException {
+    public Connection connect(Bootstrap bootstrap) throws TChannelError {
         Connection conn = getConnection(ConnectionState.IDENTIFIED);
         if (conn != null) {
             return conn;
         }
 
-        Channel channel = bootstrap.connect(remoteAddress).sync().channel();
-        return add(channel, Connection.Direction.OUT);
+        final ChannelFuture f = bootstrap.connect(remoteAddress);
+        Channel channel = f.channel();
+        final Connection connection = add(channel, Connection.Direction.OUT);
+
+        // handle connection errors
+        f.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    connection.setIndentified(new TChannelConnectionFailure(future.cause()));
+                }
+            }
+        });
+
+        return connection;
     }
 
     public Connection getConnection(ConnectionState preferedState) {

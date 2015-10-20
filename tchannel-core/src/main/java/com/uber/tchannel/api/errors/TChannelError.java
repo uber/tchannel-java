@@ -23,12 +23,15 @@
 package com.uber.tchannel.api.errors;
 
 public class TChannelError extends Exception {
+    public static final String ERROR_INTERRUPTED = "tchannel.interrupted";
+
     public static final String ERROR_INIT_TIMEOUT = "tchannel.connection.timeout";
+    public static final String ERROR_CONNECTION_FAILURE = "tchannel.socket";
 
     public final String type;
-    public final Exception subError;
+    public final Throwable subError;
 
-    public TChannelError(String message, String type, Exception subError) {
+    public TChannelError(String message, String type, Throwable subError) {
         super(message);
         this.type = type;
         this.subError = subError;

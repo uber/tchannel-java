@@ -21,6 +21,7 @@
  */
 
 package com.uber.tchannel.channels;
+import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.messages.InitMessage;
 import io.netty.channel.Channel;
 
@@ -35,6 +36,7 @@ public class Connection {
 
     private final Channel channel;
     private String remoteAddress = null;
+    private TChannelError lastError = null;
 
     public Connection(Channel channel, Direction direction) {
         this.channel = channel;
@@ -46,6 +48,9 @@ public class Connection {
 
     public Channel channel() {
         return this.channel;
+    }
+    public TChannelError lastError() {
+        return this.lastError;
     }
 
     public synchronized boolean satisfy(ConnectionState preferedState) {
@@ -65,7 +70,8 @@ public class Connection {
 
     public synchronized void setState(ConnectionState state) {
         this.state = state;
-        if (state == ConnectionState.IDENTIFIED) {
+        if (state == ConnectionState.IDENTIFIED || (
+                state == ConnectionState.UNCONNECTED && this.lastError != null)) {
             this.notifyAll();
         }
     }
@@ -79,6 +85,12 @@ public class Connection {
 
         this.remoteAddress = hostPort.trim();
         this.setState(ConnectionState.IDENTIFIED);
+    }
+
+    public synchronized void setIndentified(TChannelError error) {
+        this.remoteAddress = null;
+        this.lastError = error;
+        this.setState(ConnectionState.UNCONNECTED);
     }
 
     public synchronized boolean isEphemeral() {
@@ -99,6 +111,7 @@ public class Connection {
         // TODO reap connections/peers on init timeout
         try {
             if (this.state != ConnectionState.IDENTIFIED) {
+                this.lastError = null;
                 this.wait(timeout);
             }
         } catch (InterruptedException ex) {
@@ -109,7 +122,7 @@ public class Connection {
     }
 
     public synchronized void close() throws InterruptedException {
-        channel.close().sync();
+        channel.close();
         this.state = ConnectionState.DESTROYED;
     }
 

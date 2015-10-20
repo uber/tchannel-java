@@ -25,4 +25,15 @@ java -cp tchannel-example/target/tchannel-example.jar com.uber.tchannel.ping.Pin
 #Stopping Client...
 ```
 
+#### HyperbahnExample
+```bash
+mvn package
+Run Hyperbahn: node server.js --port 21300 2>&1 | jq .
+java -cp tchannel-example/target/tchannel-example.jar com.uber.tchannel.hyperbahn.HyperbahnExample
+tcurl -p 127.0.0.1:21300 javaServer ping -j -2 "{}" -3 '{"request":"hello"}' | jq .
+```
+
+
+
+
 ## MIT Licenced

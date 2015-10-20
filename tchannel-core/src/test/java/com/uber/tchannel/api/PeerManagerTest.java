@@ -60,7 +60,7 @@ public class PeerManagerTest {
         int port = server.getListeningPort();
 
         // create client
-        final TChannel client = new TChannel.Builder("json-server")
+        final TChannel client = new TChannel.Builder("server")
                 .setServerHost(host)
                 .build();
         client.listen();

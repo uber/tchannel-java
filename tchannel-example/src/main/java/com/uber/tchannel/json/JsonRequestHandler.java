@@ -22,20 +22,18 @@
 
 package com.uber.tchannel.json;
 
-import com.uber.tchannel.api.TChannel;
-import io.netty.channel.ChannelFuture;
+import com.uber.tchannel.api.Request;
+import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.api.handlers.JSONRequestHandler;
 
-public class JsonServer {
-    public static void main(String[] args) throws Exception {
-        final TChannel tchannel = new TChannel.Builder("json-server")
-                .register("json-endpoint", new JsonRequestHandler())
-                .setServerPort(8888)
-                .build();
+public class JsonRequestHandler extends JSONRequestHandler<RequestPojo, ResponsePojo> {
 
-        ChannelFuture f = tchannel.listen();
+    @Override
+    public Response<ResponsePojo> handleImpl(Request<RequestPojo> request) {
+        System.out.println(request);
 
-        f.channel().closeFuture().sync();
-
-        tchannel.shutdown();
+        return new Response.Builder<>(new ResponsePojo(true, "hi!"), request.getEndpoint(), ResponseCode.OK).build();
     }
+
 }
