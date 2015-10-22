@@ -19,44 +19,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.frames.ClaimFrame;
 import com.uber.tchannel.tracing.Trace;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Test;
 
-public final class Claim implements Message {
+import static org.junit.Assert.assertEquals;
 
-    private final long id;
-    private final long ttl;
-    private final Trace tracing;
+public class ClaimFrameCodecTest {
 
-    /**
-     * Designated Constructor
-     *
-     * @param id      unique id of the message
-     * @param ttl     ttl on the wire
-     * @param tracing tracing information
-     */
-    public Claim(long id, long ttl, Trace tracing) {
-        this.id = id;
-        this.ttl = ttl;
-        this.tracing = tracing;
+    @Test
+    public void testEncodeDecodeClaim() throws Exception {
 
-    }
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new TChannelLengthFieldBasedFrameDecoder(),
+                new TFrameCodec(),
+                new ClaimCodec()
+        );
 
-    public long getId() {
-        return this.id;
-    }
+        ClaimFrame claimFrameMessage = new ClaimFrame(Integer.MAX_VALUE, Integer.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03));
 
-    public MessageType getMessageType() {
-        return MessageType.Claim;
-    }
+        channel.writeOutbound(claimFrameMessage);
+        channel.writeInbound(channel.readOutbound());
 
-    public long getTTL() {
-        return ttl;
-    }
+        ClaimFrame newClaimFrameMessage = channel.readInbound();
+        assertEquals(newClaimFrameMessage.getId(), claimFrameMessage.getId());
+        assertEquals(newClaimFrameMessage.getTTL(), claimFrameMessage.getTTL());
 
-    public Trace getTracing() {
-        return tracing;
     }
 
 }

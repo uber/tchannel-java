@@ -1,3 +1,5 @@
+package com.uber.tchannel.codecs;
+
 /*
  * Copyright (c) 2015 Uber Technologies, Inc.
  *
@@ -20,39 +22,46 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
-
-import com.uber.tchannel.Fixtures;
-import com.uber.tchannel.messages.CallRequestContinue;
-import io.netty.buffer.Unpooled;
+import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.frames.InitRequestFrame;
+import com.uber.tchannel.frames.InitResponseFrame;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.CharsetUtil;
 import org.junit.Test;
+
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
-public class CallRequestContinueCodecTest {
+public class InitResponseFrameCodecTest {
 
     @Test
-    public void testEncodeDecode() throws Exception {
+    public void shouldEncodeAndDecodeInitResponse() {
 
         EmbeddedChannel channel = new EmbeddedChannel(
                 new TChannelLengthFieldBasedFrameDecoder(),
                 new TFrameCodec(),
-                new CallRequestContinueCodec()
+                new InitResponseCodec()
         );
 
-        CallRequestContinue callRequestContinue = Fixtures.callRequestContinue(
+        InitResponseFrame initResponseFrame = new InitResponseFrame(
                 42,
-                false,
-                Unpooled.wrappedBuffer("Hello, World!".getBytes())
+                InitRequestFrame.DEFAULT_VERSION,
+                new HashMap<String, String>() {{
+                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
+                }}
         );
 
-        channel.writeOutbound(callRequestContinue);
+        channel.writeOutbound(initResponseFrame);
         channel.writeInbound(channel.readOutbound());
 
-        CallRequestContinue inboundCallRequestContinue = channel.readInbound();
-        assertEquals("Hello, World!", inboundCallRequestContinue.getPayload().toString(CharsetUtil.UTF_8));
+        InitResponseFrame newInitResponseFrame = channel.readInbound();
+        assertEquals(newInitResponseFrame.getMessageType(), initResponseFrame.getMessageType());
+        assertEquals(newInitResponseFrame.getId(), initResponseFrame.getId());
+        assertEquals(newInitResponseFrame.getVersion(), initResponseFrame.getVersion());
+        assertEquals(newInitResponseFrame.getHostPort(), initResponseFrame.getHostPort());
+        assertEquals(newInitResponseFrame.getProcessName(), initResponseFrame.getProcessName());
 
     }
+
 }

@@ -22,35 +22,45 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.Fixtures;
-import com.uber.tchannel.messages.CallResponse;
-import io.netty.buffer.Unpooled;
+import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.frames.InitRequestFrame;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.CharsetUtil;
 import org.junit.Test;
+
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
-public class CallResponseCodecTest {
+public class InitRequestFrameCodecTest {
 
     @Test
-    public void testEncodeDecode() throws Exception {
+    public void shouldEncodeAndDecodeInitRequest() {
+
         EmbeddedChannel channel = new EmbeddedChannel(
                 new TChannelLengthFieldBasedFrameDecoder(),
                 new TFrameCodec(),
-                new CallResponseCodec()
+                new InitRequestCodec()
         );
 
-        CallResponse callRequestContinue = Fixtures.callResponse(
+        InitRequestFrame initReq = new InitRequestFrame(
                 42,
-                false,
-                Unpooled.wrappedBuffer("Hello, World!".getBytes())
+                InitRequestFrame.DEFAULT_VERSION,
+                new HashMap<String, String>() {{
+                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
+                }}
         );
 
-        channel.writeOutbound(callRequestContinue);
+        channel.writeOutbound(initReq);
         channel.writeInbound(channel.readOutbound());
 
-        CallResponse inboundCallResponse = channel.readInbound();
-        assertEquals("Hello, World!", inboundCallResponse.getPayload().toString(CharsetUtil.UTF_8));
+        InitRequestFrame newInitReq = channel.readInbound();
+        assertEquals(initReq.getMessageType(), newInitReq.getMessageType());
+        assertEquals(newInitReq.getId(), newInitReq.getId());
+        assertEquals(newInitReq.getVersion(), newInitReq.getVersion());
+        assertEquals(newInitReq.getHostPort(), newInitReq.getHostPort());
+        assertEquals(newInitReq.getProcessName(), initReq.getProcessName());
+
     }
+
 }

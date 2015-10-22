@@ -19,14 +19,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.framing;
+package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
 /**
- * {@link TFrame} represents a common TChannel frame that is a primitive carrier for all messages in the TChannel
+ * {@link TFrame} represents a common TChannel frame that is a primitive carrier for all frames in the TChannel
  * protocol. The {@linkplain TFrame} has a simple 16-byte header that contains information on the `size` of the payload,
  * the TChannel message `type` and the `id` of the message.
  * <h3>From the Docs</h3>
@@ -56,7 +56,7 @@ public class TFrame implements ByteBufHolder {
     // Payload message type
     public final byte type;
 
-    // Message id
+    // Frame id
     public final long id;
 
     // Contents of the payload
@@ -69,8 +69,8 @@ public class TFrame implements ByteBufHolder {
         this.payload = payload;
     }
 
-    public TFrame(int size, MessageType messageType, long id, ByteBuf payload) {
-        this(size, messageType.byteValue(), id, payload);
+    public TFrame(int size, FrameType frameType, long id, ByteBuf payload) {
+        this(size, frameType.byteValue(), id, payload);
     }
 
     @Override

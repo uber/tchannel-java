@@ -23,7 +23,7 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.Fixtures;
-import com.uber.tchannel.messages.CallResponseContinue;
+import com.uber.tchannel.frames.CallResponseContinue;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.CharsetUtil;
@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class CallResponseContinueCodecTest {
+public class CallResponseFrameContinueCodecTest {
 
     @Test
     public void testEncode() throws Exception {

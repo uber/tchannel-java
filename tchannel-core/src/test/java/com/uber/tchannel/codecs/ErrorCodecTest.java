@@ -23,7 +23,7 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.frames.ErrorFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
@@ -40,20 +40,20 @@ public class ErrorCodecTest {
                 new ErrorCodec()
         );
 
-        ErrorMessage errorMessage = new ErrorMessage(
+        ErrorFrame errorFrame = new ErrorFrame(
                 42,
                 ErrorType.FatalProtocolError,
                 new Trace(0, 0, 0, (byte) 0),
                 "I'm sorry Dave, I can't do that."
         );
 
-        channel.writeOutbound(errorMessage);
+        channel.writeOutbound(errorFrame);
         channel.writeInbound(channel.readOutbound());
 
-        ErrorMessage newErrorMessage = channel.readInbound();
+        ErrorFrame newErrorFrame = channel.readInbound();
 
-        assertEquals(errorMessage.getId(), newErrorMessage.getId());
-        assertEquals(errorMessage.getMessage(), newErrorMessage.getMessage());
+        assertEquals(errorFrame.getId(), newErrorFrame.getId());
+        assertEquals(errorFrame.getMessage(), newErrorFrame.getMessage());
 
     }
 }

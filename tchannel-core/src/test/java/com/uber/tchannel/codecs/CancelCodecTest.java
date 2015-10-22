@@ -21,7 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.messages.Cancel;
+import com.uber.tchannel.frames.CancelFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
@@ -40,18 +40,18 @@ public class CancelCodecTest {
                 new CancelCodec()
         );
 
-        Cancel cancel = new Cancel(Integer.MAX_VALUE, Integer.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03), "Whoopsies");
+        CancelFrame cancelFrame = new CancelFrame(Integer.MAX_VALUE, Integer.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03), "Whoopsies");
 
-        channel.writeOutbound(cancel);
+        channel.writeOutbound(cancelFrame);
         channel.writeInbound(channel.readOutbound());
 
-        Cancel newCancel = channel.readInbound();
+        CancelFrame newCancelFrame = channel.readInbound();
 
-        assertEquals(cancel.getId(), newCancel.getId());
-        assertEquals(cancel.getTTL(), newCancel.getTTL());
-        assertTrue(newCancel.getTTL() > 0);
-        assertEquals(cancel.getTracing().traceId, newCancel.getTracing().traceId);
-        assertEquals(cancel.getWhy(), newCancel.getWhy());
+        assertEquals(cancelFrame.getId(), newCancelFrame.getId());
+        assertEquals(cancelFrame.getTTL(), newCancelFrame.getTTL());
+        assertTrue(newCancelFrame.getTTL() > 0);
+        assertEquals(cancelFrame.getTracing().traceId, newCancelFrame.getTracing().traceId);
+        assertEquals(cancelFrame.getWhy(), newCancelFrame.getWhy());
 
     }
 

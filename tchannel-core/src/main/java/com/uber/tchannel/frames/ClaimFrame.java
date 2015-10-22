@@ -19,13 +19,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.uber.tchannel.frames;
 
-package com.uber.tchannel.messages;
+import com.uber.tchannel.tracing.Trace;
 
-public interface Message {
+public final class ClaimFrame implements Frame {
 
-    long getId();
+    private final long id;
+    private final long ttl;
+    private final Trace tracing;
 
-    MessageType getMessageType();
+    /**
+     * Designated Constructor
+     *
+     * @param id      unique id of the message
+     * @param ttl     ttl on the wire
+     * @param tracing tracing information
+     */
+    public ClaimFrame(long id, long ttl, Trace tracing) {
+        this.id = id;
+        this.ttl = ttl;
+        this.tracing = tracing;
+
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public FrameType getMessageType() {
+        return FrameType.Claim;
+    }
+
+    public long getTTL() {
+        return ttl;
+    }
+
+    public Trace getTracing() {
+        return tracing;
+    }
 
 }

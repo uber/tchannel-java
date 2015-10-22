@@ -19,11 +19,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
 import java.util.Map;
 
-public interface InitMessage extends Message {
+public interface InitFrame extends Frame {
 
     int DEFAULT_VERSION = 2;
     String HOST_PORT_KEY = "host_port";

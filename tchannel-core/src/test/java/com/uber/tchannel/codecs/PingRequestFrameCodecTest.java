@@ -1,5 +1,3 @@
-package com.uber.tchannel.codecs;
-
 /*
  * Copyright (c) 2015 Uber Technologies, Inc.
  *
@@ -22,45 +20,29 @@ package com.uber.tchannel.codecs;
  * THE SOFTWARE.
  */
 
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
+package com.uber.tchannel.codecs;
+
+import com.uber.tchannel.frames.PingRequestFrame;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
-import java.util.HashMap;
-
 import static org.junit.Assert.assertEquals;
 
-public class InitResponseCodecTest {
+public class PingRequestFrameCodecTest {
 
     @Test
-    public void shouldEncodeAndDecodeInitResponse() {
-
+    public void testEncodeDecodePingRequest() throws Exception {
         EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new InitResponseCodec()
+                new PingRequestCodec()
         );
 
-        InitResponse initResponse = new InitResponse(
-                42,
-                InitRequest.DEFAULT_VERSION,
-                new HashMap<String, String>() {{
-                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
-                }}
-        );
+        PingRequestFrame pingRequestFrame = new PingRequestFrame(42);
 
-        channel.writeOutbound(initResponse);
+        channel.writeOutbound(pingRequestFrame);
         channel.writeInbound(channel.readOutbound());
 
-        InitResponse newInitResponse = channel.readInbound();
-        assertEquals(newInitResponse.getMessageType(), initResponse.getMessageType());
-        assertEquals(newInitResponse.getId(), initResponse.getId());
-        assertEquals(newInitResponse.getVersion(), initResponse.getVersion());
-        assertEquals(newInitResponse.getHostPort(), initResponse.getHostPort());
-        assertEquals(newInitResponse.getProcessName(), initResponse.getProcessName());
+        PingRequestFrame newPingRequestFrame = channel.readInbound();
+        assertEquals(newPingRequestFrame.getId(), pingRequestFrame.getId());
 
     }
 

@@ -19,13 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
-public final class CallRequestContinue implements Message, CallMessage {
+public final class CallResponseContinue implements CallFrame {
 
     private final long id;
     private final byte flags;
@@ -33,7 +33,7 @@ public final class CallRequestContinue implements Message, CallMessage {
     private final int checksum;
     private final ByteBuf payload;
 
-    public CallRequestContinue(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
+    public CallResponseContinue(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
         this.flags = flags;
         this.checksumType = checksumType;
@@ -46,31 +46,31 @@ public final class CallRequestContinue implements Message, CallMessage {
     }
 
     public byte getFlags() {
-        return flags;
+        return this.flags;
     }
 
     public ChecksumType getChecksumType() {
-        return checksumType;
+        return this.checksumType;
     }
 
     public int getChecksum() {
-        return checksum;
+        return this.checksum;
     }
 
     public ByteBuf getPayload() {
-        return payload;
+        return this.payload;
     }
 
     public boolean moreFragmentsFollow() {
-        return ((this.flags & CallMessage.MORE_FRAGMENTS_REMAIN_MASK) == 1);
+        return ((this.flags & CallFrame.MORE_FRAGMENTS_REMAIN_MASK) == 1);
     }
 
     public long getId() {
         return this.id;
     }
 
-    public MessageType getMessageType() {
-        return MessageType.CallRequestContinue;
+    public FrameType getMessageType() {
+        return FrameType.CallResponseContinue;
     }
 
     public ByteBuf content() {
@@ -78,7 +78,7 @@ public final class CallRequestContinue implements Message, CallMessage {
     }
 
     public ByteBufHolder copy() {
-        return new CallRequestContinue(
+        return new CallResponseContinue(
                 this.id,
                 this.flags,
                 this.checksumType,
@@ -88,12 +88,12 @@ public final class CallRequestContinue implements Message, CallMessage {
     }
 
     public ByteBufHolder duplicate() {
-        return new CallRequestContinue(
+        return new CallResponseContinue(
                 this.id,
                 this.flags,
                 this.checksumType,
                 this.checksum,
-                this.payload.duplicate()
+                this.payload.copy()
         );
     }
 

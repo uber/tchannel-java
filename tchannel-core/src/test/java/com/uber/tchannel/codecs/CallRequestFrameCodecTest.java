@@ -22,45 +22,33 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.frames.CallRequestFrame;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.CharsetUtil;
 import org.junit.Test;
-
-import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
-public class InitRequestCodecTest {
+public class CallRequestFrameCodecTest {
 
     @Test
-    public void shouldEncodeAndDecodeInitRequest() {
+    public void testEncodeDecode() throws Exception {
 
         EmbeddedChannel channel = new EmbeddedChannel(
                 new TChannelLengthFieldBasedFrameDecoder(),
                 new TFrameCodec(),
-                new InitRequestCodec()
+                new CallRequestCodec()
         );
 
-        InitRequest initReq = new InitRequest(
-                42,
-                InitRequest.DEFAULT_VERSION,
-                new HashMap<String, String>() {{
-                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
-                }}
-        );
+        CallRequestFrame callRequestFrame = Fixtures.callRequest(42, false, Unpooled.wrappedBuffer("Hello, World!".getBytes()));
 
-        channel.writeOutbound(initReq);
+        channel.writeOutbound(callRequestFrame);
         channel.writeInbound(channel.readOutbound());
 
-        InitRequest newInitReq = channel.readInbound();
-        assertEquals(initReq.getMessageType(), newInitReq.getMessageType());
-        assertEquals(newInitReq.getId(), newInitReq.getId());
-        assertEquals(newInitReq.getVersion(), newInitReq.getVersion());
-        assertEquals(newInitReq.getHostPort(), newInitReq.getHostPort());
-        assertEquals(newInitReq.getProcessName(), initReq.getProcessName());
-
+        CallRequestFrame inboundCallRequestFrame = channel.readInbound();
+        assertEquals("Hello, World!", inboundCallRequestFrame.getPayload().toString(CharsetUtil.UTF_8));
     }
 
 }

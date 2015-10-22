@@ -19,13 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
-public final class PingResponse implements Message, PingMessage {
+public final class PingResponseFrame implements PingFrame {
 
     private final long id;
 
-    public PingResponse(long id) {
+    public PingResponseFrame(long id) {
         this.id = id;
     }
 
@@ -33,8 +33,8 @@ public final class PingResponse implements Message, PingMessage {
         return this.id;
     }
 
-    public MessageType getMessageType() {
-        return MessageType.PingResponse;
+    public FrameType getMessageType() {
+        return FrameType.PingResponse;
     }
 
     @Override

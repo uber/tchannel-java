@@ -20,31 +20,12 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.frames;
 
-import com.uber.tchannel.messages.PingResponse;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+public interface Frame {
 
-import static org.junit.Assert.assertEquals;
+    long getId();
 
-public class PingResponseCodecTest {
-
-    @Test
-    public void testEncodeDecodePingResponse() throws Exception {
-
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new PingResponseCodec()
-        );
-
-        PingResponse pingResponse = new PingResponse(99);
-
-        channel.writeOutbound(pingResponse);
-        channel.writeInbound(channel.readOutbound());
-
-        PingResponse newPingResponse = channel.readInbound();
-        assertEquals(newPingResponse.getId(), pingResponse.getId());
-
-    }
+    FrameType getMessageType();
 
 }

@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.messages.CallMessage;
-import com.uber.tchannel.messages.CallRequest;
+import com.uber.tchannel.frames.CallFrame;
+import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.schemes.RawRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -35,7 +35,7 @@ import java.util.Random;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertNotNull;
 
-public class MessageFragmenterTest {
+public class FrameFragmenterTest {
 
     private static final int BUFFER_SIZE = 100000;
 
@@ -46,7 +46,7 @@ public class MessageFragmenterTest {
         );
 
         // arg1
-        byte[] arg1Bytes = new byte[CallMessage.MAX_ARG1_LENGTH];
+        byte[] arg1Bytes = new byte[CallFrame.MAX_ARG1_LENGTH];
         new Random().nextBytes(arg1Bytes);
         ByteBuf arg1 = Unpooled.wrappedBuffer(arg1Bytes);
 
@@ -73,11 +73,11 @@ public class MessageFragmenterTest {
         channel.writeOutbound(rawRequest);
 
         for (int i = 0; i < 4; i++) {
-            CallRequest req = channel.readOutbound();
+            CallRequestFrame req = channel.readOutbound();
             assertNotNull(req);
         }
 
-        CallRequest req = channel.readOutbound();
+        CallRequestFrame req = channel.readOutbound();
         assertNull(req);
 
     }

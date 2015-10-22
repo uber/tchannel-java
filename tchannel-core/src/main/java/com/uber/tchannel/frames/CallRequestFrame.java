@@ -19,34 +19,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
+import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
-public final class CallResponseContinue implements Message, CallMessage {
+import java.util.Map;
+
+/**
+ * This is the primary RPC mechanism. The triple of (arg1, arg2, arg3) is sent to "service" via the remote end
+ * of this connection.
+ * <p>
+ * Whether connecting directly to a service or through a service router, the service name is always specified.
+ * This supports an explicit router model as well as peers electing to delegate some requests to another service.
+ * <p>
+ * A forwarding intermediary can relay payloads without understanding the contents of the args triple.
+ * <p>
+ * A {@link CallRequestFrame} may be fragmented across multiple frames. If so, the first frame is a {@link CallRequestFrame},
+ * and all subsequent frames are {@link CallRequestContinueFrame} frames.
+ * <p>
+ * The size of arg1 is at most 16KiB.
+ */
+public final class CallRequestFrame implements CallFrame {
 
     private final long id;
     private final byte flags;
+    private final long ttl;
+    private final Trace tracing;
+    private final String service;
+    private final Map<String, String> headers;
     private final ChecksumType checksumType;
     private final int checksum;
     private final ByteBuf payload;
 
-    public CallResponseContinue(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
+    public CallRequestFrame(long id, byte flags, long ttl, Trace tracing, String service, Map<String, String> headers,
+                            ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
         this.flags = flags;
+        this.ttl = ttl;
+        this.tracing = tracing;
+        this.service = service;
+        this.headers = headers;
         this.checksumType = checksumType;
         this.checksum = checksum;
         this.payload = payload;
     }
 
-    public int getPayloadSize() {
-        return this.payload.writerIndex() - this.payload.readerIndex();
+    public byte getFlags() {
+        return flags;
     }
 
-    public byte getFlags() {
-        return this.flags;
+    public boolean moreFragmentsFollow() {
+        return ((this.flags & CallFrame.MORE_FRAGMENTS_REMAIN_MASK) == 1);
     }
 
     public ChecksumType getChecksumType() {
@@ -58,19 +84,35 @@ public final class CallResponseContinue implements Message, CallMessage {
     }
 
     public ByteBuf getPayload() {
-        return this.payload;
-    }
-
-    public boolean moreFragmentsFollow() {
-        return ((this.flags & CallMessage.MORE_FRAGMENTS_REMAIN_MASK) == 1);
+        return payload;
     }
 
     public long getId() {
         return this.id;
     }
 
-    public MessageType getMessageType() {
-        return MessageType.CallResponseContinue;
+    public int getPayloadSize() {
+        return this.payload.writerIndex() - this.payload.readerIndex();
+    }
+
+    public FrameType getMessageType() {
+        return FrameType.CallRequest;
+    }
+
+    public long getTTL() {
+        return this.ttl;
+    }
+
+    public Trace getTracing() {
+        return this.tracing;
+    }
+
+    public String getService() {
+        return this.service;
+    }
+
+    public Map<String, String> getHeaders() {
+        return this.headers;
     }
 
     public ByteBuf content() {
@@ -78,9 +120,13 @@ public final class CallResponseContinue implements Message, CallMessage {
     }
 
     public ByteBufHolder copy() {
-        return new CallResponseContinue(
+        return new CallRequestFrame(
                 this.id,
                 this.flags,
+                this.ttl,
+                this.tracing,
+                this.service,
+                this.headers,
                 this.checksumType,
                 this.checksum,
                 this.payload.copy()
@@ -88,12 +134,16 @@ public final class CallResponseContinue implements Message, CallMessage {
     }
 
     public ByteBufHolder duplicate() {
-        return new CallResponseContinue(
+        return new CallRequestFrame(
                 this.id,
                 this.flags,
+                this.ttl,
+                this.tracing,
+                this.service,
+                this.headers,
                 this.checksumType,
                 this.checksum,
-                this.payload.copy()
+                this.payload.duplicate()
         );
     }
 
@@ -128,5 +178,4 @@ public final class CallResponseContinue implements Message, CallMessage {
     public boolean release(int i) {
         return this.payload.release(i);
     }
-
 }

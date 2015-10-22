@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
@@ -30,15 +30,15 @@ import io.netty.buffer.ByteBufHolder;
 import java.util.Map;
 
 /**
- * Very similar to {@link CallRequest}, differing only in: adds a responseCode field, no ttl field and no service field.
+ * Very similar to {@link CallRequestFrame}, differing only in: adds a responseCode field, no ttl field and no service field.
  * <p>
- * All common fields have identical definition to {@link CallRequest}. It is not necessary for arg1 to have the same
- * value between the {@link CallRequest} and the {@link CallResponse}; by convention, existing implementations leave
- * arg1 at zero length for {@link CallResponse} messages.
+ * All common fields have identical definition to {@link CallRequestFrame}. It is not necessary for arg1 to have the same
+ * value between the {@link CallRequestFrame} and the {@link CallResponseFrame}; by convention, existing implementations leave
+ * arg1 at zero length for {@link CallResponseFrame} frames.
  * <p>
  * The size of arg1 is at most 16KiB.
  */
-public final class CallResponse implements Message, CallMessage {
+public final class CallResponseFrame implements CallFrame {
 
     private final long id;
     private final byte flags;
@@ -49,8 +49,8 @@ public final class CallResponse implements Message, CallMessage {
     private final int checksum;
     private final ByteBuf payload;
 
-    public CallResponse(long id, byte flags, ResponseCode responseCode, Trace tracing, Map<String, String> headers,
-                        ChecksumType checksumType, int checksum, ByteBuf payload) {
+    public CallResponseFrame(long id, byte flags, ResponseCode responseCode, Trace tracing, Map<String, String> headers,
+                             ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
         this.flags = flags;
         this.responseCode = responseCode;
@@ -74,11 +74,11 @@ public final class CallResponse implements Message, CallMessage {
     }
 
     public boolean moreFragmentsFollow() {
-        return ((this.flags & CallMessage.MORE_FRAGMENTS_REMAIN_MASK) == 1);
+        return ((this.flags & CallFrame.MORE_FRAGMENTS_REMAIN_MASK) == 1);
     }
 
-    public MessageType getMessageType() {
-        return MessageType.CallResponse;
+    public FrameType getMessageType() {
+        return FrameType.CallResponse;
     }
 
     public long getId() {
@@ -114,7 +114,7 @@ public final class CallResponse implements Message, CallMessage {
     }
 
     public ByteBufHolder copy() {
-        return new CallResponse(
+        return new CallResponseFrame(
                 this.id,
                 this.flags,
                 this.responseCode,
@@ -127,7 +127,7 @@ public final class CallResponse implements Message, CallMessage {
     }
 
     public ByteBufHolder duplicate() {
-        return new CallResponse(
+        return new CallResponseFrame(
                 this.id,
                 this.flags,
                 this.responseCode,

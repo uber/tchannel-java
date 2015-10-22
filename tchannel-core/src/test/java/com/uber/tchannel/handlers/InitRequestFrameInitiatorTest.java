@@ -24,8 +24,9 @@ package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
-import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
+import com.uber.tchannel.frames.InitRequestFrame;
+import com.uber.tchannel.frames.InitResponseFrame;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
@@ -33,12 +34,12 @@ import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class InitRequestInitiatorTest {
+public class InitRequestFrameInitiatorTest {
 
     @Test
     public void testValidInitResponse() throws Exception {
         // Given
-        PeerManager manager = new PeerManager();
+        PeerManager manager = new PeerManager(new Bootstrap());
         manager.setHostPort(String.format("%s:%d", "127.0.0.1", 8888));
         EmbeddedChannel channel = new EmbeddedChannel(
                 new ChannelRegistrar(manager)
@@ -48,18 +49,18 @@ public class InitRequestInitiatorTest {
         assertEquals(4, channel.pipeline().names().size());
 
         // Then
-        InitRequest initRequest = channel.readOutbound();
+        InitRequestFrame initRequestFrame = channel.readOutbound();
 
         // Assert
-        assertNotNull(initRequest);
+        assertNotNull(initRequestFrame);
         // Headers as expected
-        assertEquals(initRequest.getHeaders().get("host_port"), "127.0.0.1:8888");
-        assertEquals(initRequest.getHeaders().get("process_name"), "java-process");
+        assertEquals(initRequestFrame.getHeaders().get("host_port"), "127.0.0.1:8888");
+        assertEquals(initRequestFrame.getHeaders().get("process_name"), "java-process");
 
-        channel.writeInbound(new InitResponse(
-                initRequest.getId(),
-                initRequest.getVersion(),
-                initRequest.getHeaders()
+        channel.writeInbound(new InitResponseFrame(
+                initRequestFrame.getId(),
+                initRequestFrame.getVersion(),
+                initRequestFrame.getHeaders()
         ));
 
         Object obj = channel.readOutbound();

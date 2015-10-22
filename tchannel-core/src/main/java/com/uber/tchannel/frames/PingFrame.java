@@ -19,50 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
-import com.uber.tchannel.tracing.Trace;
-
-public final class Cancel implements Message {
-
-    private final long id;
-    private final long ttl;
-    private final Trace tracing;
-    private final String why;
-
-    /**
-     * Designated Constructor
-     *
-     * @param id      unique id of the message
-     * @param ttl     ttl on the wire
-     * @param tracing tracing information
-     * @param why     why the message was canceled
-     */
-    public Cancel(long id, long ttl, Trace tracing, String why) {
-        this.id = id;
-        this.ttl = ttl;
-        this.tracing = tracing;
-        this.why = why;
-    }
-
-    public long getTTL() {
-        return ttl;
-    }
-
-    public Trace getTracing() {
-        return tracing;
-    }
-
-    public long getId() {
-        return this.id;
-    }
-
-    public MessageType getMessageType() {
-        return MessageType.Cancel;
-    }
-
-    public String getWhy() {
-        return why;
-    }
-
+public interface PingFrame extends Frame {
 }

@@ -22,25 +22,24 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.MessageType;
-import com.uber.tchannel.messages.PingRequest;
+import com.uber.tchannel.frames.FrameType;
+import com.uber.tchannel.frames.PingRequestFrame;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public final class PingRequestCodec extends MessageToMessageCodec<TFrame, PingRequest> {
+public final class PingRequestCodec extends MessageToMessageCodec<TFrame, PingRequestFrame> {
     @Override
-    protected void encode(ChannelHandlerContext ctx, PingRequest msg, List<Object> out) throws Exception {
-        TFrame frame = new TFrame(0, MessageType.PingRequest, msg.getId(), Unpooled.EMPTY_BUFFER);
+    protected void encode(ChannelHandlerContext ctx, PingRequestFrame msg, List<Object> out) throws Exception {
+        TFrame frame = new TFrame(0, FrameType.PingRequest, msg.getId(), Unpooled.EMPTY_BUFFER);
         out.add(frame);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        PingRequest pingRequest = new PingRequest(frame.id);
-        out.add(pingRequest);
+        PingRequestFrame pingRequestFrame = new PingRequestFrame(frame.id);
+        out.add(pingRequestFrame);
     }
 }

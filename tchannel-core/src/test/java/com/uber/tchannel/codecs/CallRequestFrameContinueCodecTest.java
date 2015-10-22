@@ -22,28 +22,36 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.messages.PingRequest;
+import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.frames.CallRequestContinueFrame;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class PingRequestCodecTest {
+public class CallRequestFrameContinueCodecTest {
 
     @Test
-    public void testEncodeDecodePingRequest() throws Exception {
+    public void testEncodeDecode() throws Exception {
+
         EmbeddedChannel channel = new EmbeddedChannel(
-                new PingRequestCodec()
+                new TChannelLengthFieldBasedFrameDecoder(),
+                new TFrameCodec(),
+                new CallRequestContinueCodec()
         );
 
-        PingRequest pingRequest = new PingRequest(42);
+        CallRequestContinueFrame callRequestContinueFrame = Fixtures.callRequestContinue(
+                42,
+                false,
+                Unpooled.wrappedBuffer("Hello, World!".getBytes())
+        );
 
-        channel.writeOutbound(pingRequest);
+        channel.writeOutbound(callRequestContinueFrame);
         channel.writeInbound(channel.readOutbound());
 
-        PingRequest newPingRequest = channel.readInbound();
-        assertEquals(newPingRequest.getId(), pingRequest.getId());
-
+        CallRequestContinueFrame inboundCallRequestContinueFrame = channel.readInbound();
+        assertEquals("Hello, World!", inboundCallRequestContinueFrame.getPayload().toString(CharsetUtil.UTF_8));
     }
-
 }

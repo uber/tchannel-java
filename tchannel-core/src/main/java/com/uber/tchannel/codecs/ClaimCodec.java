@@ -21,8 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.Claim;
+import com.uber.tchannel.frames.ClaimFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -30,9 +29,9 @@ import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public final class ClaimCodec extends MessageToMessageCodec<TFrame, Claim> {
+public final class ClaimCodec extends MessageToMessageCodec<TFrame, ClaimFrame> {
     @Override
-    protected void encode(ChannelHandlerContext ctx, Claim msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, ClaimFrame msg, List<Object> out) throws Exception {
         ByteBuf buffer = ctx.alloc().buffer(4 + Trace.TRACING_HEADER_LENGTH);
 
         // ttl: 4
@@ -53,7 +52,7 @@ public final class ClaimCodec extends MessageToMessageCodec<TFrame, Claim> {
         // tracing: 25
         Trace tracing = CodecUtils.decodeTrace(frame.payload);
 
-        Claim claim = new Claim(frame.id, ttl, tracing);
-        out.add(claim);
+        ClaimFrame claimFrame = new ClaimFrame(frame.id, ttl, tracing);
+        out.add(claimFrame);
     }
 }

@@ -19,37 +19,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.uber.tchannel.frames;
 
-package com.uber.tchannel.codecs;
+import com.uber.tchannel.tracing.Trace;
 
-import com.uber.tchannel.Fixtures;
-import com.uber.tchannel.messages.CallRequest;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.CharsetUtil;
-import org.junit.Test;
+public final class CancelFrame implements Frame {
 
-import static org.junit.Assert.assertEquals;
+    private final long id;
+    private final long ttl;
+    private final Trace tracing;
+    private final String why;
 
-public class CallRequestCodecTest {
+    /**
+     * Designated Constructor
+     *
+     * @param id      unique id of the message
+     * @param ttl     ttl on the wire
+     * @param tracing tracing information
+     * @param why     why the message was canceled
+     */
+    public CancelFrame(long id, long ttl, Trace tracing, String why) {
+        this.id = id;
+        this.ttl = ttl;
+        this.tracing = tracing;
+        this.why = why;
+    }
 
-    @Test
-    public void testEncodeDecode() throws Exception {
+    public long getTTL() {
+        return ttl;
+    }
 
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new CallRequestCodec()
-        );
+    public Trace getTracing() {
+        return tracing;
+    }
 
-        CallRequest callRequest = Fixtures.callRequest(42, false, Unpooled.wrappedBuffer("Hello, World!".getBytes()));
+    public long getId() {
+        return this.id;
+    }
 
-        channel.writeOutbound(callRequest);
-        channel.writeInbound(channel.readOutbound());
+    public FrameType getMessageType() {
+        return FrameType.Cancel;
+    }
 
-        CallRequest inboundCallRequest = channel.readInbound();
-        assertEquals("Hello, World!", inboundCallRequest.getPayload().toString(CharsetUtil.UTF_8));
-
+    public String getWhy() {
+        return why;
     }
 
 }

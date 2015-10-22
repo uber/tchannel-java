@@ -19,7 +19,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
-public interface PingMessage extends Message {
+public final class PingRequestFrame implements PingFrame {
+
+    private final long id;
+
+    public PingRequestFrame(long id) {
+        this.id = id;
+    }
+
+    public long getId() {
+        return this.id;
+    }
+
+    public FrameType getMessageType() {
+        return FrameType.PingRequest;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<%s id=%d>",
+                this.getClass().getSimpleName(),
+                this.id
+        );
+    }
+
 }

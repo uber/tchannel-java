@@ -19,13 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
-public interface CallMessage extends Message, ByteBufHolder {
+public interface CallFrame extends ByteBufHolder, Frame {
 
     byte MORE_FRAGMENTS_REMAIN_MASK = (byte) 0x01;
     short MAX_ARG1_LENGTH = 16384;

@@ -19,9 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
-public enum MessageType {
+public enum FrameType {
 
     // First message on every connection must be init
     InitRequest((byte) 0x01),
@@ -41,16 +41,16 @@ public enum MessageType {
     // RPC response continuation fragment
     CallResponseContinue((byte) 0x14),
 
-    // Cancel an outstanding call req / forward req (no body)
+    // CancelFrame an outstanding call req / forward req (no body)
     Cancel((byte) 0xc0),
 
-    // Claim / cancel a redundant request
+    // ClaimFrame / cancel a redundant request
     Claim((byte) 0xc1),
 
     // Protocol level ping req (no body)
     PingRequest((byte) 0xd0),
 
-    // Ping res (no body)
+    // PingFrame res (no body)
     PingResponse((byte) 0xd1),
 
     // Protocol level error.
@@ -58,11 +58,11 @@ public enum MessageType {
 
     private final byte type;
 
-    MessageType(byte type) {
+    FrameType(byte type) {
         this.type = type;
     }
 
-    public static MessageType fromByte(byte value) {
+    public static FrameType fromByte(byte value) {
         switch (value) {
             case (byte) 0x01:
                 return InitRequest;

@@ -19,34 +19,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.messages.Claim;
-import com.uber.tchannel.tracing.Trace;
+import com.uber.tchannel.frames.PingResponseFrame;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class ClaimCodecTest {
+public class PingResponseFrameCodecTest {
 
     @Test
-    public void testEncodeDecodeClaim() throws Exception {
+    public void testEncodeDecodePingResponse() throws Exception {
 
         EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ClaimCodec()
+                new PingResponseCodec()
         );
 
-        Claim claimMessage = new Claim(Integer.MAX_VALUE, Integer.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03));
+        PingResponseFrame pingResponseFrame = new PingResponseFrame(99);
 
-        channel.writeOutbound(claimMessage);
+        channel.writeOutbound(pingResponseFrame);
         channel.writeInbound(channel.readOutbound());
 
-        Claim newClaimMessage = channel.readInbound();
-        assertEquals(newClaimMessage.getId(), claimMessage.getId());
-        assertEquals(newClaimMessage.getTTL(), claimMessage.getTTL());
+        PingResponseFrame newPingResponseFrame = channel.readInbound();
+        assertEquals(newPingResponseFrame.getId(), pingResponseFrame.getId());
 
     }
 

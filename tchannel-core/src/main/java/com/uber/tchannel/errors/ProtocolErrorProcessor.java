@@ -22,7 +22,7 @@
 
 package com.uber.tchannel.errors;
 
-import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.frames.ErrorFrame;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -30,7 +30,7 @@ import io.netty.channel.ChannelHandlerContext;
 public class ProtocolErrorProcessor {
 
     public static void handleError(ChannelHandlerContext ctx, ProtocolError protocolError) {
-        ChannelFuture f = ctx.writeAndFlush(new ErrorMessage(
+        ChannelFuture f = ctx.writeAndFlush(new ErrorFrame(
                 protocolError.getId(),
                 protocolError.getErrorType(),
                 protocolError.getTrace(),

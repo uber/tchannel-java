@@ -19,60 +19,66 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.tracing.Trace;
+import java.util.Map;
 
-public final class ErrorMessage implements Message {
+/**
+ * This must be the first message sent on a new connection. It is used to negotiate a common protocol version
+ * and describe the service names on both ends. In the future, we will likely use this to negotiate authentication
+ * and authorization between services.
+ */
+public final class InitRequestFrame implements InitFrame {
 
     private final long id;
-    private final ErrorType errorType;
-    private final Trace tracing;
-    private final String message;
+    private final int version;
+    private final Map<String, String> headers;
 
-    /**
-     * Designated Constructor
-     *
-     * @param id        unique of the message
-     * @param errorType the type of error this represents
-     * @param tracing   tracing information
-     * @param message   human readable string meant for logs
-     */
-    public ErrorMessage(long id, ErrorType errorType, Trace tracing, String message) {
+    public InitRequestFrame(long id, int version, Map<String, String> headers) {
         this.id = id;
-        this.errorType = errorType;
-        this.tracing = tracing;
-        this.message = message;
+        this.version = version;
+        this.headers = headers;
+    }
+
+    public int getVersion() {
+        return this.version;
+    }
+
+    public Map<String, String> getHeaders() {
+        return this.headers;
     }
 
     public long getId() {
         return this.id;
     }
 
-    public MessageType getMessageType() {
-        return MessageType.Error;
+    public FrameType getMessageType() {
+        return FrameType.InitRequest;
     }
 
-    public ErrorType getType() {
-        return errorType;
+    public String getHostPort() {
+        return this.headers.get(HOST_PORT_KEY);
     }
 
-    public Trace getTracing() {
-        return tracing;
+    public void setHostPort(String hostPort) {
+        this.headers.put(HOST_PORT_KEY, hostPort);
     }
 
-    public String getMessage() {
-        return message;
+    public String getProcessName() {
+        return this.headers.get(PROCESS_NAME_KEY);
+    }
+
+    public void setProcessName(String processName) {
+        this.headers.put(PROCESS_NAME_KEY, processName);
     }
 
     @Override
     public String toString() {
-        return String.format(
-                "<%s id=%d message=%s>",
+        return String.format("<%s id=%d version=%d headers=%s>",
                 this.getClass().getSimpleName(),
-                this.getId(),
-                this.message
+                this.id,
+                this.version,
+                this.headers
         );
     }
 

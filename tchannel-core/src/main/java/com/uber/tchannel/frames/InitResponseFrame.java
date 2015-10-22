@@ -19,50 +19,55 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
+package com.uber.tchannel.frames;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This must be the first message sent on a new connection. It is used to negotiate a common protocol version
- * and describe the service names on both ends. In the future, we will likely use this to negotiate authentication
- * and authorization between services.
+ * Similar to {@link InitRequestFrame}. The initiator requests a version number, and the server responds with the
+ * actual version that will be used for the rest of this connection. The header name/values are the same,
+ * but identify the server.
  */
-public final class InitRequest implements Message, InitMessage {
+public final class InitResponseFrame implements InitFrame {
 
     private final long id;
     private final int version;
     private final Map<String, String> headers;
 
-    public InitRequest(long id, int version, Map<String, String> headers) {
+    public InitResponseFrame(long id, int version) {
+        this.id = id;
+        this.version = version;
+        this.headers = new HashMap<>();
+    }
+
+    public InitResponseFrame(long id, int version, Map<String, String> headers) {
         this.id = id;
         this.version = version;
         this.headers = headers;
     }
 
     public int getVersion() {
-        return this.version;
+        return version;
     }
 
     public Map<String, String> getHeaders() {
-        return this.headers;
+        return headers;
     }
 
     public long getId() {
         return this.id;
     }
 
-    public MessageType getMessageType() {
-        return MessageType.InitRequest;
+    public FrameType getMessageType() {
+        return FrameType.InitResponse;
     }
 
     public String getHostPort() {
         return this.headers.get(HOST_PORT_KEY);
     }
 
-    public void setHostPort(String hostPort) {
-        this.headers.put(HOST_PORT_KEY, hostPort);
-    }
+    public void setHostPort(String hostPort) { this.headers.put(HOST_PORT_KEY, hostPort); }
 
     public String getProcessName() {
         return this.headers.get(PROCESS_NAME_KEY);
@@ -81,5 +86,4 @@ public final class InitRequest implements Message, InitMessage {
                 this.headers
         );
     }
-
 }

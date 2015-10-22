@@ -19,30 +19,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.uber.tchannel.messages;
 
-public final class PingRequest implements Message, PingMessage {
+package com.uber.tchannel.codecs;
 
-    private final long id;
+import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.frames.CallResponseFrame;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.CharsetUtil;
+import org.junit.Test;
 
-    public PingRequest(long id) {
-        this.id = id;
-    }
+import static org.junit.Assert.assertEquals;
 
-    public long getId() {
-        return this.id;
-    }
+public class CallResponseFrameCodecTest {
 
-    public MessageType getMessageType() {
-        return MessageType.PingRequest;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("<%s id=%d>",
-                this.getClass().getSimpleName(),
-                this.id
+    @Test
+    public void testEncodeDecode() throws Exception {
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new TChannelLengthFieldBasedFrameDecoder(),
+                new TFrameCodec(),
+                new CallResponseCodec()
         );
-    }
 
+        CallResponseFrame callRequestContinue = Fixtures.callResponse(
+                42,
+                false,
+                Unpooled.wrappedBuffer("Hello, World!".getBytes())
+        );
+
+        channel.writeOutbound(callRequestContinue);
+        channel.writeInbound(channel.readOutbound());
+
+        CallResponseFrame inboundCallResponseFrame = channel.readInbound();
+        assertEquals("Hello, World!", inboundCallResponseFrame.getPayload().toString(CharsetUtil.UTF_8));
+    }
 }

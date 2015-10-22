@@ -21,26 +21,25 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.CallRequest;
-import com.uber.tchannel.messages.CallRequestContinue;
-import com.uber.tchannel.messages.CallResponse;
-import com.uber.tchannel.messages.CallResponseContinue;
-import com.uber.tchannel.messages.Cancel;
-import com.uber.tchannel.messages.Claim;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
-import com.uber.tchannel.messages.Message;
-import com.uber.tchannel.messages.MessageType;
-import com.uber.tchannel.messages.PingRequest;
-import com.uber.tchannel.messages.PingResponse;
+import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.CallRequestContinueFrame;
+import com.uber.tchannel.frames.CallResponseFrame;
+import com.uber.tchannel.frames.CallResponseContinue;
+import com.uber.tchannel.frames.CancelFrame;
+import com.uber.tchannel.frames.ClaimFrame;
+import com.uber.tchannel.frames.ErrorFrame;
+import com.uber.tchannel.frames.Frame;
+import com.uber.tchannel.frames.FrameType;
+import com.uber.tchannel.frames.InitRequestFrame;
+import com.uber.tchannel.frames.InitResponseFrame;
+import com.uber.tchannel.frames.PingRequestFrame;
+import com.uber.tchannel.frames.PingResponseFrame;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public final class MessageCodec extends MessageToMessageCodec<TFrame, Message> {
+public final class MessageCodec extends MessageToMessageCodec<TFrame, Frame> {
 
     // TODO: There has to be a better way to do this...
     private final CallRequestCodec callRequestCodec = new CallRequestCodec();
@@ -56,50 +55,50 @@ public final class MessageCodec extends MessageToMessageCodec<TFrame, Message> {
     private final PingResponseCodec pingResponseCodec = new PingResponseCodec();
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, Frame msg, List<Object> out) throws Exception {
         switch (msg.getMessageType()) {
             case CallRequest:
-                this.callRequestCodec.encode(ctx, (CallRequest) msg, out);
+                this.callRequestCodec.encode(ctx, (CallRequestFrame) msg, out);
                 break;
             case CallRequestContinue:
-                this.callRequestContinue.encode(ctx, (CallRequestContinue) msg, out);
+                this.callRequestContinue.encode(ctx, (CallRequestContinueFrame) msg, out);
                 break;
             case CallResponse:
-                this.callResponseCodec.encode(ctx, (CallResponse) msg, out);
+                this.callResponseCodec.encode(ctx, (CallResponseFrame) msg, out);
                 break;
             case CallResponseContinue:
                 this.callResponseContinueCodec.encode(ctx, (CallResponseContinue) msg, out);
                 break;
             case Cancel:
-                this.cancelCodec.encode(ctx, (Cancel) msg, out);
+                this.cancelCodec.encode(ctx, (CancelFrame) msg, out);
                 break;
             case Claim:
-                this.claimCodec.encode(ctx, (Claim) msg, out);
+                this.claimCodec.encode(ctx, (ClaimFrame) msg, out);
                 break;
             case Error:
-                this.errorCodec.encode(ctx, (ErrorMessage) msg, out);
+                this.errorCodec.encode(ctx, (ErrorFrame) msg, out);
                 break;
             case InitRequest:
-                this.initRequestCodec.encode(ctx, (InitRequest) msg, out);
+                this.initRequestCodec.encode(ctx, (InitRequestFrame) msg, out);
                 break;
             case InitResponse:
-                this.initResponseCodec.encode(ctx, (InitResponse) msg, out);
+                this.initResponseCodec.encode(ctx, (InitResponseFrame) msg, out);
                 break;
             case PingRequest:
-                this.pingRequestCodec.encode(ctx, (PingRequest) msg, out);
+                this.pingRequestCodec.encode(ctx, (PingRequestFrame) msg, out);
                 break;
             case PingResponse:
-                this.pingResponseCodec.encode(ctx, (PingResponse) msg, out);
+                this.pingResponseCodec.encode(ctx, (PingResponseFrame) msg, out);
                 break;
             default:
-                throw new Exception(String.format("Unknown MessageType: %s", msg.getMessageType()));
+                throw new Exception(String.format("Unknown FrameType: %s", msg.getMessageType()));
 
         }
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        MessageType type = MessageType.fromByte(frame.type);
+        FrameType type = FrameType.fromByte(frame.type);
 
         if (type == null) {
             throw new Exception("protocol exception");
@@ -140,7 +139,7 @@ public final class MessageCodec extends MessageToMessageCodec<TFrame, Message> {
                 this.pingResponseCodec.decode(ctx, frame, out);
                 break;
             default:
-                throw new Exception(String.format("Unknown MessageType: %s", type));
+                throw new Exception(String.format("Unknown FrameType: %s", type));
         }
     }
 }
