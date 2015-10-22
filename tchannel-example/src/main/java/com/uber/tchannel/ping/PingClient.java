@@ -90,11 +90,12 @@ public class PingClient {
                 .build();
 
         for (int i = 0; i < this.requests; i++) {
-            ListenableFuture<Response<Pong>> f = tchannel.callJSON(
-                    InetAddress.getByName(this.host),
-                    this.port,
-                    request,
-                    Pong.class
+            ListenableFuture<Response<Pong>> f = tchannel
+            .makeSubChannel("ping-server").callJSON(
+                InetAddress.getByName(this.host),
+                this.port,
+                request,
+                Pong.class
             );
 
             final int iteration = i;

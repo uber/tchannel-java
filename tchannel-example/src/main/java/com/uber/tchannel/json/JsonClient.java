@@ -36,14 +36,15 @@ public class JsonClient {
     public static void main(String[] args) throws Exception {
         final TChannel tchannel = new TChannel.Builder("json-server").build();
 
-        ListenableFuture<Response<ResponsePojo>> p = tchannel.callJSON(InetAddress.getLocalHost(), 8888,
-                new Request.Builder<>(
-                        new RequestPojo(0, "hello?"),
-                        "json-service",
-                        "json-endpoint")
-                        .setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme())
-                        .build(),
-                ResponsePojo.class
+        ListenableFuture<Response<ResponsePojo>> p = tchannel
+        .makeSubChannel("json-service").callJSON(InetAddress.getLocalHost(), 8888,
+            new Request.Builder<>(
+                new RequestPojo(0, "hello?"),
+                "json-service",
+                "json-endpoint")
+                .setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme())
+                .build(),
+            ResponsePojo.class
         );
 
         Response<ResponsePojo> res = p.get();
@@ -52,5 +53,4 @@ public class JsonClient {
 
         tchannel.shutdown();
     }
-
 }
