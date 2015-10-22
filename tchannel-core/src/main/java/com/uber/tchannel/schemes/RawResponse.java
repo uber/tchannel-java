@@ -96,12 +96,6 @@ public final class RawResponse extends ResponseMessage implements RawMessage {
         return arg3;
     }
 
-    public void release() {
-        arg1.release();
-        arg2.release();
-        arg3.release();
-    }
-
     @Override
     public String toString() {
         return String.format(
