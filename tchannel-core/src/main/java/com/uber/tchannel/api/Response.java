@@ -131,7 +131,7 @@ public final class Response<T> {
                 return this;
             }
             if (endpoint == null) {
-                throw new IllegalStateException("`endpoint` cannot be null.");
+                throw new IllegalStateException("`endpoint` cannot be null");
             }
             if (responseCode == null) {
                 throw new IllegalStateException("`responseCode` cannot be null.");

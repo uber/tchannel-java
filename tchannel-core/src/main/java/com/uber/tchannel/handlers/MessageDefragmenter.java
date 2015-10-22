@@ -188,7 +188,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
     protected ByteBuf readArg(CallFrame msg) {
 
         /**
-         * Get De-fragmentation State for this MessageID.
+         * Get De-fragmentation State for this MessageID
          *
          * Initialize it to ARG1 or ARG2 depending on if this is a Call{Request,Response} or a
          * Call{Request,Response}Continue message. Call{R,R}Continue frames don't carry arg1 payloads, so we skip
