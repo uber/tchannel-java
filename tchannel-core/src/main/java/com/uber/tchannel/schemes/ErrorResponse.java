@@ -22,18 +22,32 @@
 
 package com.uber.tchannel.schemes;
 
-import io.netty.buffer.ByteBuf;
+import com.uber.tchannel.errors.ErrorType;
+import com.uber.tchannel.frames.FrameType;
 
-import java.util.Map;
+public final class ErrorResponse extends ResponseMessage {
 
-public interface RawMessage extends TChannelMessage {
+    private final ErrorType errorType;
+    private final String message;
+    private final long id;
 
-    Map<String, String> getTransportHeaders();
+    public ErrorResponse(long id, ErrorType errorType, String message) {
+        this.id = id;
+        this.errorType = errorType;
+        this.message = message;
+        this.frameType = FrameType.Error;
+    }
 
-    ByteBuf getArg1();
+    @Override
+    public long getId() {
+        return id;
+    }
 
-    ByteBuf getArg2();
+    public ErrorType getErrorType() {
+        return errorType;
+    }
 
-    ByteBuf getArg3();
-
+    public String getMessage() {
+        return message;
+    }
 }

@@ -22,15 +22,18 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.fragmentation.FragmentationState;
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.CallMessage;
-import com.uber.tchannel.messages.CallRequest;
-import com.uber.tchannel.messages.CallRequestContinue;
-import com.uber.tchannel.messages.CallResponse;
-import com.uber.tchannel.messages.CallResponseContinue;
-import com.uber.tchannel.schemes.RawMessage;
+import com.uber.tchannel.codecs.TFrame;
+import com.uber.tchannel.frames.CallFrame;
+import com.uber.tchannel.frames.CallRequestContinueFrame;
+import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.CallResponseContinue;
+import com.uber.tchannel.frames.CallResponseFrame;
+import com.uber.tchannel.frames.ErrorFrame;
+import com.uber.tchannel.frames.Frame;
+import com.uber.tchannel.schemes.ErrorResponse;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.TChannelMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -40,18 +43,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
+public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024;
     private static final int MAX_BUFFER_SIZE = TFrame.MAX_FRAME_LENGTH - TFrame.FRAME_HEADER_LENGTH;
 
     // Maintains a mapping of MessageId -> Partial RawMessage
-    private final Map<Long, RawMessage> messageMap = new HashMap<>();
+    private final Map<Long, TChannelMessage> messageMap = new HashMap<>();
 
-    // Maintains a mapping of MessageId -> Message Defragmentation State */
+    // Maintains a mapping of MessageId -> Frame Defragmentation State */
     private final Map<Long, FragmentationState> defragmentationState = new HashMap<Long, FragmentationState>();
 
-    protected Map<Long, RawMessage> getMessageMap() {
+    protected Map<Long, TChannelMessage> getMessageMap() {
         return this.messageMap;
     }
 
@@ -60,26 +63,47 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, CallMessage msg, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, Frame msg, List<Object> out) throws Exception {
 
-        if (msg instanceof CallRequest) {
-            this.decodeCallRequest(ctx, (CallRequest) msg, out);
-        } else if (msg instanceof CallResponse) {
-            this.decodeCallResponse(ctx, (CallResponse) msg, out);
-        } else if (msg instanceof CallRequestContinue) {
-            this.decodeCallRequestContinue(ctx, (CallRequestContinue) msg, out);
+        if (msg instanceof CallRequestFrame) {
+            this.decodeCallRequest(ctx, (CallRequestFrame) msg, out);
+        } else if (msg instanceof CallResponseFrame) {
+            this.decodeCallResponse(ctx, (CallResponseFrame) msg, out);
+        } else if (msg instanceof CallRequestContinueFrame) {
+            this.decodeCallRequestContinue(ctx, (CallRequestContinueFrame) msg, out);
         } else if (msg instanceof CallResponseContinue) {
             this.decodeCallResponseContinue(ctx, (CallResponseContinue) msg, out);
+        } else if (msg instanceof ErrorFrame) {
+            this.decodeErrorResponse(ctx, (ErrorFrame) msg, out);
         }
 
-        if (!msg.moreFragmentsFollow()) {
-            RawMessage completeResponse = this.messageMap.remove(msg.getId());
+        if (!hasMore(msg)) {
+            TChannelMessage completeResponse = this.messageMap.remove(msg.getId());
             out.add(completeResponse);
         }
-
     }
 
-    private void decodeCallRequest(ChannelHandlerContext ctx, CallRequest msg, List<Object> out) {
+    private boolean hasMore(Frame msg) {
+        if (msg instanceof CallFrame) {
+            return ((CallFrame) msg).moreFragmentsFollow();
+        }
+
+        return false;
+    }
+
+    private void decodeErrorResponse(ChannelHandlerContext ctx, ErrorFrame msg, List<Object> out) {
+
+        assert this.messageMap.get(msg.getId()) == null;
+        assert this.defragmentationState.get(msg.getId()) == null;
+
+        this.messageMap.put(msg.getId(), new ErrorResponse(
+            msg.getId(),
+            msg.getType(),
+            msg.getMessage()
+        ));
+    }
+
+    private void decodeCallRequest(ChannelHandlerContext ctx, CallRequestFrame msg, List<Object> out) {
 
         assert this.messageMap.get(msg.getId()) == null;
         assert this.defragmentationState.get(msg.getId()) == null;
@@ -100,7 +124,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
 
     }
 
-    private void decodeCallResponse(ChannelHandlerContext ctx, CallResponse msg, List<Object> out) {
+    private void decodeCallResponse(ChannelHandlerContext ctx, CallResponseFrame msg, List<Object> out) {
 
         assert this.messageMap.get(msg.getId()) == null;
         assert this.defragmentationState.get(msg.getId()) == null;
@@ -119,7 +143,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
         ));
     }
 
-    private void decodeCallRequestContinue(ChannelHandlerContext ctx, CallRequestContinue msg, List<Object> out) {
+    private void decodeCallRequestContinue(ChannelHandlerContext ctx, CallRequestContinueFrame msg, List<Object> out) {
 
         assert this.messageMap.get(msg.getId()) != null;
         assert this.defragmentationState.get(msg.getId()) != null;
@@ -165,18 +189,18 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
         this.messageMap.put(msg.getId(), updatedResponse);
     }
 
-    protected ByteBuf readArg(CallMessage msg) {
+    protected ByteBuf readArg(CallFrame msg) {
 
         /**
          * Get De-fragmentation State for this MessageID.
          *
          * Initialize it to ARG1 or ARG2 depending on if this is a Call{Request,Response} or a
-         * Call{Request,Response}Continue message. Call{R,R}Continue messages don't carry arg1 payloads, so we skip
+         * Call{Request,Response}Continue message. Call{R,R}Continue frames don't carry arg1 payloads, so we skip
          * ahead to the arg2 processing state.
          */
 
         if (!this.defragmentationState.containsKey(msg.getId())) {
-            if (msg instanceof CallRequest || msg instanceof CallResponse) {
+            if (msg instanceof CallRequestFrame || msg instanceof CallResponseFrame) {
                 this.defragmentationState.put(msg.getId(), FragmentationState.ARG1);
             } else {
                 this.defragmentationState.put(msg.getId(), FragmentationState.ARG2);
@@ -192,7 +216,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<CallMessage> {
 
                 /* arg1~2. CANNOT be fragmented. MUST be < 16k */
                 argLength = msg.getPayload().readUnsignedShort();
-                assert argLength <= CallMessage.MAX_ARG1_LENGTH;
+                assert argLength <= CallFrame.MAX_ARG1_LENGTH;
                 assert msg.getPayload().readerIndex() == 2;
 
                 /* Read a slice, retain a copy */

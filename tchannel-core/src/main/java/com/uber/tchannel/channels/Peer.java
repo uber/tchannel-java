@@ -29,8 +29,8 @@ import java.util.HashMap;
 
 import com.uber.tchannel.api.errors.TChannelConnectionFailure;
 import com.uber.tchannel.api.errors.TChannelError;
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.frames.InitRequestFrame;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelId;
@@ -71,23 +71,21 @@ public class Peer {
         return add(new Connection(channel, direction));
     }
 
-    public Connection handleActiveConnection(ChannelHandlerContext ctx, Connection.Direction direction) {
+    public Connection handleActiveOutConnection(ChannelHandlerContext ctx) {
         Channel channel = ctx.channel();
-        Connection conn = add(channel, direction);
+        Connection conn = add(channel, Connection.Direction.OUT);
 
-        if (conn.direction == Connection.Direction.OUT) {
-            // Sending out the init request
-            InitRequest initRequest = new InitRequest(0,
-                InitMessage.DEFAULT_VERSION,
-                new HashMap<String, String>() { }
-            );
-            initRequest.setHostPort(this.manager.getHostPort());
-            // TODO: figure out what to put here
-            initRequest.setProcessName("java-process");
+        // Sending out the init request
+        InitRequestFrame initRequestFrame = new InitRequestFrame(0,
+            InitFrame.DEFAULT_VERSION,
+            new HashMap<String, String>() { }
+        );
+        initRequestFrame.setHostPort(this.manager.getHostPort());
+        // TODO: figure out what to put here
+        initRequestFrame.setProcessName("java-process");
 
-            ChannelFuture f = ctx.writeAndFlush(initRequest);
-            f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-        }
+        ChannelFuture f = ctx.writeAndFlush(initRequestFrame);
+        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 
         return conn;
     }
@@ -101,9 +99,10 @@ public class Peer {
         return conn;
     }
 
-    public Connection connect(Bootstrap bootstrap) throws TChannelError {
+    public Connection connect(Bootstrap bootstrap, Connection.Direction preferredDirection) throws TChannelError {
         Connection conn = getConnection(ConnectionState.IDENTIFIED);
-        if (conn != null) {
+        if (conn != null && (
+            conn.satisfy(preferredDirection) || preferredDirection == Connection.Direction.IN)) {
             return conn;
         }
 
@@ -124,16 +123,31 @@ public class Peer {
         return connection;
     }
 
-    public Connection getConnection(ConnectionState preferedState) {
+    public Connection connect(Bootstrap bootstrap) throws TChannelError {
+        return connect(bootstrap, Connection.Direction.NONE);
+    }
+
+    public Connection getConnection(ConnectionState preferedState, Connection.Direction preferredDirection) {
         Connection conn = null;
+        Connection next = null;
         for (ChannelId id : connections.keySet()) {
-            conn = connections.get(id);
-            if (conn.satisfy(preferedState)) {
-                break;
+            next = connections.get(id);
+            if (next.satisfy(preferedState)) {
+                conn = next;
+                if (preferredDirection == Connection.Direction.NONE
+                    || conn.direction == preferredDirection) {
+                    break;
+                }
+            } else if (conn == null) {
+                conn = next;
             }
         }
 
         return conn;
+    }
+
+    public Connection getConnection(ConnectionState preferedState) {
+        return getConnection(preferedState, Connection.Direction.NONE);
     }
 
     public Connection getConnection(ChannelId channelId) {

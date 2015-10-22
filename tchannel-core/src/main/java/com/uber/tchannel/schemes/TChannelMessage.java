@@ -22,18 +22,12 @@
 
 package com.uber.tchannel.schemes;
 
-import io.netty.buffer.ByteBuf;
+import com.uber.tchannel.frames.FrameType;
 
-import java.util.Map;
+public interface TChannelMessage {
 
-public interface RawMessage extends TChannelMessage {
+    long getId();
 
-    Map<String, String> getTransportHeaders();
-
-    ByteBuf getArg1();
-
-    ByteBuf getArg2();
-
-    ByteBuf getArg3();
+    FrameType getFrameType();
 
 }

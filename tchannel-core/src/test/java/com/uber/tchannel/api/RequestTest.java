@@ -27,6 +27,7 @@ import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import io.netty.handler.logging.LogLevel;
 import org.junit.Test;
 
+import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -49,36 +50,38 @@ public class RequestTest {
         final int responseBody = 10;
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
-                .register("endpoint", new JSONRequestHandler<String, Integer>() {
-                    public Response<Integer> handleImpl(Request<String> request) {
+            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setLogLevel(LogLevel.INFO)
+            .build();
+        SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
+            .register("endpoint", new JSONRequestHandler<String, Integer>() {
+                public Response<Integer> handleImpl(Request<String> request) {
 
-                        assertEquals(requestBody, request.getBody());
-                        return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
-                                .setTransportHeaders(request.getTransportHeaders())
-                                .build();
-                    }
-                })
-                .setLogLevel(LogLevel.INFO)
-                .build();
+                    assertEquals(requestBody, request.getBody());
+                    return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
+                        .setTransportHeaders(request.getTransportHeaders())
+                        .build();
+            }
+        });
 
         tchannel.listen();
 
-        Request<String> request = new Request.Builder<>(requestBody, "ping-service", "endpoint")
+        Request<String> request = new Request.Builder<>(requestBody, "tchannel-name", "endpoint")
                 .build();
 
-        ListenableFuture<Response<Integer>> responsePromise = tchannel.callJSON(
-                tchannel.getHost(),
-                tchannel.getListeningPort(),
-                request,
-                Integer.class
+        ListenableFuture<Response<Integer>> responsePromise = subChannel.callJSON(
+            tchannel.getHost(),
+            tchannel.getListeningPort(),
+            request,
+            Integer.class
         );
 
-        Response<Integer> response = responsePromise.get(200000, TimeUnit.MILLISECONDS);
+        Response<Integer> response = responsePromise.get(2000000, TimeUnit.MILLISECONDS);
 
+        assertEquals(null, response.getError());
         assertEquals(responseBody, (int) response.getBody());
 
         tchannel.shutdown();
-
     }
 
     @Test

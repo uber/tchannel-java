@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.schemes;
 
+import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -32,11 +33,11 @@ import java.util.Map;
 /**
  * Represents a TChannel request message with `raw` arg scheme encoding.
  * <p>
- * All RPC messages over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
- * about the contents of these messages. In order to make sense of these arg payloads, TChannel has the notion of
+ * All RPC frames over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
+ * about the contents of these frames. In order to make sense of these arg payloads, TChannel has the notion of
  * `arg schemes` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
- * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response messages will be built
- * on top of {@link RawRequest} and {@link RawResponse} messages.
+ * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response frames will be built
+ * on top of {@link RawRequest} and {@link ResponseMessage} frames.
  * <p>
  * <h3>From the Docs</h3>
  * The `raw` encoding is intended for any custom encodings you want to do that
@@ -51,6 +52,7 @@ public final class RawRequest implements RawMessage {
     private final ByteBuf arg1;
     private final ByteBuf arg2;
     private final ByteBuf arg3;
+    private final FrameType frameType = FrameType.CallRequest;
 
     public RawRequest(long id, long ttl, String service, Map<String, String> transportHeaders,
                       ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
@@ -84,6 +86,11 @@ public final class RawRequest implements RawMessage {
     @Override
     public long getId() {
         return this.id;
+    }
+
+    @Override
+    public FrameType getFrameType() {
+        return frameType;
     }
 
     public void setId(int id) {
@@ -134,5 +141,11 @@ public final class RawRequest implements RawMessage {
                 this.arg2.toString(CharsetUtil.UTF_8),
                 this.arg3.toString(CharsetUtil.UTF_8)
         );
+    }
+
+    public void release() {
+        arg1.release();
+        arg2.release();
+        arg3.release();
     }
 }

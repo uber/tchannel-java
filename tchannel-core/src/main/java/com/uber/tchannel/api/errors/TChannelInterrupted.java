@@ -24,6 +24,6 @@ package com.uber.tchannel.api.errors;
 
 public class TChannelInterrupted extends TChannelError {
     public TChannelInterrupted(Throwable ex) {
-        super("Interrupted Error", TChannelError.ERROR_INTERRUPTED, ex);
+        super("Interrupted ErrorFrame", TChannelError.ERROR_INTERRUPTED, ex);
     }
 }

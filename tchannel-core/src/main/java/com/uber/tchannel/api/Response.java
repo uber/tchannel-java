@@ -22,6 +22,8 @@
 
 package com.uber.tchannel.api;
 
+import com.uber.tchannel.schemes.ErrorResponse;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +34,7 @@ public final class Response<T> {
     private final Map<String, String> headers;
     private final T body;
     private final ResponseCode responseCode;
+    private final ErrorResponse error;
 
     private Response(Builder<T> builder) {
         this.transportHeaders = builder.transportHeaders;
@@ -39,6 +42,11 @@ public final class Response<T> {
         this.headers = builder.headers;
         this.body = builder.body;
         this.responseCode = builder.responseCode;
+        this.error = builder.error;
+    }
+
+    public ErrorResponse getError() {
+        return error;
     }
 
     public String getEndpoint() {
@@ -81,11 +89,20 @@ public final class Response<T> {
         private Map<String, String> headers = new HashMap<>();
         private U body;
         private ResponseCode responseCode;
+        private final ErrorResponse error;
 
         public Builder(U body, String endpoint, ResponseCode responseCode) {
             this.body = body;
             this.endpoint = endpoint;
             this.responseCode = responseCode;
+            this.error = null;
+        }
+
+        public Builder(ErrorResponse error) {
+            this.body = null;
+            this.endpoint = null;
+            this.responseCode = null;
+            this.error = error;
         }
 
         public Builder<U> setTransportHeader(String key, String value) {
@@ -110,6 +127,9 @@ public final class Response<T> {
 
         public Builder<U> validate() {
 
+            if (error != null) {
+                return this;
+            }
             if (endpoint == null) {
                 throw new IllegalStateException("`endpoint` cannot be null.");
             }

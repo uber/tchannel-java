@@ -27,40 +27,40 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.uber.tchannel.api.SubChannel;
+import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
-import com.uber.tchannel.errors.BadRequestError;
-import com.uber.tchannel.errors.BusyError;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.messages.ErrorMessage;
 import com.uber.tchannel.schemes.JSONSerializer;
 import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.ResponseMessage;
 import com.uber.tchannel.schemes.Serializer;
 import com.uber.tchannel.schemes.ThriftSerializer;
-import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.uber.tchannel.frames.ErrorFrame.sendError;
+
 public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
-    private final Map<String, ? extends RequestHandler> requestHandlers;
+    private final TChannel topChannel;
+
     private final Serializer serializer;
     private final AtomicInteger queuedRequests = new AtomicInteger(0);
     private final int maxQueuedRequests;
     private final ListeningExecutorService listeningExecutorService;
 
-    public RequestRouter(Map<String, RequestHandler> requestHandlers,
+    public RequestRouter(TChannel topChannel,
                          ExecutorService executorService, int maxQueuedRequests) {
-        this.requestHandlers = requestHandlers;
+        this.topChannel = topChannel;
         this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
             {
                 put(ArgScheme.JSON, new JSONSerializer());
@@ -72,6 +72,17 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         this.maxQueuedRequests = maxQueuedRequests;
     }
 
+    private RequestHandler getRequestHandler(String service, String endpoint) {
+        SubChannel subChannel = topChannel.getSubChannel(service);
+        RequestHandler handler = null;
+
+        if (subChannel != null) {
+            handler = subChannel.getRequestHandler(endpoint);
+        }
+
+        return handler;
+    }
+
     @Override
     protected void messageReceived(final ChannelHandlerContext ctx, final RawRequest rawRequest) throws Exception {
 
@@ -80,11 +91,18 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         );
 
         if (argScheme == null) {
-            throw new BadRequestError(
-                    "Missing `Arg Scheme` header",
-                    new Trace(0, 0, 0, (byte) 0),
-                    rawRequest.getId()
-            );
+            sendError(ErrorType.BadRequest,
+                "Expected incoming call to have \"as\" header set",
+                rawRequest, ctx);
+            return;
+        }
+
+        final String service = rawRequest.getService();
+        if (service == null || service.isEmpty()) {
+            sendError(ErrorType.BadRequest,
+                "Expected incoming call to have serviceName",
+                rawRequest, ctx);
+            return;
         }
 
         /** If the current queued request count is greater than the expected queued
@@ -92,34 +110,39 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
          * node.
          */
         if (queuedRequests.get() >= maxQueuedRequests) {
-            throw new BusyError(
-                    "Busy",
-                    new Trace(0, 0, 0, (byte) 0),
-                    rawRequest.getId()
-            );
+            sendError(ErrorType.Busy, "Service is busy", rawRequest, ctx);
+            return;
         }
 
         // Get the endpoint. The assumption over here is that endpoints are
         // always going to to utf-8 encoded.
         String endpoint = rawRequest.getArg1().toString(CharsetUtil.UTF_8);
+        if (endpoint == null || endpoint.isEmpty()) {
+            sendError(ErrorType.BadRequest,
+                "Expected incoming call to have endpoint",
+                rawRequest, ctx);
+            return;
+        }
 
         // Get handler for this method
-        RequestHandler handler = this.requestHandlers.get(endpoint);
-
+        RequestHandler handler = this.getRequestHandler(service, endpoint);
         if (handler == null) {
-            throw new RuntimeException(String.format("No handler for %s", endpoint));
+            sendError(ErrorType.BadRequest,
+                "Invalid handler function",
+                rawRequest, ctx);
+            return;
         }
 
         // Increment the number of queued requests.
         queuedRequests.getAndIncrement();
 
         // Handle the request in a separate thread and get a future to it
-        ListenableFuture<RawResponse> responseFuture = listeningExecutorService.submit(
+        ListenableFuture<ResponseMessage> responseFuture = listeningExecutorService.submit(
                 new CallableHandler(handler, rawRequest));
 
-        Futures.addCallback(responseFuture, new FutureCallback<RawResponse>() {
+        Futures.addCallback(responseFuture, new FutureCallback<ResponseMessage>() {
             @Override
-            public void onSuccess(RawResponse response) {
+            public void onSuccess(ResponseMessage response) {
 
                 // Since the request was handled, decrement the queued requests count
                 queuedRequests.decrementAndGet();
@@ -129,19 +152,15 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
             @Override
             public void onFailure(Throwable throwable) {
                 queuedRequests.decrementAndGet();
-
-                // TODO better interface for sending errors
-                ErrorMessage error = new ErrorMessage(
-                        rawRequest.getId(),
-                        ErrorType.BadRequest,
-                        new Trace(0, 0, 0, (byte) 0x00),
-                        throwable.getMessage());
-                ctx.writeAndFlush(error);
+                sendError(ErrorType.BadRequest,
+                    "Failed to handle the request: " + throwable.getMessage(),
+                    rawRequest, ctx);
+                return;
             }
         });
     }
 
-    private class CallableHandler implements Callable<RawResponse> {
+    private class CallableHandler implements Callable<ResponseMessage> {
         private final RawRequest request;
         private final RequestHandler handler;
 
@@ -151,8 +170,8 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         }
 
         @Override
-        public RawResponse call() throws Exception {
-            RawResponse response = handler.handle(request);
+        public ResponseMessage call() throws Exception {
+            ResponseMessage response = handler.handle(request);
             return response;
         }
     }

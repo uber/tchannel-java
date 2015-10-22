@@ -25,7 +25,7 @@ package com.uber.tchannel.handlers;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.ResponseMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -33,9 +33,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
+public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage> {
 
-    private final Map<Long, SettableFuture<RawResponse>> messageMap = new ConcurrentHashMap<>();
+    private final Map<Long, SettableFuture<ResponseMessage>> messageMap = new ConcurrentHashMap<>();
 
     private final AtomicInteger idGenerator = new AtomicInteger(0);
     private ChannelHandlerContext ctx;
@@ -46,18 +46,18 @@ public class ResponseRouter extends SimpleChannelInboundHandler<RawResponse> {
         this.ctx = ctx;
     }
 
-    public ListenableFuture<RawResponse> expectResponse(RawRequest request) throws InterruptedException {
+    public ListenableFuture<ResponseMessage> expectResponse(RawRequest request) throws InterruptedException {
         int messageId = idGenerator.incrementAndGet();
         request.setId(messageId);
-        SettableFuture<RawResponse> future = SettableFuture.create();
+        SettableFuture<ResponseMessage> future = SettableFuture.create();
         this.messageMap.put(request.getId(), future);
         ctx.writeAndFlush(request);
         return future;
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, RawResponse rawResponse) throws Exception {
-        SettableFuture<RawResponse> future = this.messageMap.remove(rawResponse.getId());
-        future.set(rawResponse);
+    protected void messageReceived(ChannelHandlerContext ctx, ResponseMessage responseMessage) throws Exception {
+        SettableFuture<ResponseMessage> future = this.messageMap.remove(responseMessage.getId());
+        future.set(responseMessage);
     }
 }

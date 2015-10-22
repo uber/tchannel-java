@@ -21,12 +21,6 @@
  */
 package com.uber.tchannel.api;
 
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
-import com.uber.tchannel.api.errors.TChannelError;
-import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
-import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
@@ -41,10 +35,7 @@ import com.uber.tchannel.handlers.PingHandler;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.JSONSerializer;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.schemes.Serializer;
 import com.uber.tchannel.schemes.ThriftSerializer;
 import io.netty.bootstrap.Bootstrap;
@@ -68,13 +59,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
-import static com.google.common.util.concurrent.Futures.transform;
-
 public final class TChannel {
 
     private final String service;
     private final ServerBootstrap serverBootstrap;
-    private final Bootstrap clientBootstrap;
     private final PeerManager peerManager;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup childGroup;
@@ -86,6 +74,8 @@ public final class TChannel {
     private final int maxQueuedRequests;
     private final int initTimeout;
 
+    private Map<String, SubChannel> subChannels = new HashMap<>();
+
     private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
             put(ArgScheme.JSON, new JSONSerializer());
@@ -96,53 +86,14 @@ public final class TChannel {
     private TChannel(Builder builder) {
         this.service = builder.service;
         this.exectorService = builder.executorService;
-        this.serverBootstrap = builder.serverBootstrap();
-        this.clientBootstrap = builder.bootstrap();
-        this.peerManager = builder.peerManager;
+        this.serverBootstrap = builder.serverBootstrap(this);
         this.bossGroup = builder.bossGroup;
         this.childGroup = builder.childGroup;
         this.host = builder.host;
         this.port = builder.port;
         this.maxQueuedRequests = builder.maxQueuedRequests;
         this.initTimeout = builder.initTimeout;
-    }
-
-    private <T, U> ListenableFuture<Response<T>> callWithEncoding(
-            InetAddress host,
-            int port,
-            Request<U> request,
-            final Class<T> responseType,
-            ArgScheme scheme
-    ) throws InterruptedException, TChannelError {
-
-        RawRequest rawRequest = new RawRequest(
-                request.getTTL(),
-                request.getService(),
-                request.getTransportHeaders(),
-                serializer.encodeEndpoint(request.getEndpoint(), scheme),
-                serializer.encodeHeaders(request.getHeaders(), scheme),
-                serializer.encodeBody(request.getBody(), scheme)
-        );
-
-        // Set the 'cn' header
-        rawRequest.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.service);
-        rawRequest.setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, scheme.getScheme());
-
-        ListenableFuture<RawResponse> future = this.call(host, port, rawRequest);
-        return transform(future, new AsyncFunction<RawResponse, Response<T>>() {
-            @Override
-            public ListenableFuture<Response<T>> apply(RawResponse rawResponse) {
-                SettableFuture<Response<T>> settableFuture = SettableFuture.create();
-                Response<T> response = new Response.Builder<>(
-                        serializer.decodeBody(rawResponse, responseType),
-                        serializer.decodeEndpoint(rawResponse),
-                        rawResponse.getResponseCode())
-                        .setHeaders(serializer.decodeHeaders(rawResponse))
-                        .build();
-                settableFuture.set(response);
-                return settableFuture;
-            }
-        });
+        this.peerManager = new PeerManager(builder.bootstrap(this));
     }
 
     public int getListeningPort() {
@@ -165,6 +116,10 @@ public final class TChannel {
         return this.peerManager;
     }
 
+    public long getInitTimeout() {
+        return this.initTimeout;
+    }
+
     public ChannelFuture listen() throws InterruptedException {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
@@ -174,69 +129,38 @@ public final class TChannel {
         return f;
     }
 
+    public SubChannel getSubChannel(String service) {
+        return subChannels.get(service);
+    }
+
+    // TODO: make sure makeSubChannel is called before listening ...
+    public SubChannel makeSubChannel(String service, Connection.Direction preferredDirection) {
+        SubChannel subChannel = getSubChannel(service);
+        if (subChannel == null) {
+            subChannel = new SubChannel(service, this, preferredDirection);
+            subChannels.put(service, subChannel);
+        }
+
+        return subChannel;
+    }
+
+    public SubChannel makeSubChannel(String service) {
+        return this.makeSubChannel(service, Connection.Direction.NONE);
+    }
+
     public void shutdown() throws InterruptedException {
         this.peerManager.close();
         this.bossGroup.shutdownGracefully();
         this.childGroup.shutdownGracefully();
     }
 
-    public <T, U> ListenableFuture<Response<T>> callThrift(
-            InetAddress host,
-            int port,
-            Request<U> request,
-            final Class<T> responseType
-    ) throws InterruptedException, TChannelError {
-        return callWithEncoding(host, port, request, responseType, ArgScheme.THRIFT);
-    }
-
-    public <T, U> ListenableFuture<Response<T>> callJSON(
-            InetAddress host,
-            int port,
-            Request<U> request,
-            final Class<T> responseType
-    ) throws InterruptedException, TChannelError {
-        return callWithEncoding(host, port, request, responseType, ArgScheme.JSON);
-    }
-
-    public ListenableFuture<RawResponse> call(
-            InetAddress host,
-            int port,
-            RawRequest request
-    ) throws InterruptedException, TChannelError {
-
-        // Set the ArgScheme as RAW if its not set
-        Map<String, String> transportHeaders = request.getTransportHeaders();
-        if (!transportHeaders.containsKey(TransportHeaders.ARG_SCHEME_KEY)) {
-            request.setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
-        }
-
-        // Get an outbound channel
-        Connection conn = this.peerManager.findOrNew(new InetSocketAddress(host, port), this.clientBootstrap);
-
-        if (!conn.waitForIdentified(this.initTimeout)) {
-            if (conn.lastError() != null) {
-                throw conn.lastError();
-            } else {
-                throw new TChannelConnectionTimeout();
-            }
-        }
-
-        // Get a response router for our outbound channel
-        ResponseRouter responseRouter = conn.channel().pipeline().get(ResponseRouter.class);
-
-        // Ask the router to make a call on our behalf, and return its promise
-        return responseRouter.expectResponse(request);
-    }
-
     public static class Builder {
 
         private final String service;
-        private final PeerManager peerManager = new PeerManager();
         private ExecutorService executorService = new ForkJoinPool();
         private int maxQueuedRequests = Runtime.getRuntime().availableProcessors() * 5;
         private InetAddress host;
         private int port = 0;
-        private Map<String, RequestHandler> requestHandlers = new HashMap<>();
         private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         private EventLoopGroup childGroup = new NioEventLoopGroup();
         private LogLevel logLevel = LogLevel.INFO;
@@ -270,11 +194,6 @@ public final class TChannel {
             return this;
         }
 
-        public Builder register(String endpoint, RequestHandler requestHandler) {
-            requestHandlers.put(endpoint, requestHandler);
-            return this;
-        }
-
         public Builder setBossGroup(EventLoopGroup bossGroup) {
             this.bossGroup = bossGroup;
             return this;
@@ -299,26 +218,27 @@ public final class TChannel {
             return new TChannel(this);
         }
 
-        private Bootstrap bootstrap() {
+        private Bootstrap bootstrap(TChannel topChannel) {
             return new Bootstrap()
                     .group(this.childGroup)
                     .channel(NioSocketChannel.class)
-                    .handler(this.channelInitializer(false))
+                    .handler(this.channelInitializer(false, topChannel))
                     .validate();
         }
 
-        private ServerBootstrap serverBootstrap() {
+        private ServerBootstrap serverBootstrap(TChannel topChannel) {
             return new ServerBootstrap()
                     .group(this.bossGroup, this.childGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(logLevel))
                     .option(ChannelOption.SO_BACKLOG, 128)
-                    .childHandler(this.channelInitializer(true))
+                    .childHandler(this.channelInitializer(true, topChannel))
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
                     .validate();
         }
 
-        private ChannelInitializer<SocketChannel> channelInitializer(final boolean isServer) {
+        private ChannelInitializer<SocketChannel> channelInitializer(final boolean isServer,
+                                                                     final TChannel topChannel) {
             return new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) throws Exception {
@@ -332,12 +252,14 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageCodec", new MessageCodec());
 
                     if (isServer) {
-                        ch.pipeline().addLast("InitRequestHandler", new InitRequestHandler(peerManager));
+                        ch.pipeline().addLast("InitRequestHandler",
+                            new InitRequestHandler(topChannel.getPeerManager()));
                     } else {
-                        ch.pipeline().addLast("InitRequestInitiator", new InitRequestInitiator(peerManager));
+                        ch.pipeline().addLast("InitRequestInitiator",
+                            new InitRequestInitiator(topChannel.getPeerManager()));
                     }
 
-                    // Handle PingRequest
+                    // Handle PingRequestFrame
                     ch.pipeline().addLast("PingHandler", new PingHandler());
 
                     // Handles Call Request RPC
@@ -346,16 +268,15 @@ public final class TChannel {
 
                     // Pass RequestHandlers to the RequestRouter
                     ch.pipeline().addLast("RequestRouter", new RequestRouter(
-                            requestHandlers, executorService, maxQueuedRequests));
+                        topChannel, executorService, maxQueuedRequests));
 
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter());
 
                     // Register Channels as they are created.
-                    ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(peerManager));
+                    ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(topChannel.getPeerManager()));
 
                 }
             };
         }
-
     }
 }

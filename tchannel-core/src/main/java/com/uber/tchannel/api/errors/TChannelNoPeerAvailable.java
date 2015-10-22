@@ -20,20 +20,10 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.api.errors;
 
-import io.netty.buffer.ByteBuf;
-
-import java.util.Map;
-
-public interface RawMessage extends TChannelMessage {
-
-    Map<String, String> getTransportHeaders();
-
-    ByteBuf getArg1();
-
-    ByteBuf getArg2();
-
-    ByteBuf getArg3();
-
+public class TChannelNoPeerAvailable extends TChannelError {
+    public TChannelNoPeerAvailable() {
+        super("no peer available for request", TChannelError.ERROR_NO_PEER_AVAILABLE);
+    }
 }

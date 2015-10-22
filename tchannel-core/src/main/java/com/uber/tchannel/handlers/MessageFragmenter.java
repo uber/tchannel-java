@@ -25,12 +25,12 @@ package com.uber.tchannel.handlers;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.fragmentation.FragmentationState;
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.CallRequest;
-import com.uber.tchannel.messages.CallResponse;
+import com.uber.tchannel.codecs.TFrame;
+import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.CallResponseFrame;
+import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.schemes.RawMessage;
 import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -66,7 +66,7 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
         if (msg instanceof RawRequest) {
             RawRequest rawRequest = (RawRequest) msg;
 
-            CallRequest callRequest = new CallRequest(
+            CallRequestFrame callRequestFrame = new CallRequestFrame(
                     rawRequest.getId(),
                     flags,
                     rawRequest.getTTL(),
@@ -78,22 +78,21 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
                     buffer
             );
 
-            out.add(callRequest);
+            out.add(callRequestFrame);
         } else if (msg instanceof RawResponse) {
-            RawResponse rawResponse = (RawResponse) msg;
-
-            CallResponse callResponse = new CallResponse(
-                    rawResponse.getId(),
-                    flags,
-                    ResponseCode.OK,
-                    new Trace(0, 0, 0, (byte) 0x00),
-                    rawResponse.getTransportHeaders(),
-                    ChecksumType.NoChecksum,
-                    0,
-                    buffer
+            RawResponse response = (RawResponse) msg;
+            CallResponseFrame callResponseFrame = new CallResponseFrame(
+                response.getId(),
+                flags,
+                ResponseCode.OK,
+                new Trace(0, 0, 0, (byte) 0x00),
+                response.getTransportHeaders(),
+                ChecksumType.NoChecksum,
+                0,
+                buffer
             );
 
-            out.add(callResponse);
+            out.add(callResponseFrame);
         }
 
     }
