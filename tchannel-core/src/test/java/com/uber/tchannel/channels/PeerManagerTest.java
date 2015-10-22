@@ -90,6 +90,7 @@ public class PeerManagerTest {
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        release(res);
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
@@ -157,6 +158,7 @@ public class PeerManagerTest {
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        release(res);
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
@@ -223,6 +225,7 @@ public class PeerManagerTest {
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        release(res);
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
@@ -289,6 +292,8 @@ public class PeerManagerTest {
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        release(res);
+
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
         assertEquals((int)stats.get("connections.in"), 0);
@@ -383,6 +388,7 @@ public class PeerManagerTest {
         assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
         assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
         assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        release(res);
 
         assertTrue(echo1.accessed);
         assertFalse(echo2.accessed);
@@ -477,6 +483,7 @@ public class PeerManagerTest {
         assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
         assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
         assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        release(res);
 
         assertFalse(echo1.accessed);
         assertTrue(echo2.accessed);
@@ -515,6 +522,12 @@ public class PeerManagerTest {
             accessed = true;
             return response;
         }
+    }
+
+    protected static void release(RawResponse res) {
+        res.getArg1().release();
+        res.getArg2().release();
+        res.getArg3().release();
     }
 }
 
