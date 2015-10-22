@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;

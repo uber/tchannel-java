@@ -23,10 +23,10 @@ package com.uber.tchannel;
 
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.messages.CallRequest;
-import com.uber.tchannel.messages.CallRequestContinue;
-import com.uber.tchannel.messages.CallResponse;
-import com.uber.tchannel.messages.CallResponseContinue;
+import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.CallRequestContinueFrame;
+import com.uber.tchannel.frames.CallResponseFrame;
+import com.uber.tchannel.frames.CallResponseContinue;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 
@@ -34,8 +34,8 @@ import java.util.HashMap;
 
 public class Fixtures {
 
-    public static CallRequest callRequest(long id, boolean moreFragments, ByteBuf payload) {
-        return new CallRequest(
+    public static CallRequestFrame callRequest(long id, boolean moreFragments, ByteBuf payload) {
+        return new CallRequestFrame(
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
                 0L,
@@ -48,8 +48,8 @@ public class Fixtures {
         );
     }
 
-    public static CallRequestContinue callRequestContinue(long id, boolean moreFragments, ByteBuf payload) {
-        return new CallRequestContinue(
+    public static CallRequestContinueFrame callRequestContinue(long id, boolean moreFragments, ByteBuf payload) {
+        return new CallRequestContinueFrame(
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
                 ChecksumType.NoChecksum,
@@ -58,8 +58,8 @@ public class Fixtures {
         );
     }
 
-    public static CallResponse callResponse(long id, boolean moreFragments, ByteBuf payload) {
-        return new CallResponse(
+    public static CallResponseFrame callResponse(long id, boolean moreFragments, ByteBuf payload) {
+        return new CallResponseFrame(
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
                 ResponseCode.OK,

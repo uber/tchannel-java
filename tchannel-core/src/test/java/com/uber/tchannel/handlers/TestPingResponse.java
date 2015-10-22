@@ -22,8 +22,8 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.codecs.TFrame;
+import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
@@ -41,14 +41,14 @@ public class TestPingResponse {
                 new PingHandler()
         );
 
-        TFrame frame = new TFrame(0, MessageType.PingRequest.byteValue(), Integer.MAX_VALUE, Unpooled.EMPTY_BUFFER);
+        TFrame frame = new TFrame(0, FrameType.PingRequest.byteValue(), Integer.MAX_VALUE, Unpooled.EMPTY_BUFFER);
 
         channel.writeInbound(frame);
         TFrame newFrame = channel.readOutbound();
 
         assertNotNull(newFrame);
         assertEquals(frame.size, newFrame.size);
-        assertEquals(MessageType.PingResponse.byteValue(), newFrame.type);
+        assertEquals(FrameType.PingResponse.byteValue(), newFrame.type);
         assertEquals(frame.id, newFrame.id);
 
     }

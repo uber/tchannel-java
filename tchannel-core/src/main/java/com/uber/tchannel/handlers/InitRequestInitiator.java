@@ -26,14 +26,14 @@ import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.errors.FatalProtocolError;
 import com.uber.tchannel.errors.ProtocolError;
 import com.uber.tchannel.errors.ProtocolErrorProcessor;
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitResponse;
-import com.uber.tchannel.messages.Message;
+import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.frames.InitResponseFrame;
+import com.uber.tchannel.frames.Frame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
+public class InitRequestInitiator extends SimpleChannelInboundHandler<Frame> {
 
     private final PeerManager peerManager;
 
@@ -42,20 +42,20 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Message message) throws ProtocolError {
+    protected void messageReceived(ChannelHandlerContext ctx, Frame frame) throws ProtocolError {
 
-        switch (message.getMessageType()) {
+        switch (frame.getMessageType()) {
 
             case InitResponse:
 
-                InitResponse initResponseMessage = (InitResponse) message;
+                InitResponseFrame initResponseFrameMessage = (InitResponseFrame) frame;
 
-                if (initResponseMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
+                if (initResponseFrameMessage.getVersion() == InitFrame.DEFAULT_VERSION) {
                     ctx.pipeline().remove(this);
-                    peerManager.setIdentified(ctx.channel(), initResponseMessage.getHeaders());
+                    peerManager.setIdentified(ctx.channel(), initResponseFrameMessage.getHeaders());
                 } else {
                     throw new FatalProtocolError(
-                            String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION),
+                            String.format("Expected Protocol version: %d", InitFrame.DEFAULT_VERSION),
                             new Trace(0, 0, 0, (byte) 0x00)
                     );
                 }
@@ -65,7 +65,7 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Message> {
             default:
 
                 throw new FatalProtocolError(
-                        "Must not send any data until receiving Init Response",
+                        "Must not send any data until receiving InitFrame Response",
                         new Trace(0, 0, 0, (byte) 0x00)
                 );
 

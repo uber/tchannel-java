@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import io.netty.channel.ChannelFuture;
 import org.junit.Test;
@@ -71,11 +72,12 @@ public class HyperbahnClientTest {
     }
 
     public static TChannel createMockHyperbahn(AdvertiseResponseHandler adHandler) throws Exception {
-        final TChannel server = new TChannel.Builder("autobahn")
-                .register("ad", adHandler)
+        final TChannel server = new TChannel.Builder("hyperbahn")
                 .setServerHost(InetAddress.getByName("127.0.0.1"))
                 .setServerPort(8888)
                 .build();
+
+        server.makeSubChannel("hyperbahn").register("ad", adHandler);
 
         ChannelFuture f = server.listen();
         return server;

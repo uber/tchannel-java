@@ -23,9 +23,8 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.CallResponseContinue;
-import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.frames.CallResponseContinue;
+import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -56,7 +55,7 @@ public final class CallResponseContinueCodec extends MessageToMessageCodec<TFram
         // {continuation}
         buffer.writeBytes(msg.getPayload());
 
-        TFrame frame = new TFrame(buffer.writerIndex(), MessageType.CallResponseContinue, msg.getId(), buffer);
+        TFrame frame = new TFrame(buffer.writerIndex(), FrameType.CallResponseContinue, msg.getId(), buffer);
         out.add(frame);
     }
 

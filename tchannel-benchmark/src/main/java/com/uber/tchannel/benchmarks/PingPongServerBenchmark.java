@@ -74,9 +74,9 @@ public class PingPongServerBenchmark {
     public void setup() throws Exception {
 
         this.channel = new TChannel.Builder("ping-server")
-                .register("ping", new PingDefaultRequestHandler())
                 .setMaxQueuedRequests(20000000)
                 .build();
+        channel.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
         this.client = new TChannel.Builder("ping-client").build();
         channel.listen();
         this.port = this.channel.getListeningPort();
@@ -88,11 +88,11 @@ public class PingPongServerBenchmark {
 
         Request<Ping> request = new Request.Builder<>(new Ping("ping?"), "some-service", "ping").build();
 
-        ListenableFuture<Response<Pong>> future = this.client.callJSON(
-                InetAddress.getLocalHost(),
-                this.port,
-                request,
-                Pong.class
+        ListenableFuture<Response<Pong>> future = this.client.makeSubChannel("ping-server").callJSON(
+            InetAddress.getLocalHost(),
+            this.port,
+            request,
+            Pong.class
         );
         Futures.addCallback(future, new FutureCallback<Response<Pong>>() {
             @Override

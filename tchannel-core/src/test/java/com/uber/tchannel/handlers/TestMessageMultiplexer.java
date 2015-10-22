@@ -23,9 +23,10 @@ package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.fragmentation.FragmentationState;
-import com.uber.tchannel.messages.CallRequest;
-import com.uber.tchannel.messages.CallRequestContinue;
+import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.CallRequestContinueFrame;
 import com.uber.tchannel.schemes.RawMessage;
+import com.uber.tchannel.schemes.TChannelMessage;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -46,43 +47,43 @@ public class TestMessageMultiplexer {
     public void testMergeMessage() {
 
         MessageDefragmenter mux = new MessageDefragmenter();
-        Map<Long, RawMessage> map = mux.getMessageMap();
+        Map<Long, TChannelMessage> map = mux.getMessageMap();
         EmbeddedChannel channel = new EmbeddedChannel(mux);
         long id = 42;
 
-        CallRequest callRequest = Fixtures.callRequest(id, true, Unpooled.wrappedBuffer(
+        CallRequestFrame callRequestFrame = Fixtures.callRequest(id, true, Unpooled.wrappedBuffer(
                 // arg1 size
                 new byte[]{0x00, 0x04},
                 "arg1".getBytes()
         ));
-        channel.writeInbound(callRequest);
+        channel.writeInbound(callRequestFrame);
         assertEquals(map.size(), 1);
         assertNotNull(map.get(id));
-        assertEquals(1, callRequest.refCnt());
+        assertEquals(1, callRequestFrame.refCnt());
 
-        CallRequestContinue firstCallRequestContinue = Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
+        CallRequestContinueFrame firstCallRequestContinueFrame = Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
                 // arg2 size
                 new byte[]{0x00, 0x04},
                 "arg2".getBytes()
         ));
-        channel.writeInbound(firstCallRequestContinue);
+        channel.writeInbound(firstCallRequestContinueFrame);
         assertEquals(map.size(), 1);
         assertNotNull(map.get(id));
-        assertEquals(1, callRequest.refCnt());
-        assertEquals(1, firstCallRequestContinue.refCnt());
+        assertEquals(1, callRequestFrame.refCnt());
+        assertEquals(1, firstCallRequestContinueFrame.refCnt());
 
-        CallRequestContinue secondCallRequestContinue = Fixtures.callRequestContinue(id, false, Unpooled.wrappedBuffer(
+        CallRequestContinueFrame secondCallRequestContinueFrame = Fixtures.callRequestContinue(id, false, Unpooled.wrappedBuffer(
                 // arg1 size
                 new byte[]{0x00, 0x00},
                 new byte[]{0x00, 0x04},
                 "arg3".getBytes()
         ));
-        channel.writeInbound(secondCallRequestContinue);
+        channel.writeInbound(secondCallRequestContinueFrame);
         assertEquals(map.size(), 0);
         assertNull(map.get(id));
-        assertEquals(1, callRequest.refCnt());
-        assertEquals(1, firstCallRequestContinue.refCnt());
-        assertEquals(1, secondCallRequestContinue.refCnt());
+        assertEquals(1, callRequestFrame.refCnt());
+        assertEquals(1, firstCallRequestContinueFrame.refCnt());
+        assertEquals(1, secondCallRequestContinueFrame.refCnt());
 
         RawMessage fullMessage = channel.readInbound();
         assertEquals(1, fullMessage.getArg1().refCnt());
@@ -109,9 +110,9 @@ public class TestMessageMultiplexer {
         fullMessage.getArg2().release();
         fullMessage.getArg3().release();
 
-        assertEquals(0, callRequest.refCnt());
-        assertEquals(0, firstCallRequestContinue.refCnt());
-        assertEquals(0, secondCallRequestContinue.refCnt());
+        assertEquals(0, callRequestFrame.refCnt());
+        assertEquals(0, firstCallRequestContinueFrame.refCnt());
+        assertEquals(0, secondCallRequestContinueFrame.refCnt());
 
         assertNull(channel.readInbound());
 

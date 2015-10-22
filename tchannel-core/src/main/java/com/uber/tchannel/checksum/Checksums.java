@@ -21,25 +21,25 @@
  */
 package com.uber.tchannel.checksum;
 
-import com.uber.tchannel.messages.CallMessage;
+import com.uber.tchannel.frames.CallFrame;
 import io.netty.buffer.ByteBuf;
 
 import java.util.zip.Adler32;
 
 public final class Checksums {
-    public static boolean verifyChecksum(CallMessage msg) {
+    public static boolean verifyChecksum(CallFrame msg) {
         return (calculateChecksum(msg) == msg.getChecksum());
     }
 
-    public static boolean verifyExistingChecksum(CallMessage msg, long checksum) {
+    public static boolean verifyExistingChecksum(CallFrame msg, long checksum) {
         return (msg.getChecksum() == checksum);
     }
 
-    public static long calculateChecksum(CallMessage msg) {
+    public static long calculateChecksum(CallFrame msg) {
         return calculateChecksum(msg, 0L);
     }
 
-    public static long calculateChecksum(CallMessage msg, long digestSeed) {
+    public static long calculateChecksum(CallFrame msg, long digestSeed) {
 
         // TODO: this is bad
         ByteBuf payloadCopy = msg.getPayload().slice();

@@ -44,7 +44,6 @@ import com.uber.tchannel.ping.PingRequestHandler;
 public class HyperbahnExample {
     public static void main(String[] args) throws Exception {
         TChannel tchannel = new TChannel.Builder("javaServer")
-                .register("ping", new PingRequestHandler())
                 .setServerHost(InetAddress.getByName("127.0.0.1"))
                 .setServerPort(8888)
                 .build();
@@ -60,6 +59,9 @@ public class HyperbahnExample {
         HyperbahnClient hyperbahn = new HyperbahnClient.Builder(tchannel.getServiceName(), tchannel)
                 .setRouters(routers)
                 .build();
+
+        // register the service handler
+        hyperbahn.makeClientChannel("javaServer").register("ping", new PingRequestHandler());
 
         final ListenableFuture<Response<AdvertiseResponse>> responseFuture;
 
@@ -79,7 +81,7 @@ public class HyperbahnExample {
                     Response<AdvertiseResponse> response = responseFuture.get();
                     System.out.println("Got response. All set: " + response.getBody().toString());
                 } catch (Exception ex) {
-                    System.out.println("Error happened: " + ex.getMessage());
+                    System.out.println("ErrorFrame happened: " + ex.getMessage());
                 }
             }
         }, new Executor() {

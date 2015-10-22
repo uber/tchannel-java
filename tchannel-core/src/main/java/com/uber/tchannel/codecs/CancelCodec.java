@@ -21,9 +21,8 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.Cancel;
-import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.frames.CancelFrame;
+import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -31,9 +30,9 @@ import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public class CancelCodec extends MessageToMessageCodec<TFrame, Cancel> {
+public class CancelCodec extends MessageToMessageCodec<TFrame, CancelFrame> {
     @Override
-    protected void encode(ChannelHandlerContext ctx, Cancel msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CancelFrame msg, List<Object> out) throws Exception {
         ByteBuf buffer = ctx.alloc().buffer();
 
         // ttl:4
@@ -45,7 +44,7 @@ public class CancelCodec extends MessageToMessageCodec<TFrame, Cancel> {
         // why~2
         CodecUtils.encodeString(msg.getWhy(), buffer);
 
-        TFrame frame = new TFrame(buffer.writerIndex(), MessageType.Cancel, msg.getId(), buffer);
+        TFrame frame = new TFrame(buffer.writerIndex(), FrameType.Cancel, msg.getId(), buffer);
         out.add(frame);
     }
 
@@ -60,7 +59,7 @@ public class CancelCodec extends MessageToMessageCodec<TFrame, Cancel> {
         // why~2
         String why = CodecUtils.decodeString(frame.payload);
 
-        Cancel cancel = new Cancel(frame.id, ttl, tracing, why);
-        out.add(cancel);
+        CancelFrame cancelFrame = new CancelFrame(frame.id, ttl, tracing, why);
+        out.add(cancelFrame);
     }
 }

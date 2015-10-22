@@ -23,6 +23,7 @@
 package com.uber.tchannel.schemes;
 
 import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
@@ -31,17 +32,17 @@ import java.util.Map;
 /**
  * Represents a TChannel response message with `raw` arg scheme encoding.
  * <p>
- * All RPC messages over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
- * about the contents of these messages. In order to make sense of these arg payloads, TChannel has the notion of
+ * All RPC frames over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
+ * about the contents of these frames. In order to make sense of these arg payloads, TChannel has the notion of
  * `arg schemes` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
- * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response messages will be built
- * on top of {@link RawRequest} and {@link RawResponse} messages.
+ * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response frames will be built
+ * on top of {@link RawRequest} and {@link RawResponse} frames.
  * <p>
  * <h3>From the Docs</h3>
  * The `raw` encoding is intended for any custom encodings you want to do that
  * are not part of TChannel but are application specific.
  */
-public final class RawResponse implements RawMessage {
+public final class RawResponse extends ResponseMessage implements RawMessage {
 
     private final long id;
     private final ResponseCode responseCode;
@@ -58,11 +59,17 @@ public final class RawResponse implements RawMessage {
         this.arg1 = arg1;
         this.arg2 = arg2;
         this.arg3 = arg3;
+        this.frameType = FrameType.CallResponse;
     }
 
     @Override
     public long getId() {
         return this.id;
+    }
+
+    @Override
+    public FrameType getFrameType() {
+        return frameType;
     }
 
     public ResponseCode getResponseCode() {

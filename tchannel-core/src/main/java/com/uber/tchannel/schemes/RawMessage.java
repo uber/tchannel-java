@@ -26,9 +26,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.Map;
 
-public interface RawMessage {
-
-    long getId();
+public interface RawMessage extends TChannelMessage {
 
     Map<String, String> getTransportHeaders();
 

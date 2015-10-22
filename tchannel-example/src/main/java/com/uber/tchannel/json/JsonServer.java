@@ -28,9 +28,11 @@ import io.netty.channel.ChannelFuture;
 public class JsonServer {
     public static void main(String[] args) throws Exception {
         final TChannel tchannel = new TChannel.Builder("json-server")
-                .register("json-endpoint", new JsonRequestHandler())
                 .setServerPort(8888)
                 .build();
+
+        tchannel.makeSubChannel("json-server")
+            .register("json-endpoint", new JsonRequestHandler());
 
         ChannelFuture f = tchannel.listen();
 

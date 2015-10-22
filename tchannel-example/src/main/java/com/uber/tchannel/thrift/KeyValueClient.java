@@ -64,12 +64,14 @@ public class KeyValueClient {
     public static void setValue(TChannel tchannel, String key, String value) throws Exception {
         KeyValue.setValue_args setValue = new KeyValue.setValue_args(key, value);
 
-        ListenableFuture<Response<KeyValue.setValue_result>> future = tchannel.callThrift(
+        ListenableFuture<Response<KeyValue.setValue_result>> future = tchannel
+            .makeSubChannel("keyvalue-service")
+            .callThrift(
                 InetAddress.getLocalHost(),
                 8888,
                 new Request.Builder<>(setValue, "keyvalue-service", "KeyValue::setValue").build(),
                 KeyValue.setValue_result.class
-        );
+            );
 
         future.get(100, TimeUnit.MILLISECONDS);
     }
@@ -82,12 +84,14 @@ public class KeyValueClient {
 
         KeyValue.getValue_args getValue = new KeyValue.getValue_args(key);
 
-        ListenableFuture<Response<KeyValue.getValue_result>> future = tchannel.callThrift(
+        ListenableFuture<Response<KeyValue.getValue_result>> future = tchannel
+            .makeSubChannel("keyvalue-service")
+            .callThrift(
                 InetAddress.getLocalHost(),
                 8888,
                 new Request.Builder<>(getValue, "keyvalue-service", "KeyValue::getValue").build(),
                 KeyValue.getValue_result.class
-        );
+            );
 
         Response<KeyValue.getValue_result> getResult = future.get(100, TimeUnit.MILLISECONDS);
 

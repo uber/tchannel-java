@@ -22,10 +22,9 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.CallMessage;
-import com.uber.tchannel.messages.CallRequest;
-import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.frames.CallFrame;
+import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,17 +33,17 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import java.util.List;
 import java.util.Map;
 
-public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRequest> {
+public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRequestFrame> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, CallRequest msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CallRequestFrame msg, List<Object> out) throws Exception {
         /**
          * Allocate a buffer for the rest of the pipeline
          *
          * TODO: Figure out sane initial buffer size allocation. We could calculate this dynamically based off of the
          * average payload size of the current connection.
          */
-        ByteBuf buffer = ctx.alloc().buffer(CallMessage.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
+        ByteBuf buffer = ctx.alloc().buffer(CallFrame.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
 
         // flags:1
         buffer.writeByte(msg.getFlags());
@@ -77,7 +76,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
          */
         buffer.writeBytes(msg.getPayload());
 
-        TFrame frame = new TFrame(buffer.writerIndex(), MessageType.CallRequest, msg.getId(), buffer);
+        TFrame frame = new TFrame(buffer.writerIndex(), FrameType.CallRequest, msg.getId(), buffer);
         out.add(frame);
     }
 
@@ -109,7 +108,7 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
         ByteBuf payload = frame.payload.readSlice(payloadSize);
         payload.retain();
 
-        CallRequest req = new CallRequest(
+        CallRequestFrame req = new CallRequestFrame(
                 frame.id, flags, ttl, trace, service, headers, checksumType, checksum, payload
         );
         out.add(req);

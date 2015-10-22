@@ -24,11 +24,12 @@ package com.uber.tchannel.handlers;
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.CallRequest;
-import com.uber.tchannel.messages.ErrorMessage;
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
+import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.ErrorFrame;
+import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.frames.InitRequestFrame;
+import com.uber.tchannel.frames.InitResponseFrame;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Rule;
@@ -52,42 +53,42 @@ public class InitDefaultRequestHandlerTest {
 
         // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestHandler(new PeerManager())
+                new InitRequestHandler(new PeerManager(new Bootstrap()))
         );
 
         assertEquals(3, channel.pipeline().names().size());
 
-        InitRequest initRequest = new InitRequest(
+        InitRequestFrame initRequestFrame = new InitRequestFrame(
                 42,
-                InitMessage.DEFAULT_VERSION,
+                InitFrame.DEFAULT_VERSION,
                 new HashMap<String, String>() {{
-                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
+                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
                 }}
         );
 
-        channel.writeInbound(initRequest);
+        channel.writeInbound(initRequestFrame);
         channel.writeOutbound(channel.readInbound());
 
         // Then
-        InitResponse initResponse = channel.readOutbound();
+        InitResponseFrame initResponseFrame = channel.readOutbound();
 
         // Assert
-        assertNotNull(initResponse);
-        assertEquals(initRequest.getId(), initResponse.getId());
-        assertEquals(initRequest.getVersion(), initResponse.getVersion());
-        assertEquals(initRequest.getHostPort(), initResponse.getHostPort());
+        assertNotNull(initResponseFrame);
+        assertEquals(initRequestFrame.getId(), initResponseFrame.getId());
+        assertEquals(initRequestFrame.getVersion(), initResponseFrame.getVersion());
+        assertEquals(initRequestFrame.getHostPort(), initResponseFrame.getHostPort());
 
         // Assert Pipeline is empty
         assertEquals(2, channel.pipeline().names().size());
 
         // Make sure Messages are still passed through
-        channel.writeInbound(initRequest);
+        channel.writeInbound(initRequestFrame);
         channel.writeOutbound(channel.readInbound());
-        InitRequest sameInitRequest = channel.readOutbound();
-        assertEquals(initRequest.getId(), sameInitRequest.getId());
-        assertEquals(initRequest.getVersion(), sameInitRequest.getVersion());
-        assertEquals(initRequest.getHostPort(), sameInitRequest.getHostPort());
+        InitRequestFrame sameInitRequestFrame = channel.readOutbound();
+        assertEquals(initRequestFrame.getId(), sameInitRequestFrame.getId());
+        assertEquals(initRequestFrame.getVersion(), sameInitRequestFrame.getVersion());
+        assertEquals(initRequestFrame.getHostPort(), sameInitRequestFrame.getHostPort());
 
     }
 
@@ -96,28 +97,28 @@ public class InitDefaultRequestHandlerTest {
 
         // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestHandler(new PeerManager())
+                new InitRequestHandler(new PeerManager(new Bootstrap()))
         );
 
-        InitRequest initRequest = new InitRequest(42,
-                InitMessage.DEFAULT_VERSION,
+        InitRequestFrame initRequestFrame = new InitRequestFrame(42,
+                InitFrame.DEFAULT_VERSION,
                 new HashMap<String, String>() {{
-                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
+                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
                 }}
         );
 
-        channel.writeInbound(initRequest);
+        channel.writeInbound(initRequestFrame);
         channel.writeOutbound(channel.readInbound());
 
         // Then
-        InitResponse initResponse = channel.readOutbound();
+        InitResponseFrame initResponseFrame = channel.readOutbound();
 
         // Assert
-        assertNotNull(initResponse);
-        assertEquals(initRequest.getId(), initResponse.getId());
-        assertEquals(initRequest.getVersion(), initResponse.getVersion());
-        assertEquals(initRequest.getHostPort(), initResponse.getHostPort());
+        assertNotNull(initResponseFrame);
+        assertEquals(initRequestFrame.getId(), initResponseFrame.getId());
+        assertEquals(initRequestFrame.getVersion(), initResponseFrame.getVersion());
+        assertEquals(initRequestFrame.getHostPort(), initResponseFrame.getHostPort());
 
     }
 
@@ -125,14 +126,14 @@ public class InitDefaultRequestHandlerTest {
     public void testInvalidCallBeforeInitRequest() throws Exception {
         // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestHandler(new PeerManager())
+                new InitRequestHandler(new PeerManager(new Bootstrap()))
         );
 
-        CallRequest callRequest = Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER);
-        channel.writeInbound(callRequest);
-        ErrorMessage error = channel.readOutbound();
-        assertNotNull(error);
-        assertThat(error.getType(), is(ErrorType.FatalProtocolError));
+        CallRequestFrame callRequestFrame = Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER);
+        channel.writeInbound(callRequestFrame);
+        ErrorFrame errorFrame = channel.readOutbound();
+        assertNotNull(errorFrame);
+        assertThat(errorFrame.getType(), is(ErrorType.FatalProtocolError));
 
         this.expectedClosedChannelException.expect(ClosedChannelException.class);
         channel.writeOutbound();
@@ -143,22 +144,22 @@ public class InitDefaultRequestHandlerTest {
     public void testIncorrectProtocolVersion() throws Exception {
         // Given
         EmbeddedChannel channel = new EmbeddedChannel(
-                new InitRequestHandler(new PeerManager())
+                new InitRequestHandler(new PeerManager(new Bootstrap()))
         );
 
-        InitRequest initRequest = new InitRequest(42,
+        InitRequestFrame initRequestFrame = new InitRequestFrame(42,
                 1,
                 new HashMap<String, String>() {{
-                    put(InitMessage.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitMessage.PROCESS_NAME_KEY, "test-process");
+                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
                 }}
         );
 
-        channel.writeInbound(initRequest);
-        ErrorMessage error = channel.readOutbound();
-        assertNotNull(error);
-        assertThat(error.getType(), is(ErrorType.FatalProtocolError));
-        assertThat(error.getMessage(), containsString("version"));
+        channel.writeInbound(initRequestFrame);
+        ErrorFrame errorFrame = channel.readOutbound();
+        assertNotNull(errorFrame);
+        assertThat(errorFrame.getType(), is(ErrorType.FatalProtocolError));
+        assertThat(errorFrame.getMessage(), containsString("version"));
 
         this.expectedClosedChannelException.expect(ClosedChannelException.class);
         channel.writeOutbound();

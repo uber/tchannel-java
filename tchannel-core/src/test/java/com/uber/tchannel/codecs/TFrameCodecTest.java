@@ -21,8 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.MessageType;
+import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -46,7 +45,7 @@ public class TFrameCodecTest {
 
         TFrame frame = new TFrame(
                 payload.getBytes().length,
-                MessageType.InitRequest,
+                FrameType.InitRequest,
                 Integer.MAX_VALUE,
                 buffer
         );

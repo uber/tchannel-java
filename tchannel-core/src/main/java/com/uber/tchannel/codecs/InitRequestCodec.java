@@ -22,8 +22,7 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.InitRequest;
+import com.uber.tchannel.frames.InitRequestFrame;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -31,10 +30,10 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import java.util.List;
 import java.util.Map;
 
-public final class InitRequestCodec extends MessageToMessageCodec<TFrame, InitRequest> {
+public final class InitRequestCodec extends MessageToMessageCodec<TFrame, InitRequestFrame> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, InitRequest msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, InitRequestFrame msg, List<Object> out) throws Exception {
         // Allocate new ByteBuf
         ByteBuf buffer = ctx.alloc().buffer();
 
@@ -56,7 +55,7 @@ public final class InitRequestCodec extends MessageToMessageCodec<TFrame, InitRe
         // headers -> nh:2 (key~2 value~2){nh}
         Map<String, String> headers = CodecUtils.decodeHeaders(frame.payload);
 
-        InitRequest initRequest = new InitRequest(frame.id, version, headers);
-        out.add(initRequest);
+        InitRequestFrame initRequestFrame = new InitRequestFrame(frame.id, version, headers);
+        out.add(initRequestFrame);
     }
 }

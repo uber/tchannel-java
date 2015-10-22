@@ -23,8 +23,7 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.framing.TFrame;
-import com.uber.tchannel.messages.ErrorMessage;
+import com.uber.tchannel.frames.ErrorFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,9 +31,9 @@ import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public final class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorMessage> {
+public final class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorFrame> {
     @Override
-    protected void encode(ChannelHandlerContext ctx, ErrorMessage msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, ErrorFrame msg, List<Object> out) throws Exception {
         ByteBuf buffer = ctx.alloc().buffer();
 
         // code:1
@@ -61,7 +60,7 @@ public final class ErrorCodec extends MessageToMessageCodec<TFrame, ErrorMessage
         // message~2
         String message = CodecUtils.decodeString(frame.payload);
 
-        ErrorMessage errorMessage = new ErrorMessage(frame.id, type, tracing, message);
-        out.add(errorMessage);
+        ErrorFrame errorFrame = new ErrorFrame(frame.id, type, tracing, message);
+        out.add(errorFrame);
     }
 }

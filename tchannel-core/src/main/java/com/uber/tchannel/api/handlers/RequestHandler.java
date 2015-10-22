@@ -23,9 +23,9 @@
 package com.uber.tchannel.api.handlers;
 
 import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.ResponseMessage;
 
 public interface RequestHandler {
-    RawResponse handle(RawRequest request);
+    ResponseMessage handle(RawRequest request);
 
 }

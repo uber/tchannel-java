@@ -25,17 +25,17 @@ import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.errors.FatalProtocolError;
 import com.uber.tchannel.errors.ProtocolError;
 import com.uber.tchannel.errors.ProtocolErrorProcessor;
-import com.uber.tchannel.messages.InitMessage;
-import com.uber.tchannel.messages.InitRequest;
-import com.uber.tchannel.messages.InitResponse;
-import com.uber.tchannel.messages.Message;
+import com.uber.tchannel.frames.Frame;
+import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.frames.InitRequestFrame;
+import com.uber.tchannel.frames.InitResponseFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
+public class InitRequestHandler extends SimpleChannelInboundHandler<Frame> {
 
     private final PeerManager peerManager;
 
@@ -44,30 +44,30 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, Message message) throws Exception {
+    public void messageReceived(ChannelHandlerContext ctx, Frame frame) throws Exception {
 
-        switch (message.getMessageType()) {
+        switch (frame.getMessageType()) {
 
             case InitRequest:
 
-                InitRequest initRequestMessage = (InitRequest) message;
+                InitRequestFrame initRequestFrameMessage = (InitRequestFrame) frame;
 
-                if (initRequestMessage.getVersion() == InitMessage.DEFAULT_VERSION) {
-                    InitResponse initResponse = new InitResponse(
-                            initRequestMessage.getId(),
-                            InitMessage.DEFAULT_VERSION
+                if (initRequestFrameMessage.getVersion() == InitFrame.DEFAULT_VERSION) {
+                    InitResponseFrame initResponseFrame = new InitResponseFrame(
+                            initRequestFrameMessage.getId(),
+                            InitFrame.DEFAULT_VERSION
                     );
-                    initResponse.setHostPort(this.peerManager.getHostPort());
+                    initResponseFrame.setHostPort(this.peerManager.getHostPort());
                     // TODO: figure out what to put here
-                    initResponse.setProcessName("java-process");
-                    ChannelFuture f = ctx.writeAndFlush(initResponse);
+                    initResponseFrame.setProcessName("java-process");
+                    ChannelFuture f = ctx.writeAndFlush(initResponseFrame);
                     f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                     ctx.pipeline().remove(this);
-                    peerManager.setIdentified(ctx.channel(), initRequestMessage.getHeaders());
+                    peerManager.setIdentified(ctx.channel(), initRequestFrameMessage.getHeaders());
                 } else {
                     // TODO: response ProtocolError
                     throw new FatalProtocolError(
-                            String.format("Expected Protocol version: %d", InitMessage.DEFAULT_VERSION),
+                            String.format("Expected Protocol version: %d", InitFrame.DEFAULT_VERSION),
                             new Trace(0, 0, 0, (byte) 0x00)
                     );
                 }
@@ -78,7 +78,7 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Message> {
 
                 // TODO: should send back ProtocolError
                 throw new FatalProtocolError(
-                        "Must not send any data until receiving Init Request",
+                        "Must not send any data until receiving InitFrame Request",
                         new Trace(0, 0, 0, (byte) 0x00)
                 );
 

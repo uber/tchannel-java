@@ -22,9 +22,11 @@
 
 package com.uber.tchannel.channels;
 import com.uber.tchannel.api.errors.TChannelError;
-import com.uber.tchannel.messages.InitMessage;
+import com.uber.tchannel.frames.InitFrame;
 import io.netty.channel.Channel;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 
 /**
@@ -68,6 +70,15 @@ public class Connection {
         return false;
     }
 
+    public synchronized boolean satisfy(Direction preferedDirection) {
+        Direction dir = this.direction;
+        if (preferedDirection == null || preferedDirection == Direction.NONE) {
+            return true;
+        } else {
+            return preferedDirection == dir;
+        }
+    }
+
     public synchronized void setState(ConnectionState state) {
         this.state = state;
         if (state == ConnectionState.IDENTIFIED || (
@@ -77,7 +88,7 @@ public class Connection {
     }
 
     public synchronized void setIndentified(Map<String, String> headers) {
-        String hostPort = headers.get(InitMessage.HOST_PORT_KEY);
+        String hostPort = headers.get(InitFrame.HOST_PORT_KEY);
         if (hostPort == null) {
             // TODO: handle protocol error
             hostPort = "0.0.0.0:0";
@@ -93,8 +104,20 @@ public class Connection {
         this.setState(ConnectionState.UNCONNECTED);
     }
 
+    public boolean isIndentified() {
+        return state == ConnectionState.IDENTIFIED;
+    }
+
     public synchronized boolean isEphemeral() {
         return this.remoteAddress.equals("0.0.0.0:0");
+    }
+
+    public String getRemoteAddress() {
+        return this.remoteAddress;
+    }
+
+    public SocketAddress getRemoteAddressAsSocketAddress() {
+        return hostPortToSocketAddress(this.remoteAddress);
     }
 
     public static String[] splitHostPort(String hostPort) {
@@ -105,6 +128,11 @@ public class Connection {
             strs[1] = "0";
         }
         return strs;
+    }
+
+    public static SocketAddress hostPortToSocketAddress(String hostPort) {
+        String[] strs = splitHostPort(hostPort);
+        return new InetSocketAddress(strs[0], Integer.parseInt(strs[1]));
     }
 
     public synchronized boolean waitForIdentified(long timeout) {

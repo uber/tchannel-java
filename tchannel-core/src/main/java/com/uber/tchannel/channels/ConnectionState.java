@@ -53,6 +53,19 @@ public enum ConnectionState {
         }
     }
 
+    public static boolean isConnected(ConnectionState state) {
+        ConnectionState s = state;
+        return s == IDENTIFIED || s == CONNECTED;
+    }
+
+    public static boolean isConnected(Connection conn) {
+        if (conn == null) {
+            return false;
+        }
+
+        return isConnected(conn.state);
+    }
+
     public String getState() {
         return state;
     }

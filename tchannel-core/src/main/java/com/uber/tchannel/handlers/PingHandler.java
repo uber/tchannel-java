@@ -21,16 +21,16 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.messages.PingRequest;
-import com.uber.tchannel.messages.PingResponse;
+import com.uber.tchannel.frames.PingRequestFrame;
+import com.uber.tchannel.frames.PingResponseFrame;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class PingHandler extends SimpleChannelInboundHandler<PingRequest> {
+public class PingHandler extends SimpleChannelInboundHandler<PingRequestFrame> {
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, PingRequest msg) throws Exception {
-        ctx.writeAndFlush(new PingResponse(msg.getId()));
+    protected void messageReceived(ChannelHandlerContext ctx, PingRequestFrame msg) throws Exception {
+        ctx.writeAndFlush(new PingResponseFrame(msg.getId()));
     }
 
 }

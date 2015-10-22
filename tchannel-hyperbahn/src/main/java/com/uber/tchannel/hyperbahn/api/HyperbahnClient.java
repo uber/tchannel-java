@@ -28,7 +28,6 @@ import java.io.Reader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
@@ -40,8 +39,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.uber.tchannel.api.Request;
 import com.uber.tchannel.api.Response;
+import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.errors.TChannelError;
+import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public final class HyperbahnClient {
 
     private final String service;
     private final TChannel tchannel;
+    private final SubChannel hyperbahnChannel;
     private final List<InetSocketAddress> routers;
     private final long advertiseTimeout;
     private final long advertiseInterval;
@@ -67,6 +69,14 @@ public final class HyperbahnClient {
         this.routers = builder.routers;
         this.advertiseTimeout = builder.advertiseTimeout;
         this.advertiseInterval = builder.advertiseInterval;
+        this.hyperbahnChannel = makeClientChannel(HYPERBAHN_SERVICE_NAME);
+    }
+
+    public SubChannel makeClientChannel(String service) {
+        SubChannel subChannel = this.tchannel.makeSubChannel(service, Connection.Direction.IN)
+            .setPeers(routers);
+
+        return subChannel;
     }
 
     public ListenableFuture<Response<AdvertiseResponse>> advertise()
@@ -84,15 +94,11 @@ public final class HyperbahnClient {
             .setTTL(advertiseTimeout, TimeUnit.SECONDS)
             .build();
 
-        // TODO: should be part of tchannel peer selection
-        final InetSocketAddress router = this.routers.get(new Random().nextInt(this.routers.size()));
         ListenableFuture<Response<AdvertiseResponse>> responseFuture = null;
         try {
-            responseFuture = this.tchannel.callJSON(
-                    router.getAddress(),
-                    router.getPort(),
-                    request,
-                    AdvertiseResponse.class
+            responseFuture = hyperbahnChannel.callJSON(
+                request,
+                AdvertiseResponse.class
             );
         } catch (TChannelError ex) {
             // TODO: should be moved into tchanne as retry ...
