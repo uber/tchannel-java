@@ -92,6 +92,9 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
     }
 
     private void decodeErrorResponse(ChannelHandlerContext ctx, ErrorFrame msg, List<Object> out) {
+        assert this.messageMap.get(msg.getId()) == null;
+        assert this.defragmentationState.get(msg.getId()) == null;
+
         this.messageMap.put(msg.getId(), new ErrorResponse(
             msg.getId(),
             msg.getType(),
