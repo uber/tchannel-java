@@ -35,7 +35,7 @@ public final class ErrorResponse extends ResponseMessage {
         this.id = id;
         this.errorType = errorType;
         this.message = message;
-        this.frameType = FrameType.Error;
+        this.type = FrameType.Error;
     }
 
     @Override

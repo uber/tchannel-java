@@ -30,7 +30,6 @@ import java.util.Map;
 public final class Response<T> {
 
     private final Map<String, String> transportHeaders;
-    private final String endpoint;
     private final Map<String, String> headers;
     private final T body;
     private final ResponseCode responseCode;
@@ -38,7 +37,6 @@ public final class Response<T> {
 
     private Response(Builder<T> builder) {
         this.transportHeaders = builder.transportHeaders;
-        this.endpoint = builder.endpoint;
         this.headers = builder.headers;
         this.body = builder.body;
         this.responseCode = builder.responseCode;
@@ -47,10 +45,6 @@ public final class Response<T> {
 
     public ErrorResponse getError() {
         return error;
-    }
-
-    public String getEndpoint() {
-        return endpoint;
     }
 
     public Map<String, String> getHeaders() {
@@ -72,11 +66,10 @@ public final class Response<T> {
     @Override
     public String toString() {
         return String.format(
-                "<%s responseCode=%s transportHeaders=%s endpoint=%s headers=%s body=%s>",
+                "<%s responseCode=%s transportHeaders=%s headers=%s body=%s>",
                 this.getClass().getSimpleName(),
                 this.responseCode,
                 this.transportHeaders,
-                this.endpoint,
                 this.headers,
                 this.body
         );
@@ -85,22 +78,19 @@ public final class Response<T> {
     public static class Builder<U> {
 
         private Map<String, String> transportHeaders = new HashMap<>();
-        private String endpoint;
         private Map<String, String> headers = new HashMap<>();
         private U body;
         private ResponseCode responseCode;
         private final ErrorResponse error;
 
-        public Builder(U body, String endpoint, ResponseCode responseCode) {
+        public Builder(U body, ResponseCode responseCode) {
             this.body = body;
-            this.endpoint = endpoint;
             this.responseCode = responseCode;
             this.error = null;
         }
 
         public Builder(ErrorResponse error) {
             this.body = null;
-            this.endpoint = null;
             this.responseCode = null;
             this.error = error;
         }
@@ -129,9 +119,6 @@ public final class Response<T> {
 
             if (error != null) {
                 return this;
-            }
-            if (endpoint == null) {
-                throw new IllegalStateException("`endpoint` cannot be null.");
             }
             if (responseCode == null) {
                 throw new IllegalStateException("`responseCode` cannot be null.");

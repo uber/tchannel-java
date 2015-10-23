@@ -81,7 +81,6 @@ public class ConnectionTest {
         );
 
         RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
-        assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -118,7 +117,6 @@ public class ConnectionTest {
                 request.getId(),
                 ResponseCode.OK,
                 request.getTransportHeaders(),
-                request.getArg1(),
                 request.getArg2(),
                 request.getArg3()
             );

@@ -128,7 +128,8 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
         assert this.messageMap.get(msg.getId()) == null;
         assert this.defragmentationState.get(msg.getId()) == null;
 
-        ByteBuf arg1 = this.readArg(msg);
+        // ignore arg1
+        this.readArg(msg);
         ByteBuf arg2 = this.readArg(msg);
         ByteBuf arg3 = this.readArg(msg);
 
@@ -136,7 +137,6 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
                 msg.getId(),
                 msg.getResponseCode(),
                 msg.getHeaders(),
-                arg1,
                 arg2,
                 arg3
         ));
@@ -179,7 +179,6 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
                 partialResponse.getId(),
                 partialResponse.getResponseCode(),
                 partialResponse.getTransportHeaders(),
-                partialResponse.getArg1(),
                 Unpooled.wrappedBuffer(partialResponse.getArg2(), arg2),
                 Unpooled.wrappedBuffer(partialResponse.getArg3(), arg3)
 

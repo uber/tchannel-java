@@ -39,14 +39,14 @@ import com.uber.tchannel.frames.FrameType;
  */
 public abstract class ResponseMessage implements TChannelMessage {
 
-    protected FrameType frameType;
+    protected FrameType type;
 
     public boolean isError() {
-        return this.frameType == FrameType.Error;
+        return this.type == FrameType.Error;
     }
 
     @Override
-    public FrameType getFrameType() {
-        return this.frameType;
+    public FrameType getType() {
+        return this.type;
     }
 }

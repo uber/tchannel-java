@@ -85,7 +85,6 @@ public class PeerManagerTest {
         );
 
         RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
-        assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -153,7 +152,6 @@ public class PeerManagerTest {
         );
 
         RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
-        assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -220,7 +218,6 @@ public class PeerManagerTest {
         );
 
         RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
-        assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -287,7 +284,6 @@ public class PeerManagerTest {
         );
 
         RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
-        assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -383,7 +379,6 @@ public class PeerManagerTest {
         );
 
         RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
-        assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
         assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
         assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
         res.release();
@@ -478,7 +473,6 @@ public class PeerManagerTest {
         );
 
         RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
-        assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
         assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
         assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
         res.release();
@@ -512,7 +506,6 @@ public class PeerManagerTest {
                 request.getId(),
                 ResponseCode.OK,
                 request.getTransportHeaders(),
-                request.getArg1(),
                 request.getArg2(),
                 request.getArg3()
             );

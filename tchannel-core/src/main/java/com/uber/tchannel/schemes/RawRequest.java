@@ -89,7 +89,7 @@ public final class RawRequest implements RawMessage {
     }
 
     @Override
-    public FrameType getFrameType() {
+    public FrameType getType() {
         return frameType;
     }
 

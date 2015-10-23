@@ -58,7 +58,7 @@ public class RequestTest {
                 public Response<Integer> handleImpl(Request<String> request) {
 
                     assertEquals(requestBody, request.getBody());
-                    return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK)
+                    return new Response.Builder<>(responseBody, ResponseCode.OK)
                         .setTransportHeaders(request.getTransportHeaders())
                         .build();
             }
@@ -94,7 +94,7 @@ public class RequestTest {
 
             public Response<String> handleImpl(Request<String> request) {
                 assertEquals(requestBody, request.getBody());
-                return new Response.Builder<>(responseBody, request.getEndpoint(), ResponseCode.OK).build();
+                return new Response.Builder<>(responseBody, ResponseCode.OK).build();
             }
         };
 

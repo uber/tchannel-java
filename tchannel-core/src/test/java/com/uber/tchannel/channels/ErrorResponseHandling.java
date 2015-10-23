@@ -141,7 +141,6 @@ public class ErrorResponseHandling {
                 request.getId(),
                 ResponseCode.OK,
                 request.getTransportHeaders(),
-                request.getArg1(),
                 request.getArg2(),
                 request.getArg3()
             );

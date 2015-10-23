@@ -33,7 +33,7 @@ public class JsonRequestHandler extends JSONRequestHandler<RequestPojo, Response
     public Response<ResponsePojo> handleImpl(Request<RequestPojo> request) {
         System.out.println(request);
 
-        return new Response.Builder<>(new ResponsePojo(true, "hi!"), request.getEndpoint(), ResponseCode.OK).build();
+        return new Response.Builder<>(new ResponsePojo(true, "hi!"), ResponseCode.OK).build();
     }
 
 }

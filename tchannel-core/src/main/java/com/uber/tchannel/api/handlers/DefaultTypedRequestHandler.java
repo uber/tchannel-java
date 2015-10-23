@@ -62,7 +62,6 @@ public abstract class DefaultTypedRequestHandler<T, U, V extends Serializer.Seri
                 request.getId(),
                 responseU.getResponseCode(),
                 transportHeaders,
-                serializer.encodeEndpoint(responseU.getEndpoint()),
                 serializer.encodeHeaders(responseU.getHeaders()),
                 serializer.encodeBody(responseU.getBody())
         );

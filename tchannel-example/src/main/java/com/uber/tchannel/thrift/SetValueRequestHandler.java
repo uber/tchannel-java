@@ -46,6 +46,6 @@ public class SetValueRequestHandler extends ThriftRequestHandler<KeyValue.setVal
 
         this.keyValueStore.put(key, value);
 
-        return new Response.Builder<>(new KeyValue.setValue_result(), request.getEndpoint(), ResponseCode.OK).build();
+        return new Response.Builder<>(new KeyValue.setValue_result(), ResponseCode.OK).build();
     }
 }
