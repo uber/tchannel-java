@@ -219,7 +219,7 @@ public class PeerManagerTest {
             req
         );
 
-        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
@@ -286,7 +286,7 @@ public class PeerManagerTest {
             req
         );
 
-        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
@@ -382,7 +382,7 @@ public class PeerManagerTest {
             req
         );
 
-        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
         assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
         assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
         assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
@@ -477,7 +477,7 @@ public class PeerManagerTest {
             req
         );
 
-        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
         assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
         assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
         assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
