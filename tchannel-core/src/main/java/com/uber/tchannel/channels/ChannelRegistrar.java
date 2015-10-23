@@ -48,4 +48,9 @@ public class ChannelRegistrar extends ChannelHandlerAdapter {
         super.channelInactive(ctx);
         this.peerManager.remove(ctx.channel());
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        this.peerManager.handleConnectionErrors(ctx.channel(), cause);
+    }
 }

@@ -39,6 +39,7 @@ import java.util.Map;
 public class PeerManager {
     private final Bootstrap clientBootstrap;
     private final ConcurrentHashMap<SocketAddress, Peer> peers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ChannelId, SocketAddress> channelTable = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ChannelId, Connection> inConnections = new ConcurrentHashMap<>();
     private String hostPort = "0.0.0.0:0";
 
@@ -105,9 +106,20 @@ public class PeerManager {
         peer.handleActiveOutConnection(ctx);
     }
 
-    public void remove(Channel channel) throws InterruptedException {
+    public void remove(Channel channel) {
         SocketAddress address = channel.remoteAddress();
         Peer peer = peers.get(address);
+        if (peer != null) {
+            peer.remove(channel);
+            return;
+        }
+
+        address = channelTable.remove(channel.id());
+        if (address == null) {
+            return;
+        }
+
+        peer = peers.get(address);
         if (peer != null) {
             peer.remove(channel);
         }
@@ -125,9 +137,16 @@ public class PeerManager {
         conn.setIndentified(headers);
         if (!conn.isEphemeral() && conn.direction == Connection.Direction.IN) {
             SocketAddress address = conn.getRemoteAddressAsSocketAddress();
+            channelTable.put(channel.id(), address);
             Peer peer = findOrNewPeer(address);
             peer.add(conn);
         }
+    }
+
+    public void handleConnectionErrors(Channel channel, Throwable cause) {
+        remove(channel);
+
+        // TODO: log the errror ...
     }
 
     public void close() throws InterruptedException {
