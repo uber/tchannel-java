@@ -52,5 +52,6 @@ public class CallResponseFrameContinueCodecTest {
 
         CallResponseContinue inboundCallResponseContinue = channel.readInbound();
         assertEquals("Hello, World!", inboundCallResponseContinue.getPayload().toString(CharsetUtil.UTF_8));
+        inboundCallResponseContinue.getPayload().release();
     }
 }
