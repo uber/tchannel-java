@@ -26,7 +26,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.schemes.RawMessage;
 import com.uber.tchannel.schemes.RawResponse;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
@@ -44,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class PeerManagerTest {
@@ -90,6 +88,7 @@ public class PeerManagerTest {
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        res.release();
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
@@ -157,6 +156,7 @@ public class PeerManagerTest {
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        res.release();
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
@@ -223,6 +223,7 @@ public class PeerManagerTest {
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        res.release();
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
@@ -289,6 +290,8 @@ public class PeerManagerTest {
         assertEquals(res.getArg1().toString(CharsetUtil.UTF_8), "echo");
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        res.release();
+
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
         assertEquals((int)stats.get("connections.in"), 0);
@@ -383,6 +386,7 @@ public class PeerManagerTest {
         assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
         assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
         assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        res.release();
 
         assertTrue(echo1.accessed);
         assertFalse(echo2.accessed);
@@ -477,6 +481,7 @@ public class PeerManagerTest {
         assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
         assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
         assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        res.release();
 
         assertFalse(echo1.accessed);
         assertTrue(echo2.accessed);

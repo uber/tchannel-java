@@ -108,4 +108,10 @@ public final class RawResponse extends ResponseMessage implements RawMessage {
                 this.arg3.toString(CharsetUtil.UTF_8)
         );
     }
+
+    public void release() {
+        arg1.release();
+        arg2.release();
+        arg3.release();
+    }
 }
