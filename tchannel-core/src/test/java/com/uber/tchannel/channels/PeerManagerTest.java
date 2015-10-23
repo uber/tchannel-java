@@ -315,103 +315,8 @@ public class PeerManagerTest {
         assertEquals((int)stats.get("connections.out"), 0);
     }
 
-    @Test(timeout = 1000)
-    public void testChooseOutgoing() throws Exception {
-
-        InetAddress host = InetAddress.getByName("127.0.0.1");
-
-        // create server
-        final TChannel server1 = new TChannel.Builder("server")
-            .setServerHost(host)
-            .build();
-        final EchoHandler echo1 = new EchoHandler();
-        final SubChannel subServer1 = server1.makeSubChannel("server", Connection.Direction.OUT)
-            .register("echo", echo1);
-        server1.listen();
-        final InetSocketAddress serverAddress1 = new InetSocketAddress("127.0.0.1", server1.getListeningPort());
-
-        final TChannel server2 = new TChannel.Builder("server")
-            .setServerHost(host)
-            .build();
-        final EchoHandler echo2 = new EchoHandler();
-        final SubChannel subServer2 = server2.makeSubChannel("server", Connection.Direction.OUT)
-            .register("echo", echo2);
-        server2.listen();
-        final InetSocketAddress serverAddress2 = new InetSocketAddress("127.0.0.1", server2.getListeningPort());
-
-        // create client
-        final TChannel client = new TChannel.Builder("client")
-            .setServerHost(host)
-            .build();
-        final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.OUT)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(serverAddress1);
-                    add(serverAddress2);
-                }
-            });
-        client.listen();
-        final InetSocketAddress clientAddress = new InetSocketAddress("127.0.0.1", client.getListeningPort());
-
-        Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
-        Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
-        assertTrue(conn1.waitForIdentified(1000));
-        assertTrue(conn2.waitForIdentified(1000));
-
-        // checking the connections
-        Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
-
-        stats = server1.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
-
-        stats = server2.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
-
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
-
-        ListenableFuture<ResponseMessage> future = subClient.call(
-            req
-        );
-
-        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
-        assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
-        assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
-        assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
-        release(res);
-
-        assertTrue(echo1.accessed);
-        assertFalse(echo2.accessed);
-
-        client.shutdown();
-        server1.shutdown();
-        server2.shutdown();
-
-        stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
-
-        stats = server1.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
-
-        stats = server2.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
-    }
-
-//    @Test
-//    public void testChooseIncoming() throws Exception {
+//    @Test(timeout = 1000)
+//    public void testChooseOutgoing() throws Exception {
 //
 //        InetAddress host = InetAddress.getByName("127.0.0.1");
 //
@@ -438,7 +343,7 @@ public class PeerManagerTest {
 //        final TChannel client = new TChannel.Builder("client")
 //            .setServerHost(host)
 //            .build();
-//        final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.IN)
+//        final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.OUT)
 //            .setPeers(new ArrayList<InetSocketAddress>() {
 //                {
 //                    add(serverAddress1);
@@ -485,8 +390,8 @@ public class PeerManagerTest {
 //        assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
 //        release(res);
 //
-//        assertFalse(echo1.accessed);
-//        assertTrue(echo2.accessed);
+//        assertTrue(echo1.accessed);
+//        assertFalse(echo2.accessed);
 //
 //        client.shutdown();
 //        server1.shutdown();
@@ -504,6 +409,101 @@ public class PeerManagerTest {
 //        assertEquals((int)stats.get("connections.in"), 0);
 //        assertEquals((int)stats.get("connections.out"), 0);
 //    }
+
+    @Test(timeout = 1000)
+    public void testChooseIncoming() throws Exception {
+
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+
+        // create server
+        final TChannel server1 = new TChannel.Builder("server")
+            .setServerHost(host)
+            .build();
+        final EchoHandler echo1 = new EchoHandler();
+        final SubChannel subServer1 = server1.makeSubChannel("server", Connection.Direction.OUT)
+            .register("echo", echo1);
+        server1.listen();
+        final InetSocketAddress serverAddress1 = new InetSocketAddress("127.0.0.1", server1.getListeningPort());
+
+        final TChannel server2 = new TChannel.Builder("server")
+            .setServerHost(host)
+            .build();
+        final EchoHandler echo2 = new EchoHandler();
+        final SubChannel subServer2 = server2.makeSubChannel("server", Connection.Direction.OUT)
+            .register("echo", echo2);
+        server2.listen();
+        final InetSocketAddress serverAddress2 = new InetSocketAddress("127.0.0.1", server2.getListeningPort());
+
+        // create client
+        final TChannel client = new TChannel.Builder("client")
+            .setServerHost(host)
+            .build();
+        final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.IN)
+            .setPeers(new ArrayList<InetSocketAddress>() {
+                {
+                    add(serverAddress1);
+                    add(serverAddress2);
+                }
+            });
+        client.listen();
+        final InetSocketAddress clientAddress = new InetSocketAddress("127.0.0.1", client.getListeningPort());
+
+        Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
+        Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
+        assertTrue(conn1.waitForIdentified(1000));
+        assertTrue(conn2.waitForIdentified(1000));
+
+        // checking the connections
+        Map<String, Integer> stats = client.getPeerManager().getStats();
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
+
+        stats = server1.getPeerManager().getStats();
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
+
+        stats = server2.getPeerManager().getStats();
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
+
+        RawRequest req = new RawRequest(
+            1000,
+            "server",
+            null,
+            "echo",
+            "title",
+            "hello"
+        );
+
+        ListenableFuture<ResponseMessage> future = subClient.call(
+            req
+        );
+
+        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
+        assertEquals("echo", res.getArg1().toString(CharsetUtil.UTF_8));
+        assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
+        assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        release(res);
+
+        assertFalse(echo1.accessed);
+        assertTrue(echo2.accessed);
+
+        client.shutdown();
+        server1.shutdown();
+        server2.shutdown();
+
+        stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        stats = server1.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        stats = server2.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+    }
 
     protected  class EchoHandler implements RequestHandler {
         public boolean accessed = false;
