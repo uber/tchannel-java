@@ -150,7 +150,7 @@ public class Connection {
     }
 
     public synchronized void close() throws InterruptedException {
-        channel.close();
+        channel.close().sync();
         this.state = ConnectionState.DESTROYED;
     }
 

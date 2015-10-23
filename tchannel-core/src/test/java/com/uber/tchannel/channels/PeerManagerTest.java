@@ -355,8 +355,8 @@ public class PeerManagerTest {
 
         Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
         Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
-        conn1.waitForIdentified(2000);
-        conn2.waitForIdentified(2000);
+        assertTrue(conn1.waitForIdentified(1000));
+        assertTrue(conn2.waitForIdentified(1000));
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
@@ -450,8 +450,8 @@ public class PeerManagerTest {
 
         Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
         Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
-        conn1.waitForIdentified(2000);
-        conn2.waitForIdentified(2000);
+        assertTrue(conn1.waitForIdentified(1000));
+        assertTrue(conn2.waitForIdentified(1000));
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
