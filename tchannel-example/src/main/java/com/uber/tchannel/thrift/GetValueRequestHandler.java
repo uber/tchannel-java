@@ -51,7 +51,7 @@ public class GetValueRequestHandler extends ThriftRequestHandler<KeyValue.getVal
         }
 
         return new Response.Builder<>(
-            new KeyValue.getValue_result(value, err), request.getEndpoint(), ResponseCode.OK)
+            new KeyValue.getValue_result(value, err), ResponseCode.OK)
             .build();
     }
 }

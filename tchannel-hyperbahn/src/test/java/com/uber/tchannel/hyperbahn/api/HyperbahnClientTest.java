@@ -89,7 +89,7 @@ public class HyperbahnClientTest {
         @Override
         public Response<AdvertiseResponse> handleImpl(Request<AdvertiseRequest> request) {
             requestReceived = true;
-            return new Response.Builder<>(new AdvertiseResponse(10), request.getEndpoint(), ResponseCode.OK).build();
+            return new Response.Builder<>(new AdvertiseResponse(10), ResponseCode.OK).build();
         }
     }
 }

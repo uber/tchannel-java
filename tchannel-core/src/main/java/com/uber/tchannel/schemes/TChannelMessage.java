@@ -28,6 +28,6 @@ public interface TChannelMessage {
 
     long getId();
 
-    FrameType getFrameType();
+    FrameType getType();
 
 }

@@ -137,7 +137,7 @@ public class PingPongServerBenchmark {
             } catch (InterruptedException ex) {
 
             }
-            return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
+            return new Response.Builder<>(new Pong("pong!"), ResponseCode.OK)
                     .build();
         }
 

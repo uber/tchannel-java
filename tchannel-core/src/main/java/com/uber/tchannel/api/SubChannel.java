@@ -171,7 +171,6 @@ public final class SubChannel {
                 } else {
                     response = new Response.Builder<>(
                         serializer.decodeBody((RawResponse) responseMessage, responseType),
-                        serializer.decodeEndpoint((RawResponse) responseMessage),
                         ((RawResponse) responseMessage).getResponseCode())
                         .setHeaders(serializer.decodeHeaders((RawResponse) responseMessage))
                         .build();

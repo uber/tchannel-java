@@ -25,6 +25,9 @@ package com.uber.tchannel.schemes;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.EmptyByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.util.CharsetUtil;
 
 import java.util.Map;
@@ -44,22 +47,22 @@ import java.util.Map;
  */
 public final class RawResponse extends ResponseMessage implements RawMessage {
 
+    private final static ByteBuf arg1 = new EmptyByteBuf(new UnpooledByteBufAllocator(false));
+
     private final long id;
     private final ResponseCode responseCode;
     private final Map<String, String> transportHeaders;
-    private final ByteBuf arg1;
     private final ByteBuf arg2;
     private final ByteBuf arg3;
 
-    public RawResponse(long id, ResponseCode responseCode, Map<String, String> transportHeaders, ByteBuf arg1,
+    public RawResponse(long id, ResponseCode responseCode, Map<String, String> transportHeaders,
                        ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
         this.responseCode = responseCode;
         this.transportHeaders = transportHeaders;
-        this.arg1 = arg1;
         this.arg2 = arg2;
         this.arg3 = arg3;
-        this.frameType = FrameType.CallResponse;
+        this.type = FrameType.CallResponse;
     }
 
     @Override
@@ -68,8 +71,8 @@ public final class RawResponse extends ResponseMessage implements RawMessage {
     }
 
     @Override
-    public FrameType getFrameType() {
-        return frameType;
+    public FrameType getType() {
+        return type;
     }
 
     public ResponseCode getResponseCode() {
@@ -99,13 +102,13 @@ public final class RawResponse extends ResponseMessage implements RawMessage {
     @Override
     public String toString() {
         return String.format(
-                "<%s id=%d transportHeaders=%s arg1=%s arg2=%s arg3=%s>",
-                this.getClass().getSimpleName(),
-                this.id,
-                this.transportHeaders,
-                this.arg1.toString(CharsetUtil.UTF_8),
-                this.arg2.toString(CharsetUtil.UTF_8),
-                this.arg3.toString(CharsetUtil.UTF_8)
+            "<%s id=%d transportHeaders=%s arg1=%s arg2=%s arg3=%s>",
+            this.getClass().getSimpleName(),
+            this.id,
+            this.transportHeaders,
+            arg1.toString(CharsetUtil.UTF_8),
+            this.arg2.toString(CharsetUtil.UTF_8),
+            this.arg3.toString(CharsetUtil.UTF_8)
         );
     }
 

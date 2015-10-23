@@ -32,7 +32,7 @@ public class PingRequestHandler extends JSONRequestHandler<Ping, Pong> {
     @Override
     public Response<Pong> handleImpl(Request<Ping> request) {
 
-        return new Response.Builder<>(new Pong("pong!"), request.getEndpoint(), ResponseCode.OK)
+        return new Response.Builder<>(new Pong("pong!"), ResponseCode.OK)
             .setHeaders(request.getHeaders())
             .setTransportHeaders(request.getTransportHeaders())
             .build();
