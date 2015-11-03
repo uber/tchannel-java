@@ -161,7 +161,7 @@ public final class HyperbahnClient {
         advertiseTimer.cancel();
     }
 
-    public void shutdown() throws InterruptedException {
+    public void shutdown() throws InterruptedException, ExecutionException {
         if (!destroyed.compareAndSet(false, true)) {
             return;
         }

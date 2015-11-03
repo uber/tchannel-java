@@ -56,8 +56,10 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 
 public final class TChannel {
 
@@ -148,10 +150,22 @@ public final class TChannel {
         return this.makeSubChannel(service, Connection.Direction.NONE);
     }
 
-    public void shutdown() throws InterruptedException {
+//    public void shutdown(boolean sync) throws InterruptedException, ExecutionException {
+//        this.peerManager.close();
+//        Future bg = this.bossGroup.shutdownGracefully();
+//        Future cg = this.childGroup.shutdownGracefully();
+//        if (sync) {
+//            bg.get();
+//            cg.get();
+//        }
+//    }
+
+    public void shutdown() throws InterruptedException, ExecutionException {
         this.peerManager.close();
-        this.bossGroup.shutdownGracefully();
-        this.childGroup.shutdownGracefully();
+        Future bg = this.bossGroup.shutdownGracefully();
+        Future cg = this.childGroup.shutdownGracefully();
+        bg.get();
+        cg.get();
     }
 
     public static class Builder {
