@@ -54,6 +54,7 @@ public class ThriftSerializerTest {
         ByteBuf endpointBuf = this.serializer.encodeEndpoint(endpoint);
         String decodedEndpoint = this.serializer.decodeEndpoint(endpointBuf);
         assertEquals(endpoint, decodedEndpoint);
+        endpointBuf.release();
     }
 
     @Test
@@ -64,8 +65,8 @@ public class ThriftSerializerTest {
 
         ByteBuf binaryHeaders = serializer.encodeHeaders(headers);
         Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
-
         assertEquals(headers, decodedHeaders);
+        binaryHeaders.release();
     }
 
     @Test
@@ -74,6 +75,7 @@ public class ThriftSerializerTest {
         ByteBuf binaryHeaders = serializer.encodeHeaders(emptyHeaders);
         Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
         assertEquals(emptyHeaders, decodedHeaders);
+        binaryHeaders.release();
     }
 
     @Test
@@ -92,11 +94,11 @@ public class ThriftSerializerTest {
         assertEquals(obj.getAnInteger(), decodedObj.getAnInteger());
         assertEquals(obj.getAString(), decodedObj.getAString());
         assertEquals(obj, decodedObj);
+        bodyBuf.release();
     }
 
     @org.junit.After
     public void tearDown() throws Exception {
         this.serializer = null;
     }
-
 }

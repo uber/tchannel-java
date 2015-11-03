@@ -22,18 +22,17 @@
 
 package com.uber.tchannel.json;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.schemes.Request;
 
-public class JsonRequestHandler extends JSONRequestHandler<RequestPojo, ResponsePojo> {
+public class JsonRequestHandler<T, U> extends JSONRequestHandler<T, U> {
 
     @Override
-    public Response<ResponsePojo> handleImpl(Request<RequestPojo> request) {
+    public JsonResponse<U> handleImpl(JsonRequest<T> request) {
         System.out.println(request);
-
-        return new Response.Builder<>(new ResponsePojo(true, "hi!"), ResponseCode.OK).build();
+        return new JsonResponse.Builder<U>(request).build();
     }
 
 }

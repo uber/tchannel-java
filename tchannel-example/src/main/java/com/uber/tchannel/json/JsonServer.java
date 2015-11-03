@@ -32,7 +32,7 @@ public class JsonServer {
                 .build();
 
         tchannel.makeSubChannel("json-server")
-            .register("json-endpoint", new JsonRequestHandler());
+            .register("json-endpoint", new JsonRequestHandler<RequestPojo, ResponsePojo>());
 
         ChannelFuture f = tchannel.listen();
 

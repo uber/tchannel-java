@@ -36,10 +36,17 @@ import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.ErrorResponse;
 import com.uber.tchannel.schemes.JSONSerializer;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.ResponseMessage;
+import com.uber.tchannel.schemes.Response;
+import com.uber.tchannel.schemes.Request;
+import com.uber.tchannel.schemes.Response;
+import com.uber.tchannel.schemes.Response;
 import com.uber.tchannel.schemes.Serializer;
+import com.uber.tchannel.schemes.ThriftRequest;
+import com.uber.tchannel.schemes.ThriftResponse;
 import com.uber.tchannel.schemes.ThriftSerializer;
 
 import java.net.InetAddress;
@@ -138,87 +145,11 @@ public final class SubChannel {
         return conn;
     }
 
-    private <T, U> ListenableFuture<Response<T>> callWithEncoding(
-            InetAddress host,
-            int port,
-            Request<U> request,
-            final Class<T> responseType,
-            ArgScheme scheme
-    ) throws InterruptedException, TChannelError {
-
-        RawRequest rawRequest = new RawRequest(
-                request.getTTL(),
-                request.getService(),
-                request.getTransportHeaders(),
-                serializer.encodeEndpoint(request.getEndpoint(), scheme),
-                serializer.encodeHeaders(request.getHeaders(), scheme),
-                serializer.encodeBody(request.getBody(), scheme)
-        );
-
-        // Set the "cn" header
-        // TODO: should make "cn" an option
-        rawRequest.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
-        rawRequest.setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, scheme.getScheme());
-
-        ListenableFuture<ResponseMessage> future = this.call(host, port, rawRequest);
-        return transform(future, new AsyncFunction<ResponseMessage, Response<T>>() {
-            @Override
-            public ListenableFuture<Response<T>> apply(ResponseMessage responseMessage) {
-                SettableFuture<Response<T>> settableFuture = SettableFuture.create();
-                Response<T> response = null;
-                if (responseMessage instanceof ErrorResponse) {
-                    response = new Response.Builder<T>((ErrorResponse) responseMessage).build();
-                } else {
-                    response = new Response.Builder<>(
-                        serializer.decodeBody((RawResponse) responseMessage, responseType),
-                        ((RawResponse) responseMessage).getResponseCode())
-                        .setHeaders(serializer.decodeHeaders((RawResponse) responseMessage))
-                        .build();
-                }
-
-                settableFuture.set(response);
-                return settableFuture;
-            }
-        });
-    }
-
-    public <T, U> ListenableFuture<Response<T>> callThrift(
-            InetAddress host,
-            int port,
-            Request<U> request,
-            final Class<T> responseType
-    ) throws InterruptedException, TChannelError {
-        return callWithEncoding(host, port, request, responseType, ArgScheme.THRIFT);
-    }
-
-    public <T, U> ListenableFuture<Response<T>> callThrift(
-        Request<U> request,
-        final Class<T> responseType
-    ) throws InterruptedException, TChannelError {
-        return callWithEncoding(null, 0, request, responseType, ArgScheme.THRIFT);
-    }
-
-    public <T, U> ListenableFuture<Response<T>> callJSON(
-            InetAddress host,
-            int port,
-            Request<U> request,
-            final Class<T> responseType
-    ) throws InterruptedException, TChannelError {
-        return callWithEncoding(host, port, request, responseType, ArgScheme.JSON);
-    }
-
-    public <T, U> ListenableFuture<Response<T>> callJSON(
-        Request<U> request,
-        final Class<T> responseType
-    ) throws InterruptedException, TChannelError {
-        return callWithEncoding(null, 0, request, responseType, ArgScheme.JSON);
-    }
-
-    public ListenableFuture<ResponseMessage> call(
-            InetAddress host,
-            int port,
-            RawRequest request
-    ) throws InterruptedException, TChannelError {
+    protected ResponseRouter prepare(
+        Request request,
+        InetAddress host,
+        int port
+    ) throws TChannelError {
 
         // Get an outbound channel
         Connection conn = null;
@@ -246,15 +177,60 @@ public final class SubChannel {
         }
 
         // Get a response router for our outbound channel
-        ResponseRouter responseRouter = conn.channel().pipeline().get(ResponseRouter.class);
-
-        // Ask the router to make a call on our behalf, and return its promise
-        return responseRouter.expectResponse(request);
+        return conn.channel().pipeline().get(ResponseRouter.class);
     }
 
-    public ListenableFuture<ResponseMessage> call(
+    public <T, U> ListenableFuture<ThriftResponse<U>> send(
+            ThriftRequest<T> request,
+            InetAddress host,
+            int port
+    ) throws InterruptedException, TChannelError {
+        // Set the "cn" header
+        // TODO: should make "cn" an option
+        request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
+        ResponseRouter router = prepare(request, host, port);
+        return router.expectResponse(request);
+    }
+
+    public <T, U> ListenableFuture<ThriftResponse<U>> send(
+        ThriftRequest<T> request
+    ) throws InterruptedException, TChannelError {
+        return send(request, null, 0);
+    }
+
+    public <T, U> ListenableFuture<JsonResponse<U>> send(
+        JsonRequest<T> request,
+        InetAddress host,
+        int port
+    ) throws InterruptedException, TChannelError {
+        // Set the "cn" header
+        // TODO: should make "cn" an option
+        request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
+        ResponseRouter router = prepare(request, host, port);
+        return router.expectResponse(request);
+    }
+
+    public <T, U> ListenableFuture<JsonResponse<U>> send(
+        JsonRequest<T> request
+    ) throws InterruptedException, TChannelError {
+        return send(request, null, 0);
+    }
+
+    public ListenableFuture<RawResponse> send(
+        RawRequest request,
+        InetAddress host,
+        int port
+    ) throws InterruptedException, TChannelError {
+        // Set the "cn" header
+        // TODO: should make "cn" an option
+        request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
+        ResponseRouter router = prepare(request, host, port);
+        return router.expectResponse(request);
+    }
+
+    public ListenableFuture<RawResponse> send(
         RawRequest request
     ) throws InterruptedException, TChannelError {
-        return call(null, 0, request);
+        return send(request, null, 0);
     }
 }

@@ -24,6 +24,9 @@ package com.uber.tchannel.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
+import com.uber.tchannel.schemes.RawRequest;
 import io.netty.handler.logging.LogLevel;
 import org.junit.Test;
 
@@ -37,10 +40,13 @@ public class RequestTest {
 
     @Test
     public void testGetBody() throws Exception {
-        Request<String> request = new Request.Builder<>("Hello, World!", "some-serice", "some-endpoint").build();
+        RawRequest request = new RawRequest.Builder("some-serice", "some-endpoint")
+            .setBody("Hello, World!")
+            .build();
         assertNotNull(request);
         assertEquals(String.class, request.getBody().getClass());
         assertEquals("Hello, World!", request.getBody());
+        request.release();
     }
 
     @Test
@@ -51,35 +57,37 @@ public class RequestTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setServerPort(8888)
             .setLogLevel(LogLevel.INFO)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {
-                public Response<Integer> handleImpl(Request<String> request) {
-
-                    assertEquals(requestBody, request.getBody());
-                    return new Response.Builder<>(responseBody, ResponseCode.OK)
+                public JsonResponse<Integer> handleImpl(JsonRequest<String> request) {
+                    assertEquals(requestBody, request.getBody(String.class));
+                    return new JsonResponse.Builder<Integer>(request)
                         .setTransportHeaders(request.getTransportHeaders())
+                        .setBody(10)
                         .build();
             }
         });
 
         tchannel.listen();
 
-        Request<String> request = new Request.Builder<>(requestBody, "tchannel-name", "endpoint")
-                .build();
+        JsonRequest<String> request = new JsonRequest.Builder<String>("tchannel-name", "endpoint")
+            .setBody(requestBody)
+            .build();
 
-        ListenableFuture<Response<Integer>> responsePromise = subChannel.callJSON(
-            tchannel.getHost(),
-            tchannel.getListeningPort(),
+        ListenableFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
             request,
-            Integer.class
+            tchannel.getHost(),
+            tchannel.getListeningPort()
         );
 
-        Response<Integer> response = responsePromise.get(2000000, TimeUnit.MILLISECONDS);
+        JsonResponse<Integer> response = responsePromise.get(2000000, TimeUnit.MILLISECONDS);
 
         assertEquals(null, response.getError());
-        assertEquals(responseBody, (int) response.getBody());
+        assertEquals(responseBody, (int) response.getBody(Integer.class));
+        response.release();
 
         tchannel.shutdown();
     }
@@ -91,17 +99,22 @@ public class RequestTest {
         final String responseBody = "pong!";
 
         JSONRequestHandler<String, String> requestHandler = new JSONRequestHandler<String, String>() {
-
-            public Response<String> handleImpl(Request<String> request) {
-                assertEquals(requestBody, request.getBody());
-                return new Response.Builder<>(responseBody, ResponseCode.OK).build();
+            @Override
+            public JsonResponse<String> handleImpl(JsonRequest<String> request) {
+                assertEquals(requestBody, request.getBody(String.class));
+                return new JsonResponse.Builder<String>(request)
+                    .setBody(responseBody)
+                    .build();
             }
         };
 
-        Request<String> request = new Request.Builder<>(requestBody, "some-service", "some-endpoint").build();
+        JsonRequest<String> request =
+            new JsonRequest.Builder<String>("some-service", "some-endpoint")
+                .setBody(requestBody)
+                .build();
 
-        Response<String> response = requestHandler.handleImpl(request);
-
-        assertEquals(responseBody, response.getBody());
+        JsonResponse<String> response = requestHandler.handleImpl(request);
+        assertEquals(responseBody, response.getBody(String.class));
+        response.release();
     }
 }

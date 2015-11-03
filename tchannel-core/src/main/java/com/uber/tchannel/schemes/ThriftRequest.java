@@ -28,127 +28,104 @@ import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public final class RawRequest extends Request {
-    private String header = null;
-    private String body = null;
+public class ThriftRequest<T> extends EncodedRequest<T> {
 
-    protected RawRequest(Builder builder) {
+    private ThriftRequest(Builder<T> builder) {
         super(builder);
-        this.body = builder.body;
-        this.header = builder.header;
     }
 
-    protected RawRequest(long id, long ttl,
-                      String service, Map<String, String> transportHeaders,
-                      ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    protected ThriftRequest(long id, long ttl,
+                          String service, Map<String, String> transportHeaders,
+                          ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
     }
 
-    public String getHeader() {
-        if (this.header == null) {
-            this.header = this.arg2.toString(CharsetUtil.UTF_8);
-        }
-
-        return this.header;
-    }
-
-    public String getBody() {
-        if (this.body == null) {
-            this.body = this.arg3.toString(CharsetUtil.UTF_8);
-        }
-
-        return this.body;
-    }
-
-    public static class Builder extends Request.Builder {
-        protected String header = null;
-        protected String body = null;
+    public static class Builder<T> extends EncodedRequest.Builder<T> {
 
         public Builder(String service, String endpoint) {
             super(service, endpoint);
-            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
+            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.THRIFT.getScheme());
+            this.argScheme = ArgScheme.THRIFT;
         }
 
         public Builder(String service, ByteBuf arg1) {
             super(service, arg1);
-            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
+            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.THRIFT.getScheme());
+            this.argScheme = ArgScheme.THRIFT;
+        }
+
+        public Builder<T> validate() {
+            super.validate();
+            return this;
+        }
+
+        public ThriftRequest<T> build() {
+            return new ThriftRequest(this.validate());
         }
 
         @Override
-        public Builder setTTL(long ttl) {
+        public Builder<T> setTTL(long ttl) {
             super.setTTL(ttl);
             return this;
         }
 
         @Override
-        public Builder setTTL(long ttl, TimeUnit timeUnit) {
+        public Builder<T> setTTL(long ttl, TimeUnit timeUnit) {
             super.setTTL(ttl, timeUnit);
             return this;
         }
 
         @Override
-        public Builder setId(long id) {
+        public Builder<T> setId(long id) {
             super.setId(id);
             return this;
         }
 
         @Override
-        public Builder setArg2(ByteBuf arg2) {
+        public Builder<T> setArg2(ByteBuf arg2) {
             super.setArg2(arg2);
-            this.header = null;
             return this;
         }
 
         @Override
-        public Builder setArg3(ByteBuf arg3) {
+        public Builder<T> setArg3(ByteBuf arg3) {
             super.setArg3(arg3);
-            this.body = null;
             return this;
         }
 
         @Override
-        public Builder setTransportHeader(String key, String value) {
+        public Builder<T> setHeader(String key, String value) {
+            super.setHeader(key, value);
+            return this;
+        }
+
+        @Override
+        public Builder<T> setHeaders(Map<String, String> headers) {
+            super.setHeaders(headers);
+            return this;
+        }
+
+        @Override
+        public Builder<T> setBody(T body) {
+            super.setBody(body);
+            return this;
+        }
+
+        @Override
+        public Builder<T> setTransportHeader(String key, String value) {
             super.setTransportHeader(key, value);
             return this;
         }
 
         @Override
-        public Builder setTransportHeaders(Map<String, String> transportHeaders) {
+        public Builder<T> setTransportHeaders(Map<String, String> transportHeaders) {
             super.setTransportHeaders(transportHeaders);
             return this;
-        }
-
-        public final Builder setHeader(String header) {
-            this.setArg2(Unpooled.wrappedBuffer(header.getBytes()));
-            this.header = header;
-            return this;
-        }
-
-        public final Builder setBody(String body) {
-            setArg3(Unpooled.wrappedBuffer(((String) body).getBytes()));
-            this.body = body;
-            return this;
-        }
-
-        public Builder validate() {
-            super.validate();
-
-            if (arg2 == null) {
-                arg2 = TChannelUtilities.emptyByteBuf;
-            }
-
-            if (arg3 == null) {
-                arg3 = TChannelUtilities.emptyByteBuf;
-            }
-
-            return this;
-        }
-
-        public RawRequest build() {
-            return new RawRequest(this.validate());
         }
     }
 }

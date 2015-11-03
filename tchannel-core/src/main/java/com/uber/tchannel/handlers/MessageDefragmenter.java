@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.fragmentation.FragmentationState;
 import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.CallFrame;
@@ -30,10 +31,13 @@ import com.uber.tchannel.frames.CallResponseContinue;
 import com.uber.tchannel.frames.CallResponseFrame;
 import com.uber.tchannel.frames.ErrorFrame;
 import com.uber.tchannel.frames.Frame;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.ErrorResponse;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.Response;
+import com.uber.tchannel.schemes.Request;
 import com.uber.tchannel.schemes.TChannelMessage;
+import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -43,6 +47,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.uber.tchannel.frames.ErrorFrame.sendError;
+
 public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024;
@@ -50,6 +56,8 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
 
     // Maintains a mapping of MessageId -> Partial RawMessage
     private final Map<Long, TChannelMessage> messageMap = new HashMap<>();
+
+    private final Map<Long, ErrorFrame> errorMap = new HashMap<>();
 
     // Maintains a mapping of MessageId -> Frame Defragmentation State */
     private final Map<Long, FragmentationState> defragmentationState = new HashMap<Long, FragmentationState>();
@@ -63,106 +71,124 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, Frame msg, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, Frame frame, List<Object> out) throws Exception {
 
-        if (msg instanceof CallRequestFrame) {
-            this.decodeCallRequest(ctx, (CallRequestFrame) msg, out);
-        } else if (msg instanceof CallResponseFrame) {
-            this.decodeCallResponse(ctx, (CallResponseFrame) msg, out);
-        } else if (msg instanceof CallRequestContinueFrame) {
-            this.decodeCallRequestContinue(ctx, (CallRequestContinueFrame) msg, out);
-        } else if (msg instanceof CallResponseContinue) {
-            this.decodeCallResponseContinue(ctx, (CallResponseContinue) msg, out);
-        } else if (msg instanceof ErrorFrame) {
-            this.decodeErrorResponse(ctx, (ErrorFrame) msg, out);
+        if (frame instanceof CallRequestFrame) {
+            this.decodeCallRequest(ctx, (CallRequestFrame) frame, out);
+        } else if (frame instanceof CallResponseFrame) {
+            this.decodeCallResponse(ctx, (CallResponseFrame) frame, out);
+        } else if (frame instanceof CallRequestContinueFrame) {
+            this.decodeCallRequestContinue(ctx, (CallRequestContinueFrame) frame, out);
+        } else if (frame instanceof CallResponseContinue) {
+            this.decodeCallResponseContinue(ctx, (CallResponseContinue) frame, out);
+        } else if (frame instanceof ErrorFrame) {
+            this.decodeErrorResponse(ctx, (ErrorFrame) frame, out);
         }
 
-        if (!hasMore(msg)) {
-            TChannelMessage completeResponse = this.messageMap.remove(msg.getId());
-            out.add(completeResponse);
+        if (this.errorMap.remove(frame.getId()) != null) {
+            return;
         }
+
+        if (!hasMore(frame)) {
+            TChannelMessage msg = this.messageMap.remove(frame.getId());
+            out.add(msg);
+        }
+
+        // TODO: check where frame's playload is released
     }
 
-    private boolean hasMore(Frame msg) {
-        if (msg instanceof CallFrame) {
-            return ((CallFrame) msg).moreFragmentsFollow();
+    private boolean hasMore(Frame frame) {
+        if (frame instanceof CallFrame) {
+            return ((CallFrame) frame).moreFragmentsFollow();
         }
 
         return false;
     }
 
-    private void decodeErrorResponse(ChannelHandlerContext ctx, ErrorFrame msg, List<Object> out) {
-        assert this.messageMap.get(msg.getId()) == null;
-        assert this.defragmentationState.get(msg.getId()) == null;
+    private void decodeErrorResponse(ChannelHandlerContext ctx, ErrorFrame frame, List<Object> out) {
+        assert this.messageMap.get(frame.getId()) == null;
+        assert this.defragmentationState.get(frame.getId()) == null;
 
-        this.messageMap.put(msg.getId(), new ErrorResponse(
-            msg.getId(),
-            msg.getType(),
-            msg.getMessage()
+        this.messageMap.put(frame.getId(), new ErrorResponse(
+            frame.getId(),
+            frame.getType(),
+            frame.getMessage()
         ));
     }
 
-    private void decodeCallRequest(ChannelHandlerContext ctx, CallRequestFrame msg, List<Object> out) {
+    private void decodeCallRequest(ChannelHandlerContext ctx, CallRequestFrame frame, List<Object> out) {
 
-        assert this.messageMap.get(msg.getId()) == null;
-        assert this.defragmentationState.get(msg.getId()) == null;
+        assert this.messageMap.get(frame.getId()) == null;
+        assert this.defragmentationState.get(frame.getId()) == null;
 
-        ByteBuf arg1 = this.readArg(msg);
-        ByteBuf arg2 = this.readArg(msg);
-        ByteBuf arg3 = this.readArg(msg);
+        ArgScheme scheme = ArgScheme.toScheme(frame.getHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
+        if (!ArgScheme.isSupported(scheme)) {
+            ErrorFrame error = sendError(ErrorType.BadRequest, "Invalid arg schema", frame.getId(), ctx);
+            this.errorMap.put(frame.getId(), error);
+            return;
+        }
 
-        this.messageMap.put(msg.getId(), new RawRequest(
-                msg.getId(),
-                msg.getTTL(),
-                msg.getService(),
-                msg.getHeaders(),
-                arg1,
-                arg2,
-                arg3
-        ));
+        ByteBuf arg1 = this.readArg(frame);
+        ByteBuf arg2 = this.readArg(frame);
+        ByteBuf arg3 = this.readArg(frame);
 
+        Request req = Request.build(
+            scheme,
+            frame.getId(),
+            frame.getTTL(),
+            frame.getService(),
+            frame.getHeaders(),
+            arg1,
+            arg2,
+            arg3);
+
+        this.messageMap.put(frame.getId(), req);
     }
 
-    private void decodeCallResponse(ChannelHandlerContext ctx, CallResponseFrame msg, List<Object> out) {
+    private void decodeCallResponse(ChannelHandlerContext ctx, CallResponseFrame frame, List<Object> out) {
 
-        assert this.messageMap.get(msg.getId()) == null;
-        assert this.defragmentationState.get(msg.getId()) == null;
+        assert this.messageMap.get(frame.getId()) == null;
+        assert this.defragmentationState.get(frame.getId()) == null;
+
+        ArgScheme scheme = ArgScheme.toScheme(frame.getHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
+        if (!ArgScheme.isSupported(scheme)) {
+            // TODO: logging, or more?
+            return;
+        }
 
         // ignore arg1
-        this.readArg(msg);
-        ByteBuf arg2 = this.readArg(msg);
-        ByteBuf arg3 = this.readArg(msg);
+        ByteBuf arg1 = this.readArg(frame);
+        arg1.release();
+        ByteBuf arg2 = this.readArg(frame);
+        ByteBuf arg3 = this.readArg(frame);
 
-        this.messageMap.put(msg.getId(), new RawResponse(
-                msg.getId(),
-                msg.getResponseCode(),
-                msg.getHeaders(),
-                arg2,
-                arg3
-        ));
+        Response res = Response.build(
+            scheme,
+            frame.getId(),
+            frame.getResponseCode(),
+            frame.getHeaders(),
+            arg2,
+            arg3);
+
+        this.messageMap.put(frame.getId(), res);
     }
 
-    private void decodeCallRequestContinue(ChannelHandlerContext ctx, CallRequestContinueFrame msg, List<Object> out) {
+    private void decodeCallRequestContinue(ChannelHandlerContext ctx, CallRequestContinueFrame frame, List<Object> out) {
 
-        assert this.messageMap.get(msg.getId()) != null;
-        assert this.defragmentationState.get(msg.getId()) != null;
+        assert this.messageMap.get(frame.getId()) != null;
+        assert this.defragmentationState.get(frame.getId()) != null;
 
-        ByteBuf arg2 = this.readArg(msg);
-        ByteBuf arg3 = this.readArg(msg);
+        Request req = (Request) this.messageMap.get(frame.getId());
+        if (req == null) {
+            ErrorFrame error = sendError(ErrorType.BadRequest, "call request continue without call request", frame.getId(), ctx);
+            this.errorMap.put(frame.getId(), error);
+            return;
+        }
 
-        RawRequest partialRequest = (RawRequest) this.messageMap.get(msg.getId());
-
-        RawRequest updatedRequest = new RawRequest(
-                partialRequest.getId(),
-                partialRequest.getTTL(),
-                partialRequest.getService(),
-                partialRequest.getTransportHeaders(),
-                partialRequest.getArg1(),
-                Unpooled.wrappedBuffer(partialRequest.getArg2(), arg2),
-                Unpooled.wrappedBuffer(partialRequest.getArg3(), arg3)
-        );
-
-        this.messageMap.put(msg.getId(), updatedRequest);
+        ByteBuf arg2 = this.readArg(frame);
+        ByteBuf arg3 = this.readArg(frame);
+        req.appendArg2(arg2);
+        req.appendArg3(arg3);
     }
 
     private void decodeCallResponseContinue(ChannelHandlerContext ctx, CallResponseContinue msg, List<Object> out) {
@@ -173,18 +199,15 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
         ByteBuf arg2 = this.readArg(msg);
         ByteBuf arg3 = this.readArg(msg);
 
-        RawResponse partialResponse = (RawResponse) this.messageMap.get(msg.getId());
+        Response res = (Response) this.messageMap.get(msg.getId());
+        if (res == null) {
+            // TODO: just ignore?
+            // TODO: logging
+            return;
+        }
 
-        RawResponse updatedResponse = new RawResponse(
-                partialResponse.getId(),
-                partialResponse.getResponseCode(),
-                partialResponse.getTransportHeaders(),
-                Unpooled.wrappedBuffer(partialResponse.getArg2(), arg2),
-                Unpooled.wrappedBuffer(partialResponse.getArg3(), arg3)
-
-        );
-
-        this.messageMap.put(msg.getId(), updatedResponse);
+        res.appendArg2(arg2);
+        res.appendArg3(arg3);
     }
 
     protected ByteBuf readArg(CallFrame msg) {
@@ -277,4 +300,9 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
 
     }
 
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        // TODO: logging instead of print
+        TChannelUtilities.PrintException(cause);
+    }
 }

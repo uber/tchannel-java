@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.api;
 
+import com.uber.tchannel.schemes.JsonRequest;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -33,13 +34,18 @@ public class RequestBuilderTest {
     @Test
     public void testSetTTL() throws Exception {
         long ttlInSeconds = 1;
-        Request<String> req = new Request.Builder<>("foo", "bar", "baz").setTTL(ttlInSeconds, TimeUnit.SECONDS).build();
+        JsonRequest<String> req = new JsonRequest.Builder<String>("foo", "bar")
+            .setTTL(ttlInSeconds, TimeUnit.SECONDS)
+            .build();
         assertEquals(1000, req.getTTL());
+        req.release();
 
         long ttlInMicroseconds = 1000;
-
-        req = new Request.Builder<>("foo", "bar", "baz").setTTL(ttlInMicroseconds, TimeUnit.MICROSECONDS).build();
+        req = new JsonRequest.Builder<String>("foo", "bar")
+            .setTTL(ttlInMicroseconds, TimeUnit.MICROSECONDS)
+            .build();
         assertEquals(1, req.getTTL());
+        req.release();
     }
 
 }

@@ -25,7 +25,7 @@ package com.uber.tchannel.schemes;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.frames.FrameType;
 
-public final class ErrorResponse extends ResponseMessage {
+public final class ErrorResponse extends ResponseMessage implements TChannelMessage {
 
     private final ErrorType errorType;
     private final String message;
@@ -40,7 +40,12 @@ public final class ErrorResponse extends ResponseMessage {
 
     @Override
     public long getId() {
-        return id;
+        return this.id;
+    }
+
+    @Override
+    public FrameType getType() {
+        return this.getType();
     }
 
     public ErrorType getErrorType() {
@@ -50,4 +55,18 @@ public final class ErrorResponse extends ResponseMessage {
     public String getMessage() {
         return message;
     }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "<%s id=%s errorType=%s message=%s>",
+            this.getClass().getSimpleName(),
+            this.id,
+            this.errorType,
+            this.message
+        );
+    }
+
+    @Override
+    public void release() {}
 }

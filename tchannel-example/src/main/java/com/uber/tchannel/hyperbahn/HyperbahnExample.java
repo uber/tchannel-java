@@ -29,7 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.Response;
+import com.uber.tchannel.schemes.JsonResponse;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
@@ -63,7 +63,7 @@ public class HyperbahnExample {
         // register the service handler
         hyperbahn.makeClientChannel("javaServer").register("ping", new PingRequestHandler());
 
-        final ListenableFuture<Response<AdvertiseResponse>> responseFuture;
+        final ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture;
 
         try {
             responseFuture = hyperbahn.advertise();
@@ -78,8 +78,8 @@ public class HyperbahnExample {
             @Override
             public void run() {
                 try {
-                    Response<AdvertiseResponse> response = responseFuture.get();
-                    System.out.println("Got response. All set: " + response.getBody().toString());
+                    JsonResponse<AdvertiseResponse> response = responseFuture.get();
+                    System.out.println("Got response. All set: " + response.getBody(AdvertiseResponse.class).toString());
                 } catch (Exception ex) {
                     System.out.println("ErrorFrame happened: " + ex.getMessage());
                 }

@@ -27,6 +27,8 @@ import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.Request;
+import com.uber.tchannel.schemes.Response;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
@@ -69,24 +71,21 @@ public class PeerManagerTest {
         final SubChannel subClient = client.makeSubChannel("server");
         client.listen();
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setTTL(1000)
+            .build();
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
             host,
-            port,
-            req
+            port
         );
 
-        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
-        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
-        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        assertEquals(res.getHeader(), "title");
+        assertEquals(res.getBody(), "hello");
         res.release();
 
         // checking the connections
@@ -138,22 +137,19 @@ public class PeerManagerTest {
             });
         client.listen();
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setId(1000)
+            .build();
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
-        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
-        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        assertEquals(res.getHeader(), "title");
+        assertEquals(res.getBody(), "hello");
         res.release();
 
         // checking the connections
@@ -204,20 +200,17 @@ public class PeerManagerTest {
             });
         client.listen();
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setId(1000)
+            .build();
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get(2000, TimeUnit.MILLISECONDS);
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -270,22 +263,19 @@ public class PeerManagerTest {
             });
         client.listen();
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setId(1000)
+            .build();
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
-        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
-        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        RawResponse res = future.get(2000, TimeUnit.MILLISECONDS);
+        assertEquals(res.getHeader(), "title");
+        assertEquals(res.getBody(), "hello");
         res.release();
 
         // checking the connections
@@ -365,22 +355,19 @@ public class PeerManagerTest {
         assertEquals(0, (int)stats.get("connections.in"));
         assertEquals(1, (int)stats.get("connections.out"));
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setId(1000)
+            .build();
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
-        assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
-        assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        RawResponse res = future.get(2000, TimeUnit.MILLISECONDS);
+        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
+        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
 
         assertTrue(echo1.accessed);
@@ -459,22 +446,19 @@ public class PeerManagerTest {
         assertEquals(0, (int)stats.get("connections.in"));
         assertEquals(1, (int)stats.get("connections.out"));
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setId(1000)
+            .build();
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = (RawResponse)future.get(2000, TimeUnit.MILLISECONDS);
-        assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
-        assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        RawResponse res = future.get(2000, TimeUnit.MILLISECONDS);
+        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
+        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
 
         assertFalse(echo1.accessed);
@@ -501,17 +485,14 @@ public class PeerManagerTest {
         public boolean accessed = false;
 
         @Override
-        public RawResponse handle(RawRequest request) {
-            RawResponse response = new RawResponse(
-                request.getId(),
-                ResponseCode.OK,
-                request.getTransportHeaders(),
-                request.getArg2(),
-                request.getArg3()
-            );
-
+        public Response handle(Request request) {
             accessed = true;
-            return response;
+            request.getArg2().retain();
+            request.getArg3().retain();
+            return new RawResponse.Builder(request)
+                .setArg2(request.getArg2())
+                .setArg3(request.getArg3())
+                .build();
         }
     }
 }

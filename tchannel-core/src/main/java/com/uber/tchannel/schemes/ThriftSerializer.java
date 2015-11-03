@@ -39,14 +39,12 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
     @Override
     public String decodeEndpoint(ByteBuf arg1) {
         String endpoint = arg1.toString(CharsetUtil.UTF_8);
-        arg1.release();
         return endpoint;
     }
 
     @Override
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
         Map<String, String> headers = CodecUtils.decodeHeaders(arg2);
-        arg2.release();
         return headers;
     }
 
@@ -60,7 +58,6 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
             // Get byte[] from ByteBuf
             byte[] payloadBytes = new byte[arg3.readableBytes()];
             arg3.readBytes(payloadBytes);
-            arg3.release();
 
             // Actually deserialize the payload
             TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());

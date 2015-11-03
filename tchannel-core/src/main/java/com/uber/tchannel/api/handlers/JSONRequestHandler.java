@@ -22,6 +22,16 @@
 
 package com.uber.tchannel.api.handlers;
 
-import com.uber.tchannel.schemes.JSONSerializer;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
+import com.uber.tchannel.schemes.Request;
 
-public abstract class JSONRequestHandler<T, U> extends DefaultTypedRequestHandler<T, U, JSONSerializer> { }
+public abstract class JSONRequestHandler<T, U> implements RequestHandler {
+
+    @Override
+    public JsonResponse<U> handle(Request request) {
+        return handleImpl((JsonRequest<T>)request);
+    }
+
+    public abstract JsonResponse<U> handleImpl(JsonRequest<T> request);
+}

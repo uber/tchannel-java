@@ -42,14 +42,12 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     @Override
     public String decodeEndpoint(ByteBuf arg1) {
         String endpoint = arg1.toString(CharsetUtil.UTF_8);
-        arg1.release();
         return endpoint;
     }
 
     @Override
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
         String headerJSON = arg2.toString(CharsetUtil.UTF_8);
-        arg2.release();
         Map<String, String> headers = null;
         if (headerJSON != null && !headerJSON.isEmpty() && !headerJSON.equals("\"\"")) {
             headers = new Gson().fromJson(headerJSON, HEADER_TYPE);
@@ -61,7 +59,6 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     @Override
     public <T> T decodeBody(ByteBuf arg3, Class<T> bodyType) {
         String bodyJSON = arg3.toString(CharsetUtil.UTF_8);
-        arg3.release();
         return GSON.fromJson(bodyJSON, bodyType);
     }
 

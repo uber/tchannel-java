@@ -25,11 +25,10 @@ package com.uber.tchannel.benchmarks;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -86,17 +85,19 @@ public class PingPongServerBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void benchmark(final AdditionalCounters counters) throws Exception {
 
-        Request<Ping> request = new Request.Builder<>(new Ping("ping?"), "some-service", "ping").build();
+        JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("some-service", "ping")
+            .setBody(new Ping("ping?"))
+            .build();
 
-        ListenableFuture<Response<Pong>> future = this.client.makeSubChannel("ping-server").callJSON(
-            InetAddress.getLocalHost(),
-            this.port,
-            request,
-            Pong.class
-        );
-        Futures.addCallback(future, new FutureCallback<Response<Pong>>() {
+        ListenableFuture<JsonResponse<Pong>> future = this.client.makeSubChannel("ping-server")
+            .send(
+                request,
+                InetAddress.getLocalHost(),
+                this.port
+            );
+        Futures.addCallback(future, new FutureCallback<JsonResponse<Pong>>() {
             @Override
-            public void onSuccess(Response<Pong> pongResponse) {
+            public void onSuccess(JsonResponse<Pong> pongResponse) {
                 counters.actualQPS.incrementAndGet();
             }
 
@@ -131,16 +132,17 @@ public class PingPongServerBenchmark {
 
     public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
-        public Response<Pong> handleImpl(Request<Ping> request) {
+        public JsonResponse<Pong> handleImpl(JsonRequest<Ping> request) {
             try {
                 sleep(sleepTime);
             } catch (InterruptedException ex) {
-
+                // TODO: do something ...
             }
-            return new Response.Builder<>(new Pong("pong!"), ResponseCode.OK)
-                    .build();
-        }
 
+            return new JsonResponse.Builder<Pong>(request)
+                .setBody(new Pong("pong!"))
+                .build();
+        }
     }
 
     @AuxCounters

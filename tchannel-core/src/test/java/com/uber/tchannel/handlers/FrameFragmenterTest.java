@@ -60,15 +60,12 @@ public class FrameFragmenterTest {
         new Random().nextBytes(arg3Bytes);
         ByteBuf arg3 = Unpooled.wrappedBuffer(arg3Bytes);
 
-        RawRequest rawRequest = new RawRequest(
-                0,
-                100,
-                "some-service",
-                null,
-                arg1,
-                arg2,
-                arg3
-        );
+        RawRequest rawRequest = new RawRequest.Builder("some-service", arg1)
+            .setArg2(arg2)
+            .setArg3(arg3)
+            .setId(0)
+            .setTTL(100)
+            .build();
 
         channel.writeOutbound(rawRequest);
 
