@@ -25,10 +25,12 @@ package com.uber.tchannel.benchmarks;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.schemes.JsonRequest;
 import com.uber.tchannel.schemes.JsonResponse;
+import com.uber.tchannel.schemes.Response;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -54,16 +56,18 @@ public class PingPongServerBenchmark {
 
     TChannel channel;
     TChannel client;
+    SubChannel subClient;
     int port;
 
-    @Param({ "0", "1", "10" })
+//    @Param({ "0", "1", "10" })
+    @Param({ "0"})
     private int sleepTime;
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
                 .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
-                .warmupIterations(5)
-                .measurementIterations(10)
+                .warmupIterations(0)
+                .measurementIterations(5)
                 .forks(1)
                 .build();
         new Runner(options).run();
@@ -78,18 +82,18 @@ public class PingPongServerBenchmark {
         channel.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
         this.client = new TChannel.Builder("ping-client").build();
         channel.listen();
+        this.subClient = this.client.makeSubChannel("ping-server");
         this.port = this.channel.getListeningPort();
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void benchmark(final AdditionalCounters counters) throws Exception {
-
-        JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("some-service", "ping")
+        JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("ping-server", "ping")
             .setBody(new Ping("ping?"))
             .build();
 
-        ListenableFuture<JsonResponse<Pong>> future = this.client.makeSubChannel("ping-server")
+        ListenableFuture<JsonResponse<Pong>> future = this.subClient
             .send(
                 request,
                 InetAddress.getLocalHost(),
@@ -98,12 +102,20 @@ public class PingPongServerBenchmark {
         Futures.addCallback(future, new FutureCallback<JsonResponse<Pong>>() {
             @Override
             public void onSuccess(JsonResponse<Pong> pongResponse) {
-                counters.actualQPS.incrementAndGet();
+
+                if (!pongResponse.isError()) {
+                    counters.actualQPS.incrementAndGet();
+//                    pongResponse.getBody(Pong.class);
+//                    pongResponse.getHeaders();
+                    pongResponse.release();
+                } else {
+                    System.out.println(pongResponse.getError().getMessage());
+                }
             }
 
             @Override
             public void onFailure(Throwable throwable) {
-
+                System.out.println(throwable.getMessage());
             }
         });
     }
