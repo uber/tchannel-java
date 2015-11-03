@@ -76,7 +76,7 @@ public class FrameFragmenterTest {
 
         CallRequestFrame req = channel.readOutbound();
         assertNull(req);
-
+        rawRequest.release();
     }
 
     @Test

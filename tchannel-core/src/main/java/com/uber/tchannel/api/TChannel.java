@@ -150,16 +150,6 @@ public final class TChannel {
         return this.makeSubChannel(service, Connection.Direction.NONE);
     }
 
-//    public void shutdown(boolean sync) throws InterruptedException, ExecutionException {
-//        this.peerManager.close();
-//        Future bg = this.bossGroup.shutdownGracefully();
-//        Future cg = this.childGroup.shutdownGracefully();
-//        if (sync) {
-//            bg.get();
-//            cg.get();
-//        }
-//    }
-
     public void shutdown() throws InterruptedException, ExecutionException {
         this.peerManager.close();
         Future bg = this.bossGroup.shutdownGracefully();

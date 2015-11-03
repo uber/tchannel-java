@@ -44,9 +44,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage> {
-
-//    private final Map<Long, SettableFuture<Response>> messageMap = new ConcurrentHashMap<>();s
-
     private final Map<Long, Object> messageMap = new ConcurrentHashMap<>();
     private final Map<Long, Request> requestMap = new ConcurrentHashMap<>();
 
@@ -59,22 +56,6 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         this.ctx = ctx;
     }
 
-//    public <V> ListenableFuture<V> expectResponse(Request request) throws InterruptedException {
-//        int messageId = idGenerator.incrementAndGet();
-//        request.setId(messageId);
-//        SettableFuture<V> future = SettableFuture.create();
-//        this.messageMap.put(request.getId(), future);
-//        ctx.writeAndFlush(request);
-//        return future;
-//    }
-//
-//    @Override
-//    protected void messageReceived(ChannelHandlerContext ctx, Response response) throws Exception {
-//        SettableFuture<Response> future = this.messageMap.remove(response.getId());
-//        response.release();
-//        future.set(response);
-//    }
-
     public <V> ListenableFuture<V> expectResponse(Request request) throws InterruptedException {
         int messageId = idGenerator.incrementAndGet();
         request.setId(messageId);
@@ -85,6 +66,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         return future;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, ResponseMessage response) throws Exception {
 
