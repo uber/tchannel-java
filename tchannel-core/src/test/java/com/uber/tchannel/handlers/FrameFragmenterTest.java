@@ -72,6 +72,7 @@ public class FrameFragmenterTest {
         for (int i = 0; i < 4; i++) {
             CallRequestFrame req = channel.readOutbound();
             assertNotNull(req);
+            req.release();
         }
 
         CallRequestFrame req = channel.readOutbound();

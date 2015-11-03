@@ -65,11 +65,12 @@ public class PingPongServerBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-                .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
-                .warmupIterations(0)
-                .measurementIterations(5)
-                .forks(1)
-                .build();
+            .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
+            .warmupIterations(5)
+            .measurementIterations(10)
+            .shouldDoGC(true)
+            .forks(1)
+            .build();
         new Runner(options).run();
     }
 
@@ -77,8 +78,8 @@ public class PingPongServerBenchmark {
     public void setup() throws Exception {
 
         this.channel = new TChannel.Builder("ping-server")
-                .setMaxQueuedRequests(20000000)
-                .build();
+            .setMaxQueuedRequests(20000000)
+            .build();
         channel.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
         this.client = new TChannel.Builder("ping-client").build();
         channel.listen();
@@ -109,7 +110,8 @@ public class PingPongServerBenchmark {
 //                    pongResponse.getHeaders();
                     pongResponse.release();
                 } else {
-                    System.out.println(pongResponse.getError().getMessage());
+//                    System.out.println(pongResponse.getError().getMessage());
+                    counters.errorQPS.incrementAndGet();
                 }
             }
 
@@ -122,8 +124,8 @@ public class PingPongServerBenchmark {
 
     @TearDown(Level.Trial)
     public void teardown() throws Exception {
-        this.client.shutdown();
-        this.channel.shutdown();
+        this.client.shutdown(false);
+        this.channel.shutdown(false);
     }
 
     public class Ping {
@@ -161,14 +163,20 @@ public class PingPongServerBenchmark {
     @State(Scope.Thread)
     public static class AdditionalCounters {
         public AtomicInteger actualQPS = new AtomicInteger(0);
+        public AtomicInteger errorQPS = new AtomicInteger(0);
 
         @Setup(Level.Iteration)
         public void clean() {
+            errorQPS.set(0);
             actualQPS.set(0);
         }
 
         public int actualQPS() {
             return actualQPS.get();
+        }
+
+        public int errorQPS() {
+            return errorQPS.get();
         }
     }
 }
