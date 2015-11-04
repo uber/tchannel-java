@@ -22,71 +22,15 @@
 
 package com.uber.tchannel.api.handlers;
 
-import com.google.common.reflect.TypeToken;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Serializer;
+import com.uber.tchannel.schemes.Response;
+import com.uber.tchannel.schemes.Request;
 
-import java.util.Map;
-import java.util.ServiceConfigurationError;
-
-public abstract class DefaultTypedRequestHandler<T, U, V extends Serializer.SerializerInterface>
-        implements RequestHandler {
-
-    private TypeToken<T> requestType = new TypeToken<T>(getClass()) { };
-    private TypeToken<U> responseType = new TypeToken<U>(getClass()) { };
-    private TypeToken<V> serializerType = new TypeToken<V>(getClass()) { };
-
-    private V serializer = getSerializerInstance();
+public abstract class DefaultTypedRequestHandler implements RequestHandler {
 
     @Override
-    public RawResponse handle(RawRequest request) {
-
-        Request<T> requestT = new Request.Builder<>(
-                serializer.decodeBody(request.getArg3(), this.getRequestType()),
-                request.getService(),
-                serializer.decodeEndpoint(request.getArg1()))
-                .setHeaders(serializer.decodeHeaders(request.getArg2()))
-                .setTransportHeaders(request.getTransportHeaders())
-                .setTTL(request.getTTL())
-                .build();
-
-        Response<U> responseU = handleImpl(requestT);
-
-        Map<String, String> transportHeaders = responseU.getTransportHeaders();
-        transportHeaders = transportHeaders.isEmpty() ? requestT.getTransportHeaders() : transportHeaders;
-
-        RawResponse response = new RawResponse(
-                request.getId(),
-                responseU.getResponseCode(),
-                transportHeaders,
-                serializer.encodeHeaders(responseU.getHeaders()),
-                serializer.encodeBody(responseU.getBody())
-        );
-
-        return response;
+    public Response handle(Request request) {
+        return handleImpl(request);
     }
 
-    private Class<T> getRequestType() {
-        return (Class<T>) requestType.getRawType();
-    }
-
-    private Class<U> getResponseType() {
-        return (Class<U>) responseType.getRawType();
-    }
-
-    private V getSerializerInstance() {
-        V instance = null;
-        try {
-            instance = ((Class<V>) serializerType.getRawType()).newInstance();
-        } catch (Exception exception) {
-            throw new ServiceConfigurationError("Unable to instantiate a serializer");
-        }
-        return instance;
-    }
-
-    public abstract Response<U> handleImpl(Request<T> requestT);
+    public abstract Response handleImpl(Request request);
 }
-

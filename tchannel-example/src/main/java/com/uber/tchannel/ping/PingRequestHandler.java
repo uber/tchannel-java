@@ -22,20 +22,19 @@
 
 package com.uber.tchannel.ping;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 
 public class PingRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
     @Override
-    public Response<Pong> handleImpl(Request<Ping> request) {
-
-        return new Response.Builder<>(new Pong("pong!"), ResponseCode.OK)
-            .setHeaders(request.getHeaders())
+    public JsonResponse<Pong> handleImpl(JsonRequest<Ping> request) {
+        request.getArg2().retain();
+        return new JsonResponse.Builder<Pong>(request)
             .setTransportHeaders(request.getTransportHeaders())
+            .setArg2(request.getArg2())
+            .setBody(new Pong("pong!"))
             .build();
     }
-
 }

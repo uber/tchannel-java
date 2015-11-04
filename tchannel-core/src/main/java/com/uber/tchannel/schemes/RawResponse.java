@@ -24,12 +24,14 @@ package com.uber.tchannel.schemes;
 
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.frames.FrameType;
+import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.util.CharsetUtil;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -45,76 +47,109 @@ import java.util.Map;
  * The `raw` encoding is intended for any custom encodings you want to do that
  * are not part of TChannel but are application specific.
  */
-public final class RawResponse extends ResponseMessage implements RawMessage {
+public class RawResponse extends Response implements RawMessage {
 
-    private final static ByteBuf arg1 = new EmptyByteBuf(new UnpooledByteBufAllocator(false));
+    private String header = null;
+    private String body = null;
 
-    private final long id;
-    private final ResponseCode responseCode;
-    private final Map<String, String> transportHeaders;
-    private final ByteBuf arg2;
-    private final ByteBuf arg3;
-
-    public RawResponse(long id, ResponseCode responseCode, Map<String, String> transportHeaders,
-                       ByteBuf arg2, ByteBuf arg3) {
-        this.id = id;
-        this.responseCode = responseCode;
-        this.transportHeaders = transportHeaders;
-        this.arg2 = arg2;
-        this.arg3 = arg3;
-        this.type = FrameType.CallResponse;
+    private RawResponse(Builder builder) {
+        super(builder);
     }
 
-    @Override
-    public long getId() {
-        return this.id;
+    protected RawResponse(long id, ResponseCode responseCode,
+                          Map<String, String> transportHeaders,
+                          ByteBuf arg2, ByteBuf arg3) {
+        super(id, responseCode, transportHeaders, arg2, arg3);
     }
 
-    @Override
-    public FrameType getType() {
-        return type;
+    protected RawResponse(ErrorResponse error) {
+        super(error);
     }
 
-    public ResponseCode getResponseCode() {
-        return responseCode;
+    public String getHeader() {
+        if (this.header == null) {
+            this.header = this.arg2.toString(CharsetUtil.UTF_8);
+        }
+
+        return this.header;
     }
 
-    @Override
-    public Map<String, String> getTransportHeaders() {
-        return this.transportHeaders;
+    public String getBody() {
+        if (this.body == null) {
+            this.body = this.arg3.toString(CharsetUtil.UTF_8);
+        }
+
+        return this.body;
     }
 
-    @Override
-    public ByteBuf getArg1() {
-        return arg1;
-    }
+    public static class Builder extends Response.Builder {
 
-    @Override
-    public ByteBuf getArg2() {
-        return arg2;
-    }
+        protected String header = null;
+        protected String body = null;
 
-    @Override
-    public ByteBuf getArg3() {
-        return arg3;
-    }
+        public Builder(Request req) {
+            super(req);
+        }
 
-    @Override
-    public String toString() {
-        return String.format(
-            "<%s id=%d transportHeaders=%s arg1=%s arg2=%s arg3=%s>",
-            this.getClass().getSimpleName(),
-            this.id,
-            this.transportHeaders,
-            arg1.toString(CharsetUtil.UTF_8),
-            this.arg2.toString(CharsetUtil.UTF_8),
-            this.arg3.toString(CharsetUtil.UTF_8)
-        );
-    }
+        public Builder setResponseCode(ResponseCode responseCode) {
+            this.responseCode = responseCode;
+            return this;
+        }
 
-    public void release() {
-        arg1.release();
-        arg2.release();
-        arg3.release();
+        @Override
+        public Builder setArg2(ByteBuf arg2) {
+            super.setArg2(arg2);
+            this.header = null;
+            return this;
+        }
+
+        @Override
+        public Builder setArg3(ByteBuf arg3) {
+            super.setArg3(arg3);
+            this.body = null;
+            return this;
+        }
+
+        @Override
+        public Builder setTransportHeader(String key, String value) {
+            super.setTransportHeader(key, value);
+            return this;
+        }
+
+        @Override
+        public Builder setTransportHeaders(Map<String, String> transportHeaders) {
+            super.setTransportHeaders(transportHeaders);
+            return this;
+        }
+
+        public final Builder setHeader(String header) {
+            this.setArg2(Unpooled.wrappedBuffer(header.getBytes()));
+            this.header = header;
+            return this;
+        }
+
+        public final Builder setBody(String body) {
+            setArg3(Unpooled.wrappedBuffer(((String) body).getBytes()));
+            this.body = body;
+            return this;
+        }
+
+        public Builder validate() {
+            super.validate();
+
+            if (arg2 == null) {
+                arg2 = TChannelUtilities.emptyByteBuf;
+            }
+
+            if (arg3 == null) {
+                arg3 = TChannelUtilities.emptyByteBuf;
+            }
+
+            return this;
+        }
+
+        public RawResponse build() {
+            return new RawResponse(this.validate());
+        }
     }
 }

@@ -25,11 +25,14 @@ import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.fragmentation.FragmentationState;
 import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.CallRequestContinueFrame;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.RawMessage;
 import com.uber.tchannel.schemes.TChannelMessage;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.CharsetUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -56,6 +59,7 @@ public class TestMessageMultiplexer {
                 new byte[]{0x00, 0x04},
                 "arg1".getBytes()
         ));
+        callRequestFrame.getHeaders().put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
         channel.writeInbound(callRequestFrame);
         assertEquals(map.size(), 1);
         assertNotNull(map.get(id));
@@ -92,18 +96,15 @@ public class TestMessageMultiplexer {
         assertNotNull(fullMessage);
 
         assertEquals(
-                ByteBufUtil.hexDump(fullMessage.getArg1()),
-                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg1".getBytes()))
+            fullMessage.getArg1().toString(CharsetUtil.UTF_8), "arg1"
         );
 
         assertEquals(
-                ByteBufUtil.hexDump(fullMessage.getArg2()),
-                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg2".getBytes()))
+            fullMessage.getArg2().toString(CharsetUtil.UTF_8), "arg2"
         );
 
         assertEquals(
-                ByteBufUtil.hexDump(fullMessage.getArg3()),
-                ByteBufUtil.hexDump(Unpooled.wrappedBuffer("arg3".getBytes()))
+            fullMessage.getArg3().toString(CharsetUtil.UTF_8), "arg3"
         );
 
         fullMessage.getArg1().release();

@@ -28,9 +28,9 @@ import com.uber.tchannel.fragmentation.FragmentationState;
 import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.CallResponseFrame;
-import com.uber.tchannel.schemes.RawResponse;
+import com.uber.tchannel.schemes.Response;
 import com.uber.tchannel.schemes.RawMessage;
-import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.Request;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -51,6 +51,9 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
             state = this.sendOutbound(ctx, msg, state, out);
         }
 
+        if (msg instanceof Response) {
+            ((Response)msg).release();
+        }
     }
 
     protected void writeOutbound(ChannelHandlerContext ctx,
@@ -63,24 +66,23 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
             flags = 0x00;
         }
 
-        if (msg instanceof RawRequest) {
-            RawRequest rawRequest = (RawRequest) msg;
-
+        if (msg instanceof Request) {
+            Request request = (Request) msg;
             CallRequestFrame callRequestFrame = new CallRequestFrame(
-                    rawRequest.getId(),
-                    flags,
-                    rawRequest.getTTL(),
-                    new Trace(0, 0, 0, (byte) 0x00),
-                    rawRequest.getService(),
-                    rawRequest.getTransportHeaders(),
-                    ChecksumType.NoChecksum,
-                    0,
-                    buffer
+                request.getId(),
+                flags,
+                request.getTTL(),
+                new Trace(0, 0, 0, (byte) 0x00),
+                request.getService(),
+                request.getTransportHeaders(),
+                ChecksumType.NoChecksum,
+                0,
+                buffer
             );
 
             out.add(callRequestFrame);
-        } else if (msg instanceof RawResponse) {
-            RawResponse response = (RawResponse) msg;
+        } else if (msg instanceof Response) {
+            Response response = (Response) msg;
             CallResponseFrame callResponseFrame = new CallResponseFrame(
                 response.getId(),
                 flags,
@@ -152,9 +154,6 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
 
         // Release the arg back to the pool
         int bytesRemaining = (readableBytes - (chunkLength - headerSize));
-        if (bytesRemaining == 0) {
-            arg.release();
-        }
 
         return bytesRemaining;
     }

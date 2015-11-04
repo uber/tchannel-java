@@ -23,11 +23,9 @@
 package com.uber.tchannel.json;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
 
 import java.net.InetAddress;
 
@@ -36,18 +34,18 @@ public class JsonClient {
     public static void main(String[] args) throws Exception {
         final TChannel tchannel = new TChannel.Builder("json-server").build();
 
-        ListenableFuture<Response<ResponsePojo>> p = tchannel
-        .makeSubChannel("json-service").callJSON(InetAddress.getLocalHost(), 8888,
-            new Request.Builder<>(
-                new RequestPojo(0, "hello?"),
-                "json-service",
-                "json-endpoint")
-                .setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme())
-                .build(),
-            ResponsePojo.class
-        );
+        JsonRequest<RequestPojo> req = new JsonRequest.Builder<RequestPojo>(
+            "json-service",
+            "json-endpoint")
+            .setBody(new RequestPojo(0, "hello?"))
+            .build();
+        ListenableFuture<JsonResponse<ResponsePojo>> p = tchannel
+            .makeSubChannel("json-service").send(
+                req,
+                InetAddress.getLocalHost(), 8888
+            );
 
-        Response<ResponsePojo> res = p.get();
+        JsonResponse<ResponsePojo> res = p.get();
 
         System.out.println(res);
 

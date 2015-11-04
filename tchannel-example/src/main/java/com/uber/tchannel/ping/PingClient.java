@@ -25,9 +25,9 @@ package com.uber.tchannel.ping;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -85,23 +85,23 @@ public class PingClient {
             }
         };
 
-        Request<Ping> request = new Request.Builder<>(new Ping("{'key': 'ping?'}"), "some-service", "ping")
-                .setHeaders(headers)
-                .build();
+        JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("some-service", "ping")
+            .setBody(new Ping("{'key': 'ping?'}"))
+            .setHeaders(headers)
+            .build();
 
         for (int i = 0; i < this.requests; i++) {
-            ListenableFuture<Response<Pong>> f = tchannel
-            .makeSubChannel("ping-server").callJSON(
-                InetAddress.getByName(this.host),
-                this.port,
-                request,
-                Pong.class
-            );
+            ListenableFuture<JsonResponse<Pong>> f = tchannel
+            .makeSubChannel("ping-server").send(
+                    request,
+                    InetAddress.getByName(this.host),
+                    this.port
+                );
 
             final int iteration = i;
-            Futures.addCallback(f, new FutureCallback<Response<Pong>>() {
+            Futures.addCallback(f, new FutureCallback<JsonResponse<Pong>>() {
                 @Override
-                public void onSuccess(Response<Pong> pongResponse) {
+                public void onSuccess(JsonResponse<Pong> pongResponse) {
                     if (iteration % 1000 == 0) {
                         System.out.println(pongResponse);
                     }

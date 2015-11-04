@@ -57,6 +57,21 @@ public enum ArgScheme {
         }
     }
 
+    public static boolean isSupported(ArgScheme scheme) {
+        if (scheme == null) {
+            return false;
+        }
+
+        switch (scheme) {
+            case RAW:
+            case JSON:
+            case THRIFT:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public String getScheme() {
         return scheme;
     }

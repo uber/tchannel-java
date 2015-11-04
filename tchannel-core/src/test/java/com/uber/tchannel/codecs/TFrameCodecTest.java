@@ -58,6 +58,7 @@ public class TFrameCodecTest {
         assertEquals(frame.size, newFrame.size);
         assertEquals(frame.type, newFrame.type);
         assertEquals(frame.id, newFrame.id);
+        newFrame.release();
 
     }
 

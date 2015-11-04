@@ -22,16 +22,15 @@
 package com.uber.tchannel.channels;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.ErrorResponse;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.ResponseMessage;
+import com.uber.tchannel.schemes.Request;
+import com.uber.tchannel.schemes.Response;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -39,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class ErrorResponseHandling {
+public class ErrorResponseHandlingTest {
 
     @Test
     public void testBadRequestErrorOnInvalidArgScheme() throws Exception {
@@ -63,27 +62,24 @@ public class ErrorResponseHandling {
         final SubChannel subClient = client.makeSubChannel("server");
         client.listen();
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setId(1000)
+            .build();
 
         req.getTransportHeaders().clear();
         req.getTransportHeaders().put(TransportHeaders.ARG_SCHEME_KEY, "hello");
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
             host,
-            port,
-            req
+            port
         );
 
-        ErrorResponse res = (ErrorResponse)future.get(100, TimeUnit.MILLISECONDS);
-        assertEquals(ErrorType.BadRequest, res.getErrorType());
-        assertEquals("Expected incoming call to have \"as\" header set", res.getMessage());
+        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        assertEquals(ErrorType.BadRequest, res.getError().getErrorType());
+        assertEquals("Invalid arg schema", res.getError().getMessage());
 
         server.shutdown();
         client.shutdown();
@@ -111,41 +107,39 @@ public class ErrorResponseHandling {
         SubChannel subClient = client.makeSubChannel("server");
         client.listen();
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo1",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo1")
+            .setHeader("title")
+            .setBody("hello")
+            .setId(1000)
+            .build();
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
             host,
-            port,
-            req
+            port
         );
 
-        ErrorResponse res = (ErrorResponse)future.get(100, TimeUnit.MILLISECONDS);
-        assertEquals(ErrorType.Busy, res.getErrorType());
-        assertEquals("Service is busy", res.getMessage());
+        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        assertEquals(ErrorType.Busy, res.getError().getErrorType());
+        assertEquals("Service is busy", res.getError().getMessage());
 
         server.shutdown();
         client.shutdown();
     }
 
     protected  class EchoHandler implements RequestHandler {
-        @Override
-        public RawResponse handle(RawRequest request) {
-            RawResponse response = new RawResponse(
-                request.getId(),
-                ResponseCode.OK,
-                request.getTransportHeaders(),
-                request.getArg2(),
-                request.getArg3()
-            );
+        public boolean accessed = false;
 
-            return response;
+        @Override
+        public Response handle(Request request) {
+            accessed = true;
+
+            request.getArg2().retain();
+            request.getArg3().retain();
+            return new RawResponse.Builder(request)
+                .setArg2(request.getArg2())
+                .setArg3(request.getArg3())
+                .build();
         }
     }
 }

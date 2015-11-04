@@ -23,7 +23,6 @@
 package com.uber.tchannel.schemes;
 
 import io.netty.buffer.ByteBuf;
-
 import java.util.Map;
 
 public interface RawMessage extends TChannelMessage {

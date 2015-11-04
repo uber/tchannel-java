@@ -22,6 +22,15 @@
 
 package com.uber.tchannel.api.handlers;
 
-import com.uber.tchannel.schemes.ThriftSerializer;
+import com.uber.tchannel.schemes.Request;
+import com.uber.tchannel.schemes.ThriftRequest;
+import com.uber.tchannel.schemes.ThriftResponse;
 
-public abstract class ThriftRequestHandler<T, U> extends DefaultTypedRequestHandler<T, U, ThriftSerializer> { }
+public abstract class ThriftRequestHandler<T, U> implements RequestHandler {
+    @Override
+    public ThriftResponse<U> handle(Request request) {
+        return handleImpl((ThriftRequest<T>)request);
+    }
+
+    public abstract ThriftResponse<U> handleImpl(ThriftRequest<T> request);
+}

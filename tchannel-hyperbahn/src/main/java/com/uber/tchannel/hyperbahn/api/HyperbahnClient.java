@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,14 +38,15 @@ import java.util.regex.Pattern;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import com.uber.tchannel.schemes.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,27 +81,45 @@ public final class HyperbahnClient {
         return subChannel;
     }
 
-    public ListenableFuture<Response<AdvertiseResponse>> advertise()
+    public ListenableFuture<JsonResponse<AdvertiseResponse>> advertise()
         throws InterruptedException, TChannelError {
 
         final AdvertiseRequest advertiseRequest = new AdvertiseRequest();
         advertiseRequest.addService(service, 0);
 
         // TODO: options for timeout, hard fail, etc.
-        final Request<AdvertiseRequest> request = new Request.Builder<>(
-            advertiseRequest,
+        final JsonRequest<AdvertiseRequest> request = new JsonRequest.Builder<AdvertiseRequest>(
             HYPERBAHN_SERVICE_NAME,
             HYPERBAHN_ADVERTISE_ENDPOINT
         )
+            .setBody(advertiseRequest)
             .setTTL(advertiseTimeout, TimeUnit.SECONDS)
             .build();
 
-        ListenableFuture<Response<AdvertiseResponse>> responseFuture = null;
+        Runnable runable = null;
+        ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture = null;
         try {
-            responseFuture = hyperbahnChannel.callJSON(
-                request,
-                AdvertiseResponse.class
-            );
+            final ListenableFuture<JsonResponse<AdvertiseResponse>> future = responseFuture = hyperbahnChannel.send(request);
+            runable = new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JsonResponse<AdvertiseResponse> response = future.get();
+                        // TODO: fix this hack
+                        response.getHeaders();
+                        response.getBody(AdvertiseResponse.class);
+                        response.release();
+                    } catch (Exception ex) {
+                        logger.error("Advertise failure: " + ex.toString());
+                    }
+
+                    if (destroyed.get()) {
+                        return;
+                    }
+
+                    scheduleAdvertise();
+                }
+            };
         } catch (TChannelError ex) {
             // TODO: should be moved into tchanne as retry ...
             this.logger.error("Advertise failure: " + ex.toString());
@@ -109,16 +129,7 @@ public final class HyperbahnClient {
             throw ex;
         }
 
-        responseFuture.addListener(new Runnable() {
-            @Override
-            public void run() {
-                if (destroyed.get()) {
-                    return;
-                }
-
-                scheduleAdvertise();
-            }
-        }, new Executor() {
+        responseFuture.addListener(runable, new Executor() {
             @Override
             public void execute(Runnable command) {
                 command.run();
@@ -138,7 +149,7 @@ public final class HyperbahnClient {
             @Override
             public void run() {
                 try {
-                    ListenableFuture<Response<AdvertiseResponse>> responseFuture = advertise();
+                    ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture = advertise();
                 } catch (Exception ex) {
                     logger.error(service + " failed to advertise. " + ex.getMessage());
                 }
@@ -150,7 +161,7 @@ public final class HyperbahnClient {
         advertiseTimer.cancel();
     }
 
-    public void shutdown() throws InterruptedException {
+    public void shutdown() throws InterruptedException, ExecutionException {
         if (!destroyed.compareAndSet(false, true)) {
             return;
         }

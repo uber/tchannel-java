@@ -24,10 +24,9 @@ package com.uber.tchannel.thrift;
 
 import java.util.Map;
 
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.handlers.ThriftRequestHandler;
+import com.uber.tchannel.schemes.ThriftRequest;
+import com.uber.tchannel.schemes.ThriftResponse;
 import com.uber.tchannel.thrift.generated.KeyValue;
 
 public class SetValueRequestHandler extends ThriftRequestHandler<KeyValue.setValue_args, KeyValue.setValue_result> {
@@ -39,13 +38,15 @@ public class SetValueRequestHandler extends ThriftRequestHandler<KeyValue.setVal
     }
 
     @Override
-    public Response<KeyValue.setValue_result> handleImpl(Request<KeyValue.setValue_args> request) {
+    public ThriftResponse<KeyValue.setValue_result> handleImpl(ThriftRequest<KeyValue.setValue_args> request) {
 
-        String key = request.getBody().getKey();
-        String value = request.getBody().getValue();
+        String key = request.getBody(KeyValue.setValue_args.class).getKey();
+        String value = request.getBody(KeyValue.setValue_args.class).getValue();
 
         this.keyValueStore.put(key, value);
 
-        return new Response.Builder<>(new KeyValue.setValue_result(), ResponseCode.OK).build();
+        return new ThriftResponse.Builder<KeyValue.setValue_result>(request)
+            .setBody(new KeyValue.setValue_result())
+            .build();
     }
 }

@@ -56,8 +56,10 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 
 public final class TChannel {
 
@@ -148,10 +150,19 @@ public final class TChannel {
         return this.makeSubChannel(service, Connection.Direction.NONE);
     }
 
-    public void shutdown() throws InterruptedException {
+    public void shutdown(boolean sync) throws InterruptedException, ExecutionException {
         this.peerManager.close();
-        this.bossGroup.shutdownGracefully();
-        this.childGroup.shutdownGracefully();
+        Future bg = this.bossGroup.shutdownGracefully();
+        Future cg = this.childGroup.shutdownGracefully();
+
+        if (sync) {
+            bg.get();
+            cg.get();
+        }
+    }
+
+    public void shutdown() throws InterruptedException, ExecutionException {
+        this.shutdown(true);
     }
 
     public static class Builder {
@@ -220,21 +231,25 @@ public final class TChannel {
 
         private Bootstrap bootstrap(TChannel topChannel) {
             return new Bootstrap()
-                    .group(this.childGroup)
-                    .channel(NioSocketChannel.class)
-                    .handler(this.channelInitializer(false, topChannel))
-                    .validate();
+                .group(this.childGroup)
+                .channel(NioSocketChannel.class)
+                .handler(this.channelInitializer(false, topChannel))
+//                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
+//                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .validate();
         }
 
         private ServerBootstrap serverBootstrap(TChannel topChannel) {
             return new ServerBootstrap()
-                    .group(this.bossGroup, this.childGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .handler(new LoggingHandler(logLevel))
-                    .option(ChannelOption.SO_BACKLOG, 128)
-                    .childHandler(this.channelInitializer(true, topChannel))
-                    .childOption(ChannelOption.SO_KEEPALIVE, true)
-                    .validate();
+                .group(this.bossGroup, this.childGroup)
+                .channel(NioServerSocketChannel.class)
+                .handler(new LoggingHandler(logLevel))
+                .option(ChannelOption.SO_BACKLOG, 128)
+                .childHandler(this.channelInitializer(true, topChannel))
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+//                .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
+//                .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .validate();
         }
 
         private ChannelInitializer<SocketChannel> channelInitializer(final boolean isServer,

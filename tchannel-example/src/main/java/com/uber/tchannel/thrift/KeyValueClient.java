@@ -23,10 +23,10 @@
 package com.uber.tchannel.thrift;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.errors.TChannelError;
+import com.uber.tchannel.schemes.ThriftRequest;
+import com.uber.tchannel.schemes.ThriftResponse;
 import com.uber.tchannel.thrift.generated.KeyValue;
 import com.uber.tchannel.thrift.generated.NotFoundError;
 
@@ -64,13 +64,14 @@ public class KeyValueClient {
     public static void setValue(TChannel tchannel, String key, String value) throws Exception {
         KeyValue.setValue_args setValue = new KeyValue.setValue_args(key, value);
 
-        ListenableFuture<Response<KeyValue.setValue_result>> future = tchannel
+        ListenableFuture<ThriftResponse<KeyValue.setValue_result>> future = tchannel
             .makeSubChannel("keyvalue-service")
-            .callThrift(
+            .send(
+                new ThriftRequest.Builder<KeyValue.setValue_args>("keyvalue-service", "KeyValue::setValue")
+                    .setBody(setValue)
+                    .build(),
                 InetAddress.getLocalHost(),
-                8888,
-                new Request.Builder<>(setValue, "keyvalue-service", "KeyValue::setValue").build(),
-                KeyValue.setValue_result.class
+                8888
             );
 
         future.get(100, TimeUnit.MILLISECONDS);
@@ -84,19 +85,20 @@ public class KeyValueClient {
 
         KeyValue.getValue_args getValue = new KeyValue.getValue_args(key);
 
-        ListenableFuture<Response<KeyValue.getValue_result>> future = tchannel
+        ListenableFuture<ThriftResponse<KeyValue.getValue_result>> future = tchannel
             .makeSubChannel("keyvalue-service")
-            .callThrift(
+            .send(
+                new ThriftRequest.Builder<KeyValue.getValue_args>("keyvalue-service", "KeyValue::getValue")
+                    .setBody(getValue)
+                    .build(),
                 InetAddress.getLocalHost(),
-                8888,
-                new Request.Builder<>(getValue, "keyvalue-service", "KeyValue::getValue").build(),
-                KeyValue.getValue_result.class
+                8888
             );
 
-        Response<KeyValue.getValue_result> getResult = future.get(100, TimeUnit.MILLISECONDS);
+        ThriftResponse<KeyValue.getValue_result> getResult = future.get(100, TimeUnit.MILLISECONDS);
 
-        String value = getResult.getBody().getSuccess();
-        NotFoundError err = getResult.getBody().getNotFound();
+        String value = getResult.getBody(KeyValue.getValue_result.class).getSuccess();
+        NotFoundError err = getResult.getBody(KeyValue.getValue_result.class).getNotFound();
 
         if (value == null) {
             throw err;

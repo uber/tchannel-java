@@ -23,11 +23,10 @@
 package com.uber.tchannel.hyperbahn.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.Request;
-import com.uber.tchannel.api.Response;
 import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.schemes.JsonResponse;
 import io.netty.channel.ChannelFuture;
 import org.junit.Test;
 
@@ -60,9 +59,9 @@ public class HyperbahnClientTest {
         HyperbahnClient hyperbahnClient = new HyperbahnClient.Builder("service", tchannel)
                 .setRouters(routers)
                 .build();
-        ListenableFuture<Response<AdvertiseResponse>> responseFuture = hyperbahnClient.advertise();
+        ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture = hyperbahnClient.advertise();
 
-        Response<AdvertiseResponse> response = responseFuture.get(1000, TimeUnit.MILLISECONDS);
+        JsonResponse<AdvertiseResponse> response = responseFuture.get(1000, TimeUnit.MILLISECONDS);
 
         assertNotNull(response);
         assertEquals(responseHandler.requestReceived, true);
@@ -87,9 +86,11 @@ public class HyperbahnClientTest {
         public boolean requestReceived = false;
 
         @Override
-        public Response<AdvertiseResponse> handleImpl(Request<AdvertiseRequest> request) {
+        public JsonResponse<AdvertiseResponse> handleImpl(JsonRequest<AdvertiseRequest> request) {
             requestReceived = true;
-            return new Response.Builder<>(new AdvertiseResponse(10), ResponseCode.OK).build();
+            return new JsonResponse.Builder<AdvertiseResponse>(request)
+                .setBody(new AdvertiseResponse(10))
+                .build();
         }
     }
 }

@@ -22,7 +22,7 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.Request;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -80,7 +80,7 @@ public final class ErrorFrame implements Frame {
         );
     }
 
-    public static void sendError(ErrorType type, String message, RawRequest request, ChannelHandlerContext ctx) {
+    public static ErrorFrame sendError(ErrorType type, String message, Request request, ChannelHandlerContext ctx) {
         ErrorFrame errorFrame = new ErrorFrame(
             request.getId(),
             type,
@@ -94,5 +94,21 @@ public final class ErrorFrame implements Frame {
         f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 
         request.release();
+        return errorFrame;
+    }
+
+    public static ErrorFrame sendError(ErrorType type, String message, long id, ChannelHandlerContext ctx) {
+        ErrorFrame errorFrame = new ErrorFrame(
+            id,
+            type,
+            // TODO: get trace from request
+            new Trace(0, 0, 0, (byte) 0x00),
+            message);
+
+        ChannelFuture f = ctx.writeAndFlush(errorFrame);
+
+        // TODO: log the errorFrame instead of firing an exception ...
+        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        return errorFrame;
     }
 }

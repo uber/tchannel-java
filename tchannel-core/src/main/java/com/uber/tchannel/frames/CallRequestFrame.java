@@ -22,6 +22,8 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
@@ -113,6 +115,10 @@ public final class CallRequestFrame implements CallFrame {
 
     public Map<String, String> getHeaders() {
         return this.headers;
+    }
+
+    public ArgScheme getArgScheme() {
+        return ArgScheme.toScheme(headers.get(TransportHeaders.ARG_SCHEME_KEY));
     }
 
     public ByteBuf content() {

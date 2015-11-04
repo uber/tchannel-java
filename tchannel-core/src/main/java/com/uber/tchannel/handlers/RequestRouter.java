@@ -34,7 +34,7 @@ import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.schemes.JSONSerializer;
-import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.schemes.Request;
 import com.uber.tchannel.schemes.ResponseMessage;
 import com.uber.tchannel.schemes.Serializer;
 import com.uber.tchannel.schemes.ThriftSerializer;
@@ -42,6 +42,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -49,7 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
-public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
+public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private final TChannel topChannel;
 
@@ -84,24 +86,24 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
     }
 
     @Override
-    protected void messageReceived(final ChannelHandlerContext ctx, final RawRequest rawRequest) throws Exception {
+    protected void messageReceived(final ChannelHandlerContext ctx, final Request request) throws Exception {
 
         final ArgScheme argScheme = ArgScheme.toScheme(
-                rawRequest.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
+                request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
         );
 
         if (argScheme == null) {
             sendError(ErrorType.BadRequest,
                 "Expected incoming call to have \"as\" header set",
-                rawRequest, ctx);
+                request, ctx);
             return;
         }
 
-        final String service = rawRequest.getService();
+        final String service = request.getService();
         if (service == null || service.isEmpty()) {
             sendError(ErrorType.BadRequest,
                 "Expected incoming call to have serviceName",
-                rawRequest, ctx);
+                request, ctx);
             return;
         }
 
@@ -110,17 +112,17 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
          * node.
          */
         if (queuedRequests.get() >= maxQueuedRequests) {
-            sendError(ErrorType.Busy, "Service is busy", rawRequest, ctx);
+            sendError(ErrorType.Busy, "Service is busy", request, ctx);
             return;
         }
 
         // Get the endpoint. The assumption over here is that endpoints are
         // always going to to utf-8 encoded.
-        String endpoint = rawRequest.getArg1().toString(CharsetUtil.UTF_8);
+        String endpoint = request.getArg1().toString(CharsetUtil.UTF_8);
         if (endpoint == null || endpoint.isEmpty()) {
             sendError(ErrorType.BadRequest,
                 "Expected incoming call to have endpoint",
-                rawRequest, ctx);
+                request, ctx);
             return;
         }
 
@@ -129,7 +131,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         if (handler == null) {
             sendError(ErrorType.BadRequest,
                 "Invalid handler function",
-                rawRequest, ctx);
+                request, ctx);
             return;
         }
 
@@ -138,7 +140,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
         // Handle the request in a separate thread and get a future to it
         ListenableFuture<ResponseMessage> responseFuture = listeningExecutorService.submit(
-                new CallableHandler(handler, rawRequest));
+                new CallableHandler(handler, request));
 
         Futures.addCallback(responseFuture, new FutureCallback<ResponseMessage>() {
             @Override
@@ -151,20 +153,26 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
 
             @Override
             public void onFailure(Throwable throwable) {
+                StringWriter writer = new StringWriter();
+                PrintWriter printWriter = new PrintWriter( writer );
+                throwable.printStackTrace( printWriter );
+                printWriter.flush();
+                System.out.println(writer.toString());
+
                 queuedRequests.decrementAndGet();
                 sendError(ErrorType.BadRequest,
                     "Failed to handle the request: " + throwable.getMessage(),
-                    rawRequest, ctx);
+                    request, ctx);
                 return;
             }
         });
     }
 
     private class CallableHandler implements Callable<ResponseMessage> {
-        private final RawRequest request;
+        private final Request request;
         private final RequestHandler handler;
 
-        public CallableHandler(RequestHandler handler, RawRequest request) {
+        public CallableHandler(RequestHandler handler, Request request) {
             this.handler = handler;
             this.request = request;
         }
@@ -172,6 +180,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<RawRequest> {
         @Override
         public ResponseMessage call() throws Exception {
             ResponseMessage response = handler.handle(request);
+            request.release();
             return response;
         }
     }

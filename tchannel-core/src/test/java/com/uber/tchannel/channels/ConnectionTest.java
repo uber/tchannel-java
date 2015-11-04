@@ -23,13 +23,13 @@
 package com.uber.tchannel.channels;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.schemes.RawRequest;
 import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.ResponseMessage;
+import com.uber.tchannel.schemes.Request;
+import com.uber.tchannel.schemes.Response;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
@@ -65,22 +65,18 @@ public class ConnectionTest {
         final SubChannel subClient = client.makeSubChannel("server");
         client.listen();
 
-        RawRequest req = new RawRequest(
-            1000,
-            "server",
-            null,
-            "echo",
-            "title",
-            "hello"
-        );
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .build();
 
-        ListenableFuture<ResponseMessage> future = subClient.call(
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
             host,
-            port,
-            req
+            port
         );
 
-        RawResponse res = (RawResponse)future.get(100, TimeUnit.MILLISECONDS);
+        Response res = (Response)future.get(100, TimeUnit.MILLISECONDS);
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -112,14 +108,13 @@ public class ConnectionTest {
         public boolean accessed = false;
 
         @Override
-        public RawResponse handle(RawRequest request) {
-            RawResponse response = new RawResponse(
-                request.getId(),
-                ResponseCode.OK,
-                request.getTransportHeaders(),
-                request.getArg2(),
-                request.getArg3()
-            );
+        public RawResponse handle(Request request) {
+            request.getArg2().retain();
+            request.getArg3().retain();
+            RawResponse response = new RawResponse.Builder(request)
+                .setArg2(request.getArg2())
+                .setArg3(request.getArg3())
+                .build();
 
             accessed = true;
             return response;
