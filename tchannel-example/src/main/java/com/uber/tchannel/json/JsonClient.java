@@ -24,8 +24,8 @@ package com.uber.tchannel.json;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
 
 import java.net.InetAddress;
 

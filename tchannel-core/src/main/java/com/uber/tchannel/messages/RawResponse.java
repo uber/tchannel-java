@@ -20,31 +20,46 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
-import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-public final class RawRequest extends Request {
+import java.util.Map;
+
+/**
+ * Represents a TChannel response message with `raw` arg scheme encoding.
+ * <p>
+ * All RPC frames over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
+ * about the contents of these frames. In order to make sense of these arg payloads, TChannel has the notion of
+ * `arg messages` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
+ * supported `arg messages` are `thrift`, `json`, `http` and `sthrift`. These request / response frames will be built
+ * on top of {@link RawRequest} and {@link RawResponse} frames.
+ * <p>
+ * <h3>From the Docs</h3>
+ * The `raw` encoding is intended for any custom encodings you want to do that
+ * are not part of TChannel but are application specific.
+ */
+public class RawResponse extends Response implements RawMessage {
+
     private String header = null;
     private String body = null;
 
-    protected RawRequest(Builder builder) {
+    private RawResponse(Builder builder) {
         super(builder);
-        this.body = builder.body;
-        this.header = builder.header;
     }
 
-    protected RawRequest(long id, long ttl,
-                      String service, Map<String, String> transportHeaders,
-                      ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-        super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+    protected RawResponse(long id, ResponseCode responseCode,
+                          Map<String, String> transportHeaders,
+                          ByteBuf arg2, ByteBuf arg3) {
+        super(id, responseCode, transportHeaders, arg2, arg3);
+    }
+
+    protected RawResponse(ErrorResponse error) {
+        super(error);
     }
 
     public String getHeader() {
@@ -63,35 +78,17 @@ public final class RawRequest extends Request {
         return this.body;
     }
 
-    public static class Builder extends Request.Builder {
+    public static class Builder extends Response.Builder {
+
         protected String header = null;
         protected String body = null;
 
-        public Builder(String service, String endpoint) {
-            super(service, endpoint);
-            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
+        public Builder(Request req) {
+            super(req);
         }
 
-        public Builder(String service, ByteBuf arg1) {
-            super(service, arg1);
-            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
-        }
-
-        @Override
-        public Builder setTTL(long ttl) {
-            super.setTTL(ttl);
-            return this;
-        }
-
-        @Override
-        public Builder setTTL(long ttl, TimeUnit timeUnit) {
-            super.setTTL(ttl, timeUnit);
-            return this;
-        }
-
-        @Override
-        public Builder setId(long id) {
-            super.setId(id);
+        public Builder setResponseCode(ResponseCode responseCode) {
+            this.responseCode = responseCode;
             return this;
         }
 
@@ -147,8 +144,8 @@ public final class RawRequest extends Request {
             return this;
         }
 
-        public RawRequest build() {
-            return new RawRequest(this.validate());
+        public RawResponse build() {
+            return new RawResponse(this.validate());
         }
     }
 }

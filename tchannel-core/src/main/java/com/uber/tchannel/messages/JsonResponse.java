@@ -20,43 +20,35 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-public class ThriftRequest<T> extends EncodedRequest<T> {
+public final class JsonResponse<T> extends EncodedResponse<T> {
 
-    private ThriftRequest(Builder<T> builder) {
+    private JsonResponse(Builder<T> builder) {
         super(builder);
     }
 
-    protected ThriftRequest(long id, long ttl,
-                          String service, Map<String, String> transportHeaders,
-                          ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-        super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+    protected JsonResponse(long id, ResponseCode responseCode,
+                              Map<String, String> transportHeaders,
+                              ByteBuf arg2, ByteBuf arg3) {
+        super(id, responseCode, transportHeaders, arg2, arg3);
     }
 
-    public static class Builder<T> extends EncodedRequest.Builder<T> {
+    protected JsonResponse(ErrorResponse error) {
+        super(error);
+    }
 
-        public Builder(String service, String endpoint) {
-            super(service, endpoint);
-            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.THRIFT.getScheme());
-            this.argScheme = ArgScheme.THRIFT;
-        }
+    public static class Builder<T> extends EncodedResponse.Builder<T> {
 
-        public Builder(String service, ByteBuf arg1) {
-            super(service, arg1);
-            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.THRIFT.getScheme());
-            this.argScheme = ArgScheme.THRIFT;
+        public Builder(JsonRequest req) {
+            super(req);
+            this.argScheme = ArgScheme.JSON;
         }
 
         public Builder<T> validate() {
@@ -64,26 +56,8 @@ public class ThriftRequest<T> extends EncodedRequest<T> {
             return this;
         }
 
-        public ThriftRequest<T> build() {
-            return new ThriftRequest(this.validate());
-        }
-
-        @Override
-        public Builder<T> setTTL(long ttl) {
-            super.setTTL(ttl);
-            return this;
-        }
-
-        @Override
-        public Builder<T> setTTL(long ttl, TimeUnit timeUnit) {
-            super.setTTL(ttl, timeUnit);
-            return this;
-        }
-
-        @Override
-        public Builder<T> setId(long id) {
-            super.setId(id);
-            return this;
+        public JsonResponse<T> build() {
+            return new JsonResponse(this.validate());
         }
 
         @Override

@@ -22,9 +22,9 @@
 
 package com.uber.tchannel.api.handlers;
 
-import com.uber.tchannel.schemes.Request;
-import com.uber.tchannel.schemes.ThriftRequest;
-import com.uber.tchannel.schemes.ThriftResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.ThriftRequest;
+import com.uber.tchannel.messages.ThriftResponse;
 
 public abstract class ThriftRequestHandler<T, U> implements RequestHandler {
     @Override

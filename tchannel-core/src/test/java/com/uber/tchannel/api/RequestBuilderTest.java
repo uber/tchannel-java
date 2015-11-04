@@ -22,7 +22,7 @@
 
 package com.uber.tchannel.api;
 
-import com.uber.tchannel.schemes.JsonRequest;
+import com.uber.tchannel.messages.JsonRequest;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;

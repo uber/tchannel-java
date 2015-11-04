@@ -23,10 +23,9 @@
 package com.uber.tchannel.hyperbahn.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
 import io.netty.channel.ChannelFuture;
 import org.junit.Test;
 

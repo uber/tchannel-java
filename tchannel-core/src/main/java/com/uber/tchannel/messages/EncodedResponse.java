@@ -20,8 +20,9 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
@@ -29,7 +30,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class EncodedRequest<T> extends Request {
+public abstract class EncodedResponse<T> extends Response {
 
     private static final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
@@ -41,16 +42,20 @@ public abstract class EncodedRequest<T> extends Request {
     protected Map<String, String> headers;
     protected T body = null;
 
-    protected EncodedRequest(Builder<T> builder) {
+    protected EncodedResponse(Builder<T> builder) {
         super(builder);
-        this.body = builder.body;
         this.headers = builder.headers;
+        this.body = builder.body;
     }
 
-    protected EncodedRequest(long id, long ttl,
-                         String service, Map<String, String> transportHeaders,
-                         ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-        super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+    protected EncodedResponse(long id, ResponseCode responseCode,
+                              Map<String, String> transportHeaders,
+                              ByteBuf arg2, ByteBuf arg3) {
+        super(id, responseCode, transportHeaders, arg2, arg3);
+    }
+
+    protected EncodedResponse(ErrorResponse error) {
+        super(error);
     }
 
     public Map<String, String> getHeaders() {
@@ -73,18 +78,27 @@ public abstract class EncodedRequest<T> extends Request {
         return body;
     }
 
-    public static class Builder<T> extends Request.Builder {
+    @Override
+    public String toString() {
+        return String.format(
+                "<%s responseCode=%s transportHeaders=%s headers=%s body=%s>",
+                this.getClass().getSimpleName(),
+                this.responseCode,
+                this.transportHeaders,
+                this.headers,
+                this.body
+        );
+    }
 
-        protected Map<String, String> headers = new HashMap<>();
-        protected T body = null;
+    public static class Builder<T> extends Response.Builder {
+
+        private Map<String, String> headers = new HashMap<>();
+        private T body;
+
         protected ArgScheme argScheme;
 
-        public Builder(String service, String endpoint) {
-            super(service, endpoint);
-        }
-
-        public Builder(String service, ByteBuf arg1) {
-            super(service, arg1);
+        public Builder(Request req) {
+            super(req);
         }
 
         @Override
@@ -156,6 +170,11 @@ public abstract class EncodedRequest<T> extends Request {
             super.validate();
             this.validateHeader();
             this.validateBody();
+
+            if (responseCode == null) {
+                throw new IllegalStateException("`responseCode` cannot be null.");
+            }
+
             return this;
         }
     }

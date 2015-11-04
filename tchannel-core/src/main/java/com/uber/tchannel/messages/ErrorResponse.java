@@ -20,14 +20,53 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.frames.FrameType;
 
-public interface TChannelMessage {
+public final class ErrorResponse extends ResponseMessage implements TChannelMessage {
 
-    long getId();
+    private final ErrorType errorType;
+    private final String message;
+    private final long id;
 
-    FrameType getType();
+    public ErrorResponse(long id, ErrorType errorType, String message) {
+        this.id = id;
+        this.errorType = errorType;
+        this.message = message;
+        this.type = FrameType.Error;
+    }
 
+    @Override
+    public long getId() {
+        return this.id;
+    }
+
+    @Override
+    public FrameType getType() {
+        return this.getType();
+    }
+
+    public ErrorType getErrorType() {
+        return errorType;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "<%s id=%s errorType=%s message=%s>",
+            this.getClass().getSimpleName(),
+            this.id,
+            this.errorType,
+            this.message
+        );
+    }
+
+    @Override
+    public void release() {}
 }

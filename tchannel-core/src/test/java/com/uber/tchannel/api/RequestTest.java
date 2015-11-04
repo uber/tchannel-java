@@ -24,9 +24,9 @@ package com.uber.tchannel.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
-import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.RawRequest;
 import io.netty.handler.logging.LogLevel;
 import org.junit.Test;
 

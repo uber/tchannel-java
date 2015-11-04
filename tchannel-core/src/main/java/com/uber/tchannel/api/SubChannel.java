@@ -21,9 +21,7 @@
  */
 package com.uber.tchannel.api;
 
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
@@ -34,20 +32,16 @@ import com.uber.tchannel.channels.SubPeer;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.ErrorResponse;
-import com.uber.tchannel.schemes.JSONSerializer;
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Response;
-import com.uber.tchannel.schemes.Request;
-import com.uber.tchannel.schemes.Response;
-import com.uber.tchannel.schemes.Response;
-import com.uber.tchannel.schemes.Serializer;
-import com.uber.tchannel.schemes.ThriftRequest;
-import com.uber.tchannel.schemes.ThriftResponse;
-import com.uber.tchannel.schemes.ThriftSerializer;
+import com.uber.tchannel.messages.JSONSerializer;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.RawRequest;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Serializer;
+import com.uber.tchannel.messages.ThriftRequest;
+import com.uber.tchannel.messages.ThriftResponse;
+import com.uber.tchannel.messages.ThriftSerializer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

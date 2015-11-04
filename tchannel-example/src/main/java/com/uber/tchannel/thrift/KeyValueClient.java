@@ -25,8 +25,8 @@ package com.uber.tchannel.thrift;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.errors.TChannelError;
-import com.uber.tchannel.schemes.ThriftRequest;
-import com.uber.tchannel.schemes.ThriftResponse;
+import com.uber.tchannel.messages.ThriftRequest;
+import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.thrift.generated.KeyValue;
 import com.uber.tchannel.thrift.generated.NotFoundError;
 

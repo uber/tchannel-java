@@ -23,20 +23,18 @@
 package com.uber.tchannel.channels;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Request;
-import com.uber.tchannel.schemes.Response;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
 import java.net.InetAddress;
 
 import com.uber.tchannel.api.handlers.RequestHandler;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.ResponseMessage;
+import com.uber.tchannel.messages.RawRequest;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;

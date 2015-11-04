@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.api.handlers;
 
-import com.uber.tchannel.schemes.Response;
-import com.uber.tchannel.schemes.Request;
+import com.uber.tchannel.messages.Response;
+import com.uber.tchannel.messages.Request;
 
 public abstract class DefaultTypedRequestHandler implements RequestHandler {
 

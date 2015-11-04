@@ -22,9 +22,9 @@
 
 package com.uber.tchannel.api.handlers;
 
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
-import com.uber.tchannel.schemes.Request;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.Request;
 
 public abstract class JSONRequestHandler<T, U> implements RequestHandler {
 

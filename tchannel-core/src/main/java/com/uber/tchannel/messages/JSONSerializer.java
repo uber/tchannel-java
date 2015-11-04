@@ -20,22 +20,25 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
-import com.uber.tchannel.codecs.CodecUtils;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
-import org.apache.thrift.TBase;
-import org.apache.thrift.TDeserializer;
-import org.apache.thrift.TException;
-import org.apache.thrift.TSerializer;
-import org.apache.thrift.protocol.TBinaryProtocol;
 
+import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
-public class ThriftSerializer implements Serializer.SerializerInterface {
+public final class JSONSerializer implements Serializer.SerializerInterface {
+    private static final Type HEADER_TYPE = (new TypeToken<Map<String, String>>() {
+
+    }).getType();
+
+    private static final Gson GSON = new Gson();
+
     @Override
     public String decodeEndpoint(ByteBuf arg1) {
         String endpoint = arg1.toString(CharsetUtil.UTF_8);
@@ -44,55 +47,35 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
 
     @Override
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
-        Map<String, String> headers = CodecUtils.decodeHeaders(arg2);
-        return headers;
+        String headerJSON = arg2.toString(CharsetUtil.UTF_8);
+        Map<String, String> headers = null;
+        if (headerJSON != null && !headerJSON.isEmpty() && !headerJSON.equals("\"\"")) {
+            headers = new Gson().fromJson(headerJSON, HEADER_TYPE);
+        }
+
+        return (headers == null) ? new HashMap<String, String>() : headers;
     }
 
     @Override
     public <T> T decodeBody(ByteBuf arg3, Class<T> bodyType) {
-
-        try {
-            // Create a new instance of type 'T'
-            T base = bodyType.newInstance();
-
-            // Get byte[] from ByteBuf
-            byte[] payloadBytes = new byte[arg3.readableBytes()];
-            arg3.readBytes(payloadBytes);
-
-            // Actually deserialize the payload
-            TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());
-            deserializer.deserialize((TBase) base, payloadBytes);
-
-            return base;
-        } catch (InstantiationException | IllegalAccessException | TException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-
+        String bodyJSON = arg3.toString(CharsetUtil.UTF_8);
+        return GSON.fromJson(bodyJSON, bodyType);
     }
 
     @Override
     public ByteBuf encodeEndpoint(String method) {
+
         return Unpooled.wrappedBuffer(method.getBytes());
     }
 
     @Override
     public ByteBuf encodeHeaders(Map<String, String> applicationHeaders) {
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
-        CodecUtils.encodeHeaders(applicationHeaders, buf);
-        return buf;
+        return Unpooled.wrappedBuffer(GSON.toJson(applicationHeaders, HEADER_TYPE).getBytes());
     }
 
     @Override
     public ByteBuf encodeBody(Object body) {
-        try {
-            TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
-            byte[] payloadBytes = serializer.serialize((TBase) body);
-            return Unpooled.wrappedBuffer(payloadBytes);
-        } catch (TException e) {
-            e.printStackTrace();
-        }
-        return null;
+        return Unpooled.wrappedBuffer(GSON.toJson(body).getBytes());
     }
+
 }
