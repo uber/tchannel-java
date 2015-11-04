@@ -106,8 +106,6 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
     }
 
     private void decodeErrorResponse(ChannelHandlerContext ctx, ErrorFrame frame, List<Object> out) {
-        assert this.messageMap.get(frame.getId()) == null;
-        assert this.defragmentationState.get(frame.getId()) == null;
 
         this.messageMap.put(frame.getId(), new ErrorResponse(
             frame.getId(),
@@ -117,9 +115,6 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
     }
 
     private void decodeCallRequest(ChannelHandlerContext ctx, CallRequestFrame frame, List<Object> out) {
-
-        assert this.messageMap.get(frame.getId()) == null;
-        assert this.defragmentationState.get(frame.getId()) == null;
 
         ArgScheme scheme = ArgScheme.toScheme(frame.getHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
         if (!ArgScheme.isSupported(scheme)) {
@@ -147,9 +142,6 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
 
     private void decodeCallResponse(ChannelHandlerContext ctx, CallResponseFrame frame, List<Object> out) {
 
-        assert this.messageMap.get(frame.getId()) == null;
-        assert this.defragmentationState.get(frame.getId()) == null;
-
         ArgScheme scheme = ArgScheme.toScheme(frame.getHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
         if (!ArgScheme.isSupported(scheme)) {
             // TODO: logging, or more?
@@ -175,9 +167,6 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
 
     private void decodeCallRequestContinue(ChannelHandlerContext ctx, CallRequestContinueFrame frame, List<Object> out) {
 
-        assert this.messageMap.get(frame.getId()) != null;
-        assert this.defragmentationState.get(frame.getId()) != null;
-
         Request req = (Request) this.messageMap.get(frame.getId());
         if (req == null) {
             ErrorFrame error = sendError(ErrorType.BadRequest, "call request continue without call request", frame.getId(), ctx);
@@ -192,9 +181,6 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
     }
 
     private void decodeCallResponseContinue(ChannelHandlerContext ctx, CallResponseContinue msg, List<Object> out) {
-
-        assert this.messageMap.get(msg.getId()) != null;
-        assert this.defragmentationState.get(msg.getId()) != null;
 
         ByteBuf arg2 = this.readArg(msg);
         ByteBuf arg3 = this.readArg(msg);

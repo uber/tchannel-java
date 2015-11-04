@@ -106,11 +106,12 @@ public class PingPongServerBenchmark {
 
                 if (!pongResponse.isError()) {
                     counters.actualQPS.incrementAndGet();
-//                    pongResponse.getBody(Pong.class);
-//                    pongResponse.getHeaders();
+                    // uncomment the following code to enforce evaluation
+                    // pongResponse.getBody(Pong.class);
+                    // pongResponse.getHeaders();
                     pongResponse.release();
                 } else {
-//                    System.out.println(pongResponse.getError().getMessage());
+                    // System.out.println(pongResponse.getError().getMessage());
                     counters.errorQPS.incrementAndGet();
                 }
             }
