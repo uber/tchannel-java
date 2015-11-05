@@ -77,7 +77,7 @@ public class ErrorResponseHandlingTest {
             port
         );
 
-        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(ErrorType.BadRequest, res.getError().getErrorType());
         assertEquals("Invalid arg schema", res.getError().getMessage());
 
@@ -119,7 +119,7 @@ public class ErrorResponseHandlingTest {
             port
         );
 
-        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(ErrorType.Busy, res.getError().getErrorType());
         assertEquals("Service is busy", res.getError().getMessage());
 

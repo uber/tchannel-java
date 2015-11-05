@@ -76,7 +76,7 @@ public class ConnectionTest {
             port
         );
 
-        Response res = (Response)future.get(100, TimeUnit.MILLISECONDS);
+        Response res = (Response)future.get();
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();

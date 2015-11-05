@@ -22,26 +22,8 @@
 
 package com.uber.tchannel.api.errors;
 
-public class TChannelError extends Exception {
-    public static final String ERROR_INTERRUPTED = "tchannel.interrupted";
-    public static final String ERROR_WRAPPED = "tchannel.wrapped";
-
-    public static final String ERROR_INIT_TIMEOUT = "tchannel.connection.timeout";
-    public static final String ERROR_CONNECTION_FAILURE = "tchannel.socket";
-    public static final String ERROR_NO_PEER_AVAILABLE = "tchannel.no-peer-available";
-
-    public final String type;
-    public final Throwable subError;
-
-    public TChannelError(String message, String type, Throwable subError) {
-        super(message);
-        this.type = type;
-        this.subError = subError;
-    }
-
-    public TChannelError(String message, String type) {
-        super(message);
-        this.type = type;
-        this.subError = null;
+public class TChannelWrappedError extends TChannelError {
+    public TChannelWrappedError(Throwable ex) {
+        super("Wrapped Error", TChannelError.ERROR_WRAPPED, ex);
     }
 }

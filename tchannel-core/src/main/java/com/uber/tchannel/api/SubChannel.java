@@ -50,8 +50,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.google.common.util.concurrent.Futures.transform;
-
 public final class SubChannel {
 
     private final String service;
@@ -178,7 +176,7 @@ public final class SubChannel {
             ThriftRequest<T> request,
             InetAddress host,
             int port
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
@@ -188,7 +186,7 @@ public final class SubChannel {
 
     public <T, U> ListenableFuture<ThriftResponse<U>> send(
         ThriftRequest<T> request
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         return send(request, null, 0);
     }
 
@@ -196,7 +194,7 @@ public final class SubChannel {
         JsonRequest<T> request,
         InetAddress host,
         int port
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
@@ -206,7 +204,7 @@ public final class SubChannel {
 
     public <T, U> ListenableFuture<JsonResponse<U>> send(
         JsonRequest<T> request
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         return send(request, null, 0);
     }
 
@@ -214,7 +212,7 @@ public final class SubChannel {
         RawRequest request,
         InetAddress host,
         int port
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
@@ -224,7 +222,7 @@ public final class SubChannel {
 
     public ListenableFuture<RawResponse> send(
         RawRequest request
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         return send(request, null, 0);
     }
 }

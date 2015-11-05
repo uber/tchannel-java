@@ -65,14 +65,14 @@ public class JsonRequest<T> extends EncodedRequest<T> {
         }
 
         @Override
-        public Builder<T> setTTL(long ttl) {
-            super.setTTL(ttl);
+        public Builder<T> setTimeout(long timeout) {
+            super.setTimeout(timeout);
             return this;
         }
 
         @Override
-        public Builder<T> setTTL(long ttl, TimeUnit timeUnit) {
-            super.setTTL(ttl, timeUnit);
+        public Builder<T> setTimeout(long timeout, TimeUnit timeUnit) {
+            super.setTimeout(timeout, timeUnit);
             return this;
         }
 
@@ -121,6 +121,12 @@ public class JsonRequest<T> extends EncodedRequest<T> {
         @Override
         public Builder<T> setTransportHeaders(Map<String, String> transportHeaders) {
             super.setTransportHeaders(transportHeaders);
+            return this;
+        }
+
+        @Override
+        public Builder<T> setRetryLimit(int retryLimit) {
+            super.setRetryLimit(retryLimit);
             return this;
         }
     }

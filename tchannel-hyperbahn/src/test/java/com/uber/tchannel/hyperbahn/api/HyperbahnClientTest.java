@@ -60,7 +60,7 @@ public class HyperbahnClientTest {
                 .build();
         ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture = hyperbahnClient.advertise();
 
-        JsonResponse<AdvertiseResponse> response = responseFuture.get(1000, TimeUnit.MILLISECONDS);
+        JsonResponse<AdvertiseResponse> response = responseFuture.get();
 
         assertNotNull(response);
         assertEquals(responseHandler.requestReceived, true);

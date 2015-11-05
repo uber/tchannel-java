@@ -64,7 +64,7 @@ public class FrameFragmenterTest {
             .setArg2(arg2)
             .setArg3(arg3)
             .setId(0)
-            .setTTL(100)
+            .setTimeout(100)
             .build();
 
         channel.writeOutbound(rawRequest);

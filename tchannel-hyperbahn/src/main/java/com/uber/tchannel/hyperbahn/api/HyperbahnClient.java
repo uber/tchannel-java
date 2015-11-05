@@ -64,6 +64,8 @@ public final class HyperbahnClient {
 
     private Timer advertiseTimer = new Timer(true);
 
+    private static final long requestTimeout = 500;
+
     private HyperbahnClient(Builder builder) {
         this.service = builder.service;
         this.tchannel = builder.channel;
@@ -80,19 +82,19 @@ public final class HyperbahnClient {
         return subChannel;
     }
 
-    public ListenableFuture<JsonResponse<AdvertiseResponse>> advertise()
-        throws InterruptedException, TChannelError {
+    public ListenableFuture<JsonResponse<AdvertiseResponse>> advertise() throws TChannelError {
 
         final AdvertiseRequest advertiseRequest = new AdvertiseRequest();
         advertiseRequest.addService(service, 0);
 
-        // TODO: options for timeout, hard fail, etc.
+        // TODO: options for hard fail, retries etc.
         final JsonRequest<AdvertiseRequest> request = new JsonRequest.Builder<AdvertiseRequest>(
             HYPERBAHN_SERVICE_NAME,
             HYPERBAHN_ADVERTISE_ENDPOINT
         )
             .setBody(advertiseRequest)
-            .setTTL(advertiseTimeout, TimeUnit.SECONDS)
+            .setTimeout(requestTimeout)
+            .setRetryLimit(3)
             .build();
 
         Runnable runable = null;

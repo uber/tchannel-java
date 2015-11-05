@@ -47,6 +47,8 @@ public abstract class Request implements RawMessage {
     protected long ttl = 100;
     protected Map<String, String> transportHeaders = new HashMap<String, String>();
 
+    protected final int retryLimit;
+
     protected Request(Builder builder) {
         this.service = builder.service;
         this.arg1 = builder.arg1;
@@ -55,6 +57,7 @@ public abstract class Request implements RawMessage {
         this.ttl = builder.ttl;
         this.transportHeaders = builder.transportHeaders;
         this.endpoint = builder.endpoint;
+        this.retryLimit = builder.retryLimit;
     }
 
     protected Request(long id, long ttl,
@@ -67,6 +70,7 @@ public abstract class Request implements RawMessage {
         this.arg2 = arg2;
         this.arg3 = arg3;
         this.transportHeaders = transportHeaders;
+        this.retryLimit = 0;
     }
 
     @Override
@@ -118,6 +122,14 @@ public abstract class Request implements RawMessage {
         this.transportHeaders.put(key, value);
     }
 
+    public final long getTimeout() {
+        return ttl;
+    }
+
+    public final int getRetryLimit() {
+        return retryLimit;
+    }
+
     @Override
     public Map<String, String> getTransportHeaders() {
         return this.transportHeaders;
@@ -138,12 +150,20 @@ public abstract class Request implements RawMessage {
     }
 
     public void release() {
-        arg1.release();
-        arg2.release();
-        arg3.release();
-        arg1 = null;
-        arg2 = null;
-        arg3 = null;
+        if (arg1 != null) {
+            arg1.release();
+            arg1 = null;
+        }
+
+        if (arg2 != null) {
+            arg2.release();
+            arg2 = null;
+        }
+
+        if (arg3 != null) {
+            arg3.release();
+            arg3 = null;
+        }
     }
 
     public String getEndpoint() {
@@ -210,6 +230,8 @@ public abstract class Request implements RawMessage {
         */
         private long ttl = 100;
 
+        protected int retryLimit = 0;
+
         public Builder(String service, String endpoint) {
             this.service = service;
             this.setEndpoint(endpoint);
@@ -270,22 +292,18 @@ public abstract class Request implements RawMessage {
             return this;
         }
 
-        /**
-         * @param ttl TTL in milliseconds
-         * @return Builder
-         */
-        public Builder setTTL(long ttl) {
-            this.ttl = ttl;
+        public Builder setRetryLimit(int retryLimit) {
+            this.retryLimit = retryLimit;
             return this;
         }
 
-        /**
-         * @param ttl      TTL in `timeUnit` units
-         * @param timeUnit time unit for the `ttl`
-         * @return Builder
-         */
-        public Builder setTTL(long ttl, TimeUnit timeUnit) {
-            this.ttl = TimeUnit.MILLISECONDS.convert(ttl, timeUnit);
+        public Builder setTimeout(long timeout) {
+            this.ttl = timeout;
+            return this;
+        }
+
+        public Builder setTimeout(long timeout, TimeUnit timeUnit) {
+            this.ttl = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
             return this;
         }
 
@@ -299,7 +317,11 @@ public abstract class Request implements RawMessage {
             }
 
             if (ttl <= 0) {
-                throw new IllegalStateException("`ttl` must be greater than 0.");
+                throw new IllegalStateException("`timeout` must be greater than 0.");
+            }
+
+            if (retryLimit < 0) {
+                throw new IllegalStateException("`retryLimit` must be greater equal to 0.");
             }
 
             return this;

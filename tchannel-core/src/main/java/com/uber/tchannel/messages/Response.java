@@ -146,10 +146,16 @@ public abstract class Response extends ResponseMessage implements RawMessage {
     @Override
     public void release() {
         arg1.release();
-        arg2.release();
-        arg3.release();
-        arg2 = null;
-        arg3 = null;
+
+        if (arg2 != null) {
+            arg2.release();
+            arg2 = null;
+        }
+
+        if (arg3 != null) {
+            arg3.release();
+            arg3 = null;
+        }
     }
 
     public final ErrorResponse getError() {
