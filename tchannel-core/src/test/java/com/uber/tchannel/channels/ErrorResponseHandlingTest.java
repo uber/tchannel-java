@@ -66,6 +66,7 @@ public class ErrorResponseHandlingTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         req.getTransportHeaders().clear();
@@ -111,6 +112,7 @@ public class ErrorResponseHandlingTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(

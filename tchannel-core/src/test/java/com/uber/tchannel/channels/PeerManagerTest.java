@@ -71,7 +71,7 @@ public class PeerManagerTest {
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")
             .setBody("hello")
-            .setTimeout(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
@@ -138,6 +138,7 @@ public class PeerManagerTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(

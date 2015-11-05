@@ -68,6 +68,7 @@ public class ConnectionTest {
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")
             .setBody("hello")
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
