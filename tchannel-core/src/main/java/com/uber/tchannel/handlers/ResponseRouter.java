@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage> {
 
-//    private final HashedWheelTimer timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
     private final HashedWheelTimer timer;
 
     private final Map<Long, OutRequest> requestMap = new ConcurrentHashMap<>();
