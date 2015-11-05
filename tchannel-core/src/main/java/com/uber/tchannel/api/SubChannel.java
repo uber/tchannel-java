@@ -21,9 +21,7 @@
  */
 package com.uber.tchannel.api;
 
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
@@ -34,20 +32,16 @@ import com.uber.tchannel.channels.SubPeer;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.ErrorResponse;
-import com.uber.tchannel.schemes.JSONSerializer;
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Response;
-import com.uber.tchannel.schemes.Request;
-import com.uber.tchannel.schemes.Response;
-import com.uber.tchannel.schemes.Response;
-import com.uber.tchannel.schemes.Serializer;
-import com.uber.tchannel.schemes.ThriftRequest;
-import com.uber.tchannel.schemes.ThriftResponse;
-import com.uber.tchannel.schemes.ThriftSerializer;
+import com.uber.tchannel.messages.JSONSerializer;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.RawRequest;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Serializer;
+import com.uber.tchannel.messages.ThriftRequest;
+import com.uber.tchannel.messages.ThriftResponse;
+import com.uber.tchannel.messages.ThriftSerializer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -55,8 +49,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.google.common.util.concurrent.Futures.transform;
 
 public final class SubChannel {
 
@@ -184,7 +176,7 @@ public final class SubChannel {
             ThriftRequest<T> request,
             InetAddress host,
             int port
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
@@ -194,7 +186,7 @@ public final class SubChannel {
 
     public <T, U> ListenableFuture<ThriftResponse<U>> send(
         ThriftRequest<T> request
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         return send(request, null, 0);
     }
 
@@ -202,7 +194,7 @@ public final class SubChannel {
         JsonRequest<T> request,
         InetAddress host,
         int port
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
@@ -212,7 +204,7 @@ public final class SubChannel {
 
     public <T, U> ListenableFuture<JsonResponse<U>> send(
         JsonRequest<T> request
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         return send(request, null, 0);
     }
 
@@ -220,7 +212,7 @@ public final class SubChannel {
         RawRequest request,
         InetAddress host,
         int port
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
@@ -230,7 +222,7 @@ public final class SubChannel {
 
     public ListenableFuture<RawResponse> send(
         RawRequest request
-    ) throws InterruptedException, TChannelError {
+    ) throws TChannelError {
         return send(request, null, 0);
     }
 }

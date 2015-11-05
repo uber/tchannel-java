@@ -20,34 +20,39 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.buffer.ByteBuf;
+
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-public final class ThriftResponse<T> extends EncodedResponse<T> {
+public class JsonRequest<T> extends EncodedRequest<T> {
 
-    private ThriftResponse(Builder<T> builder) {
+    private JsonRequest(Builder<T> builder) {
         super(builder);
     }
 
-    protected ThriftResponse(long id, ResponseCode responseCode,
-                              Map<String, String> transportHeaders,
-                              ByteBuf arg2, ByteBuf arg3) {
-        super(id, responseCode, transportHeaders, arg2, arg3);
+    protected JsonRequest(long id, long ttl,
+                             String service, Map<String, String> transportHeaders,
+                             ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+        super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
     }
 
-    protected ThriftResponse(ErrorResponse error) {
-        super(error);
-    }
+    public static class Builder<T> extends EncodedRequest.Builder<T> {
 
-    public static class Builder<T> extends EncodedResponse.Builder<T> {
+        public Builder(String service, String endpoint) {
+            super(service, endpoint);
+            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme());
+            this.argScheme = ArgScheme.JSON;
+        }
 
-        public Builder(ThriftRequest req) {
-            super(req);
-            this.argScheme = ArgScheme.THRIFT;
+        public Builder(String service, ByteBuf arg1) {
+            super(service, arg1);
+            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme());
+            this.argScheme = ArgScheme.JSON;
         }
 
         public Builder<T> validate() {
@@ -55,8 +60,26 @@ public final class ThriftResponse<T> extends EncodedResponse<T> {
             return this;
         }
 
-        public ThriftResponse<T> build() {
-            return new ThriftResponse(this.validate());
+        public JsonRequest<T> build() {
+            return new JsonRequest<T>(this.validate());
+        }
+
+        @Override
+        public Builder<T> setTimeout(long timeout) {
+            super.setTimeout(timeout);
+            return this;
+        }
+
+        @Override
+        public Builder<T> setTimeout(long timeout, TimeUnit timeUnit) {
+            super.setTimeout(timeout, timeUnit);
+            return this;
+        }
+
+        @Override
+        public Builder<T> setId(long id) {
+            super.setId(id);
+            return this;
         }
 
         @Override
@@ -98,6 +121,12 @@ public final class ThriftResponse<T> extends EncodedResponse<T> {
         @Override
         public Builder<T> setTransportHeaders(Map<String, String> transportHeaders) {
             super.setTransportHeaders(transportHeaders);
+            return this;
+        }
+
+        @Override
+        public Builder<T> setRetryLimit(int retryLimit) {
+            super.setRetryLimit(retryLimit);
             return this;
         }
     }

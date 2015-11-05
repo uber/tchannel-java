@@ -23,25 +23,22 @@
 package com.uber.tchannel.channels;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Request;
-import com.uber.tchannel.schemes.Response;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
 import java.net.InetAddress;
 
 import com.uber.tchannel.api.handlers.RequestHandler;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.ResponseMessage;
+import com.uber.tchannel.messages.RawRequest;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,7 +71,7 @@ public class PeerManagerTest {
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")
             .setBody("hello")
-            .setTTL(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
@@ -83,7 +80,7 @@ public class PeerManagerTest {
             port
         );
 
-        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(res.getHeader(), "title");
         assertEquals(res.getBody(), "hello");
         res.release();
@@ -141,13 +138,14 @@ public class PeerManagerTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(res.getHeader(), "title");
         assertEquals(res.getBody(), "hello");
         res.release();
@@ -204,13 +202,14 @@ public class PeerManagerTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get(2000, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -267,13 +266,14 @@ public class PeerManagerTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get(2000, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(res.getHeader(), "title");
         assertEquals(res.getBody(), "hello");
         res.release();
@@ -359,13 +359,14 @@ public class PeerManagerTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get(2000, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();
@@ -450,13 +451,14 @@ public class PeerManagerTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get(2000, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();

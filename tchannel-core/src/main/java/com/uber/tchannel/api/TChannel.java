@@ -35,9 +35,9 @@ import com.uber.tchannel.handlers.PingHandler;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.schemes.JSONSerializer;
-import com.uber.tchannel.schemes.Serializer;
-import com.uber.tchannel.schemes.ThriftSerializer;
+import com.uber.tchannel.messages.JSONSerializer;
+import com.uber.tchannel.messages.Serializer;
+import com.uber.tchannel.messages.ThriftSerializer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -50,6 +50,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.HashedWheelTimer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -60,8 +61,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public final class TChannel {
+
+    private final HashedWheelTimer timer;
 
     private final String service;
     private final ServerBootstrap serverBootstrap;
@@ -96,6 +100,7 @@ public final class TChannel {
         this.maxQueuedRequests = builder.maxQueuedRequests;
         this.initTimeout = builder.initTimeout;
         this.peerManager = new PeerManager(builder.bootstrap(this));
+        this.timer = builder.timer;
     }
 
     public int getListeningPort() {
@@ -151,6 +156,7 @@ public final class TChannel {
     }
 
     public void shutdown(boolean sync) throws InterruptedException, ExecutionException {
+        timer.stop();
         this.peerManager.close();
         Future bg = this.bossGroup.shutdownGracefully();
         Future cg = this.childGroup.shutdownGracefully();
@@ -168,6 +174,8 @@ public final class TChannel {
     public static class Builder {
 
         private final String service;
+        private final HashedWheelTimer timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
+
         private ExecutorService executorService = new ForkJoinPool();
         private int maxQueuedRequests = Runtime.getRuntime().availableProcessors() * 5;
         private InetAddress host;
@@ -285,7 +293,7 @@ public final class TChannel {
                     ch.pipeline().addLast("RequestRouter", new RequestRouter(
                         topChannel, executorService, maxQueuedRequests));
 
-                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter());
+                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter(timer));
 
                     // Register Channels as they are created.
                     ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(topChannel.getPeerManager()));

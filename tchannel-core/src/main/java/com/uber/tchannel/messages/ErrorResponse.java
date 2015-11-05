@@ -20,35 +20,53 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.json;
+package com.uber.tchannel.messages;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.messages.JsonRequest;
-import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.errors.ErrorType;
+import com.uber.tchannel.frames.FrameType;
 
-import java.net.InetAddress;
+public final class ErrorResponse extends ResponseMessage implements TChannelMessage {
 
-public class JsonClient {
+    private final ErrorType errorType;
+    private final String message;
+    private final long id;
 
-    public static void main(String[] args) throws Exception {
-        final TChannel tchannel = new TChannel.Builder("json-server").build();
-
-        JsonRequest<RequestPojo> req = new JsonRequest.Builder<RequestPojo>(
-            "json-service",
-            "json-endpoint")
-            .setBody(new RequestPojo(0, "hello?"))
-            .build();
-        ListenableFuture<JsonResponse<ResponsePojo>> p = tchannel
-            .makeSubChannel("json-service").send(
-                req,
-                InetAddress.getLocalHost(), 8888
-            );
-
-        JsonResponse<ResponsePojo> res = p.get();
-
-        System.out.println(res);
-
-        tchannel.shutdown();
+    public ErrorResponse(long id, ErrorType errorType, String message) {
+        this.id = id;
+        this.errorType = errorType;
+        this.message = message;
+        this.type = FrameType.Error;
     }
+
+    @Override
+    public long getId() {
+        return this.id;
+    }
+
+    @Override
+    public FrameType getType() {
+        return this.getType();
+    }
+
+    public ErrorType getErrorType() {
+        return errorType;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "<%s id=%s errorType=%s message=%s>",
+            this.getClass().getSimpleName(),
+            this.id,
+            this.errorType,
+            this.message
+        );
+    }
+
+    @Override
+    public void release() {}
 }

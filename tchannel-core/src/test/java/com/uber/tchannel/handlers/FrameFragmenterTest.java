@@ -24,7 +24,7 @@ package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.frames.CallFrame;
 import com.uber.tchannel.frames.CallRequestFrame;
-import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.messages.RawRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -64,7 +64,7 @@ public class FrameFragmenterTest {
             .setArg2(arg2)
             .setArg3(arg3)
             .setId(0)
-            .setTTL(100)
+            .setTimeout(100)
             .build();
 
         channel.writeOutbound(rawRequest);

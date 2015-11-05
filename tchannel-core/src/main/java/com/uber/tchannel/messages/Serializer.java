@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;

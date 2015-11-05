@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
@@ -29,15 +29,15 @@ import io.netty.buffer.ByteBuf;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class JsonRequest<T> extends EncodedRequest<T> {
+public class ThriftRequest<T> extends EncodedRequest<T> {
 
-    private JsonRequest(Builder<T> builder) {
+    private ThriftRequest(Builder<T> builder) {
         super(builder);
     }
 
-    protected JsonRequest(long id, long ttl,
-                             String service, Map<String, String> transportHeaders,
-                             ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
+    protected ThriftRequest(long id, long ttl,
+                          String service, Map<String, String> transportHeaders,
+                          ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
     }
 
@@ -45,14 +45,14 @@ public class JsonRequest<T> extends EncodedRequest<T> {
 
         public Builder(String service, String endpoint) {
             super(service, endpoint);
-            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme());
-            this.argScheme = ArgScheme.JSON;
+            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.THRIFT.getScheme());
+            this.argScheme = ArgScheme.THRIFT;
         }
 
         public Builder(String service, ByteBuf arg1) {
             super(service, arg1);
-            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.JSON.getScheme());
-            this.argScheme = ArgScheme.JSON;
+            this.transportHeaders.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.THRIFT.getScheme());
+            this.argScheme = ArgScheme.THRIFT;
         }
 
         public Builder<T> validate() {
@@ -60,19 +60,19 @@ public class JsonRequest<T> extends EncodedRequest<T> {
             return this;
         }
 
-        public JsonRequest<T> build() {
-            return new JsonRequest<T>(this.validate());
+        public ThriftRequest<T> build() {
+            return new ThriftRequest(this.validate());
         }
 
         @Override
-        public Builder<T> setTTL(long ttl) {
-            super.setTTL(ttl);
+        public Builder<T> setTimeout(long timeout) {
+            super.setTimeout(timeout);
             return this;
         }
 
         @Override
-        public Builder<T> setTTL(long ttl, TimeUnit timeUnit) {
-            super.setTTL(ttl, timeUnit);
+        public Builder<T> setTimeout(long timeout, TimeUnit timeUnit) {
+            super.setTimeout(timeout, timeUnit);
             return this;
         }
 
@@ -121,6 +121,12 @@ public class JsonRequest<T> extends EncodedRequest<T> {
         @Override
         public Builder<T> setTransportHeaders(Map<String, String> transportHeaders) {
             super.setTransportHeaders(transportHeaders);
+            return this;
+        }
+
+        @Override
+        public Builder<T> setRetryLimit(int retryLimit) {
+            super.setRetryLimit(retryLimit);
             return this;
         }
     }

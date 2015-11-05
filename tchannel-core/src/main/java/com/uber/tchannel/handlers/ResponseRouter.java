@@ -23,32 +23,42 @@
 package com.uber.tchannel.handlers;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
+import com.uber.tchannel.api.TFuture;
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.schemes.ErrorResponse;
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Request;
-import com.uber.tchannel.schemes.Response;
-import com.uber.tchannel.schemes.ResponseMessage;
-import com.uber.tchannel.schemes.ThriftRequest;
-import com.uber.tchannel.schemes.ThriftResponse;
+import com.uber.tchannel.messages.ErrorResponse;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
+import com.uber.tchannel.messages.ResponseMessage;
+import com.uber.tchannel.messages.ThriftRequest;
+import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage> {
-    private final Map<Long, Object> messageMap = new ConcurrentHashMap<>();
-    private final Map<Long, Request> requestMap = new ConcurrentHashMap<>();
+
+    private final HashedWheelTimer timer;
+
+    private final Map<Long, OutRequest> requestMap = new ConcurrentHashMap<>();
 
     private final AtomicInteger idGenerator = new AtomicInteger(0);
     private ChannelHandlerContext ctx;
+
+    public ResponseRouter(HashedWheelTimer timer) {
+        this.timer = timer;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -56,28 +66,59 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         this.ctx = ctx;
     }
 
-    public <V> ListenableFuture<V> expectResponse(Request request) throws InterruptedException {
+    public <V> ListenableFuture<V> expectResponse(Request request) {
         int messageId = idGenerator.incrementAndGet();
         request.setId(messageId);
-        SettableFuture<V> future = SettableFuture.create();
-        this.messageMap.put(request.getId(), future);
-        this.requestMap.put(request.getId(), request);
-        ctx.writeAndFlush(request);
+        TFuture<V> future = TFuture.create();
+        OutRequest<V> outRequest = new OutRequest<V>(request, future);
+        send(outRequest);
         return future;
+    }
+
+    protected <V> boolean send(OutRequest<V> outRequest) {
+        if (!outRequest.shouldRetry()) {
+            messageReceived(ctx, outRequest.getLastError());
+            return false;
+        }
+
+        Request request = outRequest.getRequest();
+        this.requestMap.put(request.getId(), outRequest);
+        ctx.writeAndFlush(request);
+        setTimer(outRequest);
+
+        return true;
+    }
+
+    protected <V> void setTimer(final OutRequest<V> outRequest) {
+        final long start = System.currentTimeMillis();
+        Timeout timeout = timer.newTimeout(new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                messageReceived(ctx, new ErrorResponse(
+                    outRequest.getRequest().getId(),
+                    ErrorType.Timeout,
+                    String.format("Request timeout after %dms", System.currentTimeMillis() - start)));
+            }
+        }, outRequest.getRequest().getTimeout(), TimeUnit.MILLISECONDS);
+
+        outRequest.setTimeout(timeout);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, ResponseMessage response) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, ResponseMessage response) {
 
-        Object future = this.messageMap.remove(response.getId());
-        if (future == null) {
+        OutRequest outRequest = this.requestMap.remove(response.getId());
+        if (outRequest == null) {
+            response.release();
+            // TODO logging
             return;
         }
 
-        // TODO: handle timeout here
-        // TODO better interface?
-        Request request = this.requestMap.remove(response.getId());
+        outRequest.getTimeout().cancel();
+        TFuture future = outRequest.getFuture();
+        Request request = outRequest.getRequest();
+
         ArgScheme argScheme = request.getArgScheme();
         if (argScheme == null) {
             if (request instanceof JsonRequest) {
@@ -89,27 +130,32 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
             }
         }
 
-        request.release();
-
         Response res;
         if (response.isError()) {
+            outRequest.setLastError((ErrorResponse) response);
+            if (send(outRequest)) {
+                return;
+            }
+
             res = Response.build(argScheme, (ErrorResponse) response);
         } else {
             res = (Response) response;
         }
 
+        // release the request
+        request.release();
         switch (argScheme) {
             case RAW:
-                ((SettableFuture<RawResponse>)future).set((RawResponse) res);
+                ((TFuture<RawResponse>)future).set((RawResponse) res);
                 break;
             case JSON:
-                ((SettableFuture<JsonResponse>)future).set((JsonResponse) res);
+                ((TFuture<JsonResponse>)future).set((JsonResponse) res);
                 break;
             case THRIFT:
-                ((SettableFuture<ThriftResponse>)future).set((ThriftResponse) res);
+                ((TFuture<ThriftResponse>)future).set((ThriftResponse) res);
                 break;
             default:
-                ((SettableFuture<Response>)future).set((Response) res);
+                ((TFuture<RawResponse>)future).set((RawResponse) res);
                 break;
         }
     }

@@ -36,31 +36,32 @@ mvn clean test
 ```java
 // Create a TChannel, and register a RequestHandler
 TChannel tchannel = new TChannel.Builder("ping-server")
-	.register("ping-handler", new PingRequestHandler())
 	.setServerPort(this.port)
 	.build();
+tchannel.makeSubChannel("json-server")
+	.register("ping-handler", new PingRequestHandler());
 
 // Listen for incoming connections
 tchannel.listen();
 
 // Create another TChannel to act as a client.
 TChannel tchannelClient = new TChannel.Builder("ping-client").build();
-Request<Ping> request = new Request.Builder<>(new Ping("ping?"))
+JsonRequest<Ping> request = new JsonRequest.Builder<Ping>(new Ping("ping?"))
 	.setEndpoint("ping-handler")
 	.build();
 
 // Make an asynchronous request
-ListenableFuture<Response<Pong>> responseFuture = tchannel.callJSON(
-	tchannel.getHost(),
-	tchannel.getListeningPort(),
-	"service",
-	request,
-	Pong.class
-);
+ListenableFuture<JsonResponse<Pong>> responseFuture = tchannel
+	.makeSubChannel("json-service").send(
+		request,
+		tchannel.getHost(),
+		tchannel.getListeningPort()
+	);
 
 // Block and wait for the response
-Response<Pong> response = responseFuture.get(100, TimeUnit.MILLISECONDS);
+JsonResponse<Pong> response = responseFuture.get();
 System.out.println(response);
+response.release();
 ```
 
 ## Run The Examples

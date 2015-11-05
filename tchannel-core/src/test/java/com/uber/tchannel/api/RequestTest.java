@@ -24,17 +24,21 @@ package com.uber.tchannel.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
-import com.uber.tchannel.schemes.RawRequest;
+import com.uber.tchannel.errors.ErrorType;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.RawRequest;
 import io.netty.handler.logging.LogLevel;
 import org.junit.Test;
 
 import java.net.InetAddress;
-import java.util.concurrent.TimeUnit;
+
+import static java.lang.Thread.sleep;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class RequestTest {
 
@@ -74,6 +78,7 @@ public class RequestTest {
         tchannel.listen();
 
         JsonRequest<String> request = new JsonRequest.Builder<String>("tchannel-name", "endpoint")
+            .setTimeout(2000000)
             .setBody(requestBody)
             .build();
 
@@ -83,12 +88,63 @@ public class RequestTest {
             tchannel.getListeningPort()
         );
 
-        JsonResponse<Integer> response = responsePromise.get(2000000, TimeUnit.MILLISECONDS);
+        JsonResponse<Integer> response = responsePromise.get();
 
         assertEquals(null, response.getError());
         assertEquals(responseBody, (int) response.getBody(Integer.class));
         response.release();
 
+        tchannel.shutdown();
+    }
+
+    @Test
+    public void requestTimeout() throws Exception {
+
+        final String requestBody = "Hello, World!";
+        final int responseBody = 10;
+
+        TChannel tchannel = new TChannel.Builder("tchannel-name")
+            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setServerPort(8888)
+            .setLogLevel(LogLevel.INFO)
+            .build();
+        SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
+            .register("endpoint", new JSONRequestHandler<String, Integer>() {
+                public JsonResponse<Integer> handleImpl(JsonRequest<String> request) {
+                    try {
+                        sleep(150);
+                    } catch (Exception ex) {
+                        System.out.println(ex.getMessage());
+                    }
+
+                    return new JsonResponse.Builder<Integer>(request)
+                        .setTransportHeaders(request.getTransportHeaders())
+                        .setBody(10)
+                        .build();
+                }
+            });
+
+        tchannel.listen();
+
+        JsonRequest<String> request = new JsonRequest.Builder<String>("tchannel-name", "endpoint")
+            .setTimeout(100)
+            .setBody(requestBody)
+            .build();
+
+        ListenableFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
+            request,
+            tchannel.getHost(),
+            tchannel.getListeningPort()
+        );
+
+        JsonResponse<Integer> response = responsePromise.get();
+
+        assertNotEquals(null, response.getError());
+        assertEquals(1, response.getError().getId());
+        assertEquals(ErrorType.Timeout, response.getError().getErrorType());
+        assertTrue(response.getError().getMessage().startsWith("Request timeout after"));
+
+        response.release();
         tchannel.shutdown();
     }
 

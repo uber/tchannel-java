@@ -26,10 +26,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Request;
-import com.uber.tchannel.schemes.Response;
+import com.uber.tchannel.messages.RawRequest;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
@@ -68,6 +68,7 @@ public class ConnectionTest {
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")
             .setBody("hello")
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
@@ -76,7 +77,7 @@ public class ConnectionTest {
             port
         );
 
-        Response res = (Response)future.get(100, TimeUnit.MILLISECONDS);
+        Response res = (Response)future.get();
         assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
         assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
         res.release();

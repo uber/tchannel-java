@@ -22,7 +22,7 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.schemes.Request;
+import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;

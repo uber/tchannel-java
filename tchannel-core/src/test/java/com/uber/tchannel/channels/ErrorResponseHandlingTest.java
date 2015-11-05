@@ -27,10 +27,10 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.schemes.RawRequest;
-import com.uber.tchannel.schemes.RawResponse;
-import com.uber.tchannel.schemes.Request;
-import com.uber.tchannel.schemes.Response;
+import com.uber.tchannel.messages.RawRequest;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -66,6 +66,7 @@ public class ErrorResponseHandlingTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         req.getTransportHeaders().clear();
@@ -77,7 +78,7 @@ public class ErrorResponseHandlingTest {
             port
         );
 
-        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(ErrorType.BadRequest, res.getError().getErrorType());
         assertEquals("Invalid arg schema", res.getError().getMessage());
 
@@ -111,6 +112,7 @@ public class ErrorResponseHandlingTest {
             .setHeader("title")
             .setBody("hello")
             .setId(1000)
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<RawResponse> future = subClient.send(
@@ -119,7 +121,7 @@ public class ErrorResponseHandlingTest {
             port
         );
 
-        RawResponse res = future.get(100, TimeUnit.MILLISECONDS);
+        RawResponse res = future.get();
         assertEquals(ErrorType.Busy, res.getError().getErrorType());
         assertEquals("Service is busy", res.getError().getMessage());
 

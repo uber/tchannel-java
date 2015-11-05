@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
@@ -78,20 +78,26 @@ public final class RawRequest extends Request {
         }
 
         @Override
-        public Builder setTTL(long ttl) {
-            super.setTTL(ttl);
+        public Builder setTimeout(long timeout) {
+            super.setTimeout(timeout);
             return this;
         }
 
         @Override
-        public Builder setTTL(long ttl, TimeUnit timeUnit) {
-            super.setTTL(ttl, timeUnit);
+        public Builder setTimeout(long timeout, TimeUnit timeUnit) {
+            super.setTimeout(timeout, timeUnit);
             return this;
         }
 
         @Override
         public Builder setId(long id) {
             super.setId(id);
+            return this;
+        }
+
+        @Override
+        public Builder setRetryLimit(int retryLimit) {
+            super.setRetryLimit(retryLimit);
             return this;
         }
 

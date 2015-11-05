@@ -38,15 +38,14 @@ import java.util.regex.Pattern;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
-import com.uber.tchannel.schemes.JsonRequest;
-import com.uber.tchannel.schemes.JsonResponse;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
-import com.uber.tchannel.schemes.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +64,8 @@ public final class HyperbahnClient {
 
     private Timer advertiseTimer = new Timer(true);
 
+    private static final long requestTimeout = 500;
+
     private HyperbahnClient(Builder builder) {
         this.service = builder.service;
         this.tchannel = builder.channel;
@@ -81,19 +82,19 @@ public final class HyperbahnClient {
         return subChannel;
     }
 
-    public ListenableFuture<JsonResponse<AdvertiseResponse>> advertise()
-        throws InterruptedException, TChannelError {
+    public ListenableFuture<JsonResponse<AdvertiseResponse>> advertise() throws TChannelError {
 
         final AdvertiseRequest advertiseRequest = new AdvertiseRequest();
         advertiseRequest.addService(service, 0);
 
-        // TODO: options for timeout, hard fail, etc.
+        // TODO: options for hard fail, retries etc.
         final JsonRequest<AdvertiseRequest> request = new JsonRequest.Builder<AdvertiseRequest>(
             HYPERBAHN_SERVICE_NAME,
             HYPERBAHN_ADVERTISE_ENDPOINT
         )
             .setBody(advertiseRequest)
-            .setTTL(advertiseTimeout, TimeUnit.SECONDS)
+            .setTimeout(requestTimeout)
+            .setRetryLimit(3)
             .build();
 
         Runnable runable = null;

@@ -20,53 +20,19 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.frames.FrameType;
+import io.netty.buffer.ByteBuf;
+import java.util.Map;
 
-public final class ErrorResponse extends ResponseMessage implements TChannelMessage {
+public interface RawMessage extends TChannelMessage {
 
-    private final ErrorType errorType;
-    private final String message;
-    private final long id;
+    Map<String, String> getTransportHeaders();
 
-    public ErrorResponse(long id, ErrorType errorType, String message) {
-        this.id = id;
-        this.errorType = errorType;
-        this.message = message;
-        this.type = FrameType.Error;
-    }
+    ByteBuf getArg1();
 
-    @Override
-    public long getId() {
-        return this.id;
-    }
+    ByteBuf getArg2();
 
-    @Override
-    public FrameType getType() {
-        return this.getType();
-    }
+    ByteBuf getArg3();
 
-    public ErrorType getErrorType() {
-        return errorType;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    @Override
-    public String toString() {
-        return String.format(
-            "<%s id=%s errorType=%s message=%s>",
-            this.getClass().getSimpleName(),
-            this.id,
-            this.errorType,
-            this.message
-        );
-    }
-
-    @Override
-    public void release() {}
 }

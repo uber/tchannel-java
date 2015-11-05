@@ -20,18 +20,14 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
 import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.util.CharsetUtil;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -39,8 +35,8 @@ import java.util.Map;
  * <p>
  * All RPC frames over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
  * about the contents of these frames. In order to make sense of these arg payloads, TChannel has the notion of
- * `arg schemes` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
- * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response frames will be built
+ * `arg messages` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
+ * supported `arg messages` are `thrift`, `json`, `http` and `sthrift`. These request / response frames will be built
  * on top of {@link RawRequest} and {@link RawResponse} frames.
  * <p>
  * <h3>From the Docs</h3>

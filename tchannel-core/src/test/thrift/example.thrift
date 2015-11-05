@@ -1,4 +1,4 @@
-namespace java com.uber.tchannel.schemes.generated
+namespace java com.uber.tchannel.messages.generated
 
 struct Example {
     1: string aString

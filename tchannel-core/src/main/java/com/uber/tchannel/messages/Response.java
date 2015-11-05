@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.errors.ErrorType;
@@ -40,8 +40,8 @@ import java.util.Map;
  * <p>
  * All RPC frames over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
  * about the contents of these frames. In order to make sense of these arg payloads, TChannel has the notion of
- * `arg schemes` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
- * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response frames will be built
+ * `arg messages` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
+ * supported `arg messages` are `thrift`, `json`, `http` and `sthrift`. These request / response frames will be built
  * on top of {@link RawRequest} and {@link Response} frames.
  * <p>
  * <h3>From the Docs</h3>
@@ -146,10 +146,16 @@ public abstract class Response extends ResponseMessage implements RawMessage {
     @Override
     public void release() {
         arg1.release();
-        arg2.release();
-        arg3.release();
-        arg2 = null;
-        arg3 = null;
+
+        if (arg2 != null) {
+            arg2.release();
+            arg2 = null;
+        }
+
+        if (arg3 != null) {
+            arg3.release();
+            arg3 = null;
+        }
     }
 
     public final ErrorResponse getError() {

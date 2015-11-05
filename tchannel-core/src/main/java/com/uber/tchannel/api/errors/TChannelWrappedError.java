@@ -20,19 +20,10 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.api.errors;
 
-import io.netty.buffer.ByteBuf;
-import java.util.Map;
-
-public interface RawMessage extends TChannelMessage {
-
-    Map<String, String> getTransportHeaders();
-
-    ByteBuf getArg1();
-
-    ByteBuf getArg2();
-
-    ByteBuf getArg3();
-
+public class TChannelWrappedError extends TChannelError {
+    public TChannelWrappedError(Throwable ex) {
+        super("Wrapped Error", TChannelError.ERROR_WRAPPED, ex);
+    }
 }

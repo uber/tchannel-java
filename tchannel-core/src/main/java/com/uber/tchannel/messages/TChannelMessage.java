@@ -20,35 +20,14 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
 import com.uber.tchannel.frames.FrameType;
 
-/**
- * Represents a TChannel response message with `raw` arg scheme encoding.
- * <p>
- * All RPC frames over TChannel contain 3 opaque byte payloads, namely, arg{1,2,3}. TChannel makes no assumptions
- * about the contents of these frames. In order to make sense of these arg payloads, TChannel has the notion of
- * `arg schemes` which define standardized schemas and serialization formats over the raw arg{1,2,3} payloads. The
- * supported `arg schemes` are `thrift`, `json`, `http` and `sthrift`. These request / response frames will be built
- * on top of {@link RawRequest} and {@link ResponseMessage} frames.
- * <p>
- * <h3>From the Docs</h3>
- * The `raw` encoding is intended for any custom encodings you want to do that
- * are not part of TChannel but are application specific.
- */
-public abstract class ResponseMessage implements TChannelMessage {
+public interface TChannelMessage {
 
-    protected FrameType type;
+    long getId();
 
-    public boolean isError() {
-        return this.type == FrameType.Error;
-    }
+    FrameType getType();
 
-    @Override
-    public FrameType getType() {
-        return this.type;
-    }
-
-    public abstract void release();
 }

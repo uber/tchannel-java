@@ -29,7 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.schemes.JsonResponse;
+import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.hyperbahn.api.HyperbahnClient;

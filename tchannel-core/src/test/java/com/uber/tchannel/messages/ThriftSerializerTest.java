@@ -20,69 +20,84 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.schemes;
+package com.uber.tchannel.messages;
 
+import com.uber.tchannel.messages.generated.Example;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-public class JSONSerializerTest {
+public class ThriftSerializerTest {
 
     private Serializer.SerializerInterface serializer;
 
-    @Before
+    @org.junit.Before
     public void setUp() throws Exception {
-        this.serializer = new JSONSerializer();
+        this.serializer = new ThriftSerializer();
+    }
+
+    @Test
+    public void testNewInstance() throws Exception {
+        Class<?> instanceType = Example.class;
+        Example obj = (Example) instanceType.newInstance();
+        assertNotNull(obj);
     }
 
     @Test
     public void testEncodeDecodeEndpoint() throws Exception {
-
+        String endpoint = "SomeService::someMethod";
+        ByteBuf endpointBuf = this.serializer.encodeEndpoint(endpoint);
+        String decodedEndpoint = this.serializer.decodeEndpoint(endpointBuf);
+        assertEquals(endpoint, decodedEndpoint);
+        endpointBuf.release();
     }
 
     @Test
     public void testEncodeDecodeHeaders() throws Exception {
-
         Map<String, String> headers = new HashMap<String, String>() {{
             put("foo", "bar");
         }};
 
         ByteBuf binaryHeaders = serializer.encodeHeaders(headers);
         Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
-
         assertEquals(headers, decodedHeaders);
+        binaryHeaders.release();
     }
 
     @Test
-    public void testDecodeEmptyHeaders() throws Exception {
+    public void testEncodeDecodeEmptyHeaders() {
         Map<String, String> emptyHeaders = new HashMap<>();
-        Map<String, String> decodedHeaders = serializer.decodeHeaders(Unpooled.EMPTY_BUFFER);
+        ByteBuf binaryHeaders = serializer.encodeHeaders(emptyHeaders);
+        Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
         assertEquals(emptyHeaders, decodedHeaders);
-    }
-
-    @Test
-    public void testEncodeEmptyHeaders() throws Exception {
-
-        Map<String, String> emptyHeaders = new HashMap<>();
-        ByteBuf encodedHeaders = serializer.encodeHeaders(emptyHeaders);
-        assertEquals("{}", encodedHeaders.toString(CharsetUtil.UTF_8));
-
+        binaryHeaders.release();
     }
 
     @Test
     public void testEncodeDecodeBody() throws Exception {
 
+        // Given
+        Class<?> instanceType = Example.class;
+        Example obj = (Example) instanceType.newInstance();
+        obj.setAnInteger(42);
+        obj.setAString("Hello, World!");
+
+        // Then
+        ByteBuf bodyBuf = this.serializer.encodeBody(obj);
+        Example decodedObj = (Example) this.serializer.decodeBody(bodyBuf, instanceType);
+
+        assertEquals(obj.getAnInteger(), decodedObj.getAnInteger());
+        assertEquals(obj.getAString(), decodedObj.getAString());
+        assertEquals(obj, decodedObj);
+        bodyBuf.release();
     }
 
-    @After
+    @org.junit.After
     public void tearDown() throws Exception {
         this.serializer = null;
     }
