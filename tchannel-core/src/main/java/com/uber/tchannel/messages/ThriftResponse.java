@@ -100,5 +100,11 @@ public final class ThriftResponse<T> extends EncodedResponse<T> {
             super.setTransportHeaders(transportHeaders);
             return this;
         }
+
+        @Override
+        public Builder<T> setResponseCode(ResponseCode responseCode) {
+            super.setResponseCode(responseCode);
+            return this;
+        }
     }
 }

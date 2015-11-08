@@ -28,6 +28,7 @@ import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.messages.RawRequest;
+import com.uber.tchannel.messages.Response;
 import io.netty.handler.logging.LogLevel;
 import org.junit.Test;
 
@@ -61,7 +62,6 @@ public class RequestTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
-            .setServerPort(8888)
             .setLogLevel(LogLevel.INFO)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
@@ -98,6 +98,47 @@ public class RequestTest {
     }
 
     @Test
+    public void notOkResponse() throws Exception {
+
+        final String requestBody = "Hello, World!";
+
+        TChannel tchannel = new TChannel.Builder("tchannel-name")
+            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setLogLevel(LogLevel.INFO)
+            .build();
+        SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
+            .register("endpoint", new JSONRequestHandler<String, Integer>() {
+                public JsonResponse<Integer> handleImpl(JsonRequest<String> request) {
+                    return new JsonResponse.Builder<Integer>(request)
+                        .setTransportHeaders(request.getTransportHeaders())
+                        .setResponseCode(ResponseCode.Error)
+                        .build();
+                }
+            });
+
+        tchannel.listen();
+
+        JsonRequest<String> request = new JsonRequest.Builder<String>("tchannel-name", "endpoint")
+            .setTimeout(2000000)
+            .setBody(requestBody)
+            .build();
+
+        ListenableFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
+            request,
+            tchannel.getHost(),
+            tchannel.getListeningPort()
+        );
+
+        JsonResponse<Integer> response = responsePromise.get();
+
+        assertEquals(null, response.getError());
+        assertEquals(ResponseCode.Error, response.getResponseCode());
+        response.release();
+
+        tchannel.shutdown();
+    }
+
+    @Test
     public void requestTimeout() throws Exception {
 
         final String requestBody = "Hello, World!";
@@ -105,7 +146,6 @@ public class RequestTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
-            .setServerPort(8888)
             .setLogLevel(LogLevel.INFO)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
