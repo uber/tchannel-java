@@ -282,8 +282,9 @@ public final class TChannel {
                             new InitRequestInitiator(topChannel.getPeerManager()));
                     }
 
+                    // Ping frame is not current used
                     // Handle PingRequestFrame
-                    ch.pipeline().addLast("PingHandler", new PingHandler());
+                    // ch.pipeline().addLast("PingHandler", new PingHandler());
 
                     // Handles Call Request RPC
                     ch.pipeline().addLast("MessageDefragmenter", new MessageDefragmenter());
