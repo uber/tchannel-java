@@ -28,8 +28,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.Response;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -67,7 +69,6 @@ public class PingPongServerBenchmark {
             .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
             .warmupIterations(5)
             .measurementIterations(10)
-            .shouldDoGC(true)
             .forks(1)
             .build();
         new Runner(options).run();
@@ -91,6 +92,7 @@ public class PingPongServerBenchmark {
     public void benchmark(final AdditionalCounters counters) throws Exception {
         JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("ping-server", "ping")
             .setBody(new Ping("ping?"))
+            .setTimeout(2000)
             .build();
 
         ListenableFuture<JsonResponse<Pong>> future = this.subClient
@@ -112,6 +114,14 @@ public class PingPongServerBenchmark {
                 } else {
                     // System.out.println(pongResponse.getError().getMessage());
                     counters.errorQPS.incrementAndGet();
+
+//                    if (pongResponse.getError().getErrorType() == ErrorType.Busy) {
+//                        try {
+//                            sleep(1);
+//                        } catch (Exception ex) {
+//
+//                        }
+//                    }
                 }
             }
 

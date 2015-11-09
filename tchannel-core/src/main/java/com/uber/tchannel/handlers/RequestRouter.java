@@ -38,6 +38,7 @@ import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.ResponseMessage;
 import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftSerializer;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
@@ -148,7 +149,21 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
                 // Since the request was handled, decrement the queued requests count
                 queuedRequests.decrementAndGet();
-                ctx.writeAndFlush(response);
+
+//                // TODO: aggregate the flush
+//                try {
+//                    ChannelFuture wf = ctx.writeAndFlush(response);
+//                    if (!ctx.channel().isWritable()) {
+//                        wf.sync();
+//                    }
+//                }  catch (InterruptedException ie) {
+//                    System.out.println("failure !!!!!!!!!!!!!!!!!!!!!!!!!!");
+//                }
+
+                ChannelFuture wf = ctx.writeAndFlush(response);
+                if (!ctx.channel().isWritable()) {
+                    wf.syncUninterruptibly();
+                }
             }
 
             @Override

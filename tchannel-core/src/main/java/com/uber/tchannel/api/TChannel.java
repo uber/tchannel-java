@@ -242,8 +242,8 @@ public final class TChannel {
                 .group(this.childGroup)
                 .channel(NioSocketChannel.class)
                 .handler(this.channelInitializer(false, topChannel))
-//                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
-//                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
+                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
                 .validate();
         }
 
@@ -255,8 +255,8 @@ public final class TChannel {
                 .option(ChannelOption.SO_BACKLOG, 128)
                 .childHandler(this.channelInitializer(true, topChannel))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
-//                .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
-//                .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
+                .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
                 .validate();
         }
 
