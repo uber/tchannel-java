@@ -36,7 +36,6 @@ import com.uber.tchannel.messages.ResponseMessage;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.utils.TChannelUtilities;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.HashedWheelTimer;
@@ -76,13 +75,6 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         return future;
     }
 
-//    @Override
-//    public void channelWritabilityChanged(ChannelHandlerContext ctx) {
-//        if (ctx.channel().isWritable()) {
-//            this.notifyAll();
-//        }
-//    }
-
     protected <V> boolean send(OutRequest<V> outRequest) {
         if (!outRequest.shouldRetry()) {
             messageReceived(ctx, outRequest.getLastError());
@@ -94,37 +86,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         setTimer(outRequest);
 
         // TODO: aggregate the flush
-//        try {
-//            ChannelFuture wf = ctx.writeAndFlush(request);
-//            if (!ctx.channel().isWritable()) {
-//                wf.sync();
-//            }
-//        } catch (InterruptedException ie) {
-//            System.out.println("failure !!!!!!!!!!!!!!!!!!!!!!!!!!");
-//        }
-
-        ChannelFuture wf = ctx.writeAndFlush(request);
-        if (!ctx.channel().isWritable()) {
-            wf.syncUninterruptibly();
+        while(!ctx.channel().isWritable()) {
+            Thread.yield();
         }
-
-//        if (!ctx.channel().isWritable()) {
-//            messageReceived(ctx, new ErrorResponse(
-//                outRequest.getRequest().getId(),
-//                ErrorType.Busy,
-//                "Connection is busy"));
-//            return false;
-//        }
-//        ctx.writeAndFlush(request);
-
-//        if (!ctx.channel().isWritable()) {
-//            try {
-//                this.wait();
-//            } catch (Exception ex) {
-//
-//            }
-//        }
-//        ctx.writeAndFlush(request);
+        ctx.writeAndFlush(request);
 
         return true;
     }

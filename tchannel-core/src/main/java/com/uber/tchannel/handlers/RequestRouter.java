@@ -33,19 +33,16 @@ import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.ResponseMessage;
-import com.uber.tchannel.messages.Serializer;
-import com.uber.tchannel.messages.ThriftSerializer;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,21 +53,15 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private final TChannel topChannel;
 
-    private final Serializer serializer;
     private final AtomicInteger queuedRequests = new AtomicInteger(0);
     private final int maxQueuedRequests;
     private final ListeningExecutorService listeningExecutorService;
 
+    private final List<ResponseMessage> responseQueue = new LinkedList<ResponseMessage>();
+
     public RequestRouter(TChannel topChannel,
                          ExecutorService executorService, int maxQueuedRequests) {
         this.topChannel = topChannel;
-        this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
-            {
-                put(ArgScheme.JSON, new JSONSerializer());
-                put(ArgScheme.THRIFT, new ThriftSerializer());
-            }
-        }
-        );
         this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
         this.maxQueuedRequests = maxQueuedRequests;
     }
@@ -150,19 +141,13 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 // Since the request was handled, decrement the queued requests count
                 queuedRequests.decrementAndGet();
 
-//                // TODO: aggregate the flush
-//                try {
-//                    ChannelFuture wf = ctx.writeAndFlush(response);
-//                    if (!ctx.channel().isWritable()) {
-//                        wf.sync();
-//                    }
-//                }  catch (InterruptedException ie) {
-//                    System.out.println("failure !!!!!!!!!!!!!!!!!!!!!!!!!!");
-//                }
-
-                ChannelFuture wf = ctx.writeAndFlush(response);
+                // TODO: aggregate the flush
                 if (!ctx.channel().isWritable()) {
-                    wf.syncUninterruptibly();
+                    synchronized (responseQueue) {
+                        responseQueue.add(response);
+                    }
+                } else {
+                    ctx.writeAndFlush(response);
                 }
             }
 
@@ -181,6 +166,20 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 return;
             }
         });
+    }
+
+    @Override
+    public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+        if (!ctx.channel().isWritable()) {
+            return;
+        }
+
+        synchronized (responseQueue) {
+            while (responseQueue.size() != 0 && ctx.channel().isWritable()) {
+                ResponseMessage res = responseQueue.remove(0);
+                ctx.writeAndFlush(res);
+            }
+        }
     }
 
     private class CallableHandler implements Callable<ResponseMessage> {
