@@ -86,7 +86,7 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
             CallResponseFrame callResponseFrame = new CallResponseFrame(
                 response.getId(),
                 flags,
-                ResponseCode.OK,
+                response.getResponseCode(),
                 new Trace(0, 0, 0, (byte) 0x00),
                 response.getTransportHeaders(),
                 ChecksumType.NoChecksum,
