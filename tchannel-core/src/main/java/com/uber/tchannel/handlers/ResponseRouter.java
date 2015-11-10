@@ -91,6 +91,13 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         }
         ctx.writeAndFlush(request);
 
+        // TODO: better peer selection and channel write
+//        if(!ctx.channel().isWritable()) {
+//            ctx.writeAndFlush(request).syncUninterruptibly();
+//        } else {
+//            ctx.writeAndFlush(request);
+//        }
+
         return true;
     }
 
