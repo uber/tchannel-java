@@ -33,18 +33,16 @@ import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.ResponseMessage;
-import com.uber.tchannel.messages.Serializer;
-import com.uber.tchannel.messages.ThriftSerializer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,23 +53,14 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private final TChannel topChannel;
 
-    private final Serializer serializer;
     private final AtomicInteger queuedRequests = new AtomicInteger(0);
-    private final int maxQueuedRequests;
     private final ListeningExecutorService listeningExecutorService;
 
-    public RequestRouter(TChannel topChannel,
-                         ExecutorService executorService, int maxQueuedRequests) {
+    private final List<ResponseMessage> responseQueue = new LinkedList<ResponseMessage>();
+
+    public RequestRouter(TChannel topChannel, ExecutorService executorService) {
         this.topChannel = topChannel;
-        this.serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
-            {
-                put(ArgScheme.JSON, new JSONSerializer());
-                put(ArgScheme.THRIFT, new ThriftSerializer());
-            }
-        }
-        );
         this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
-        this.maxQueuedRequests = maxQueuedRequests;
     }
 
     private RequestHandler getRequestHandler(String service, String endpoint) {
@@ -107,15 +96,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             return;
         }
 
-        /** If the current queued request count is greater than the expected queued
-         * request count then send a busy error so that the caller can try a different
-         * node.
-         */
-        if (queuedRequests.get() >= maxQueuedRequests) {
-            sendError(ErrorType.Busy, "Service is busy", request, ctx);
-            return;
-        }
-
         // Get the endpoint. The assumption over here is that endpoints are
         // always going to to utf-8 encoded.
         String endpoint = request.getArg1().toString(CharsetUtil.UTF_8);
@@ -148,7 +128,15 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
                 // Since the request was handled, decrement the queued requests count
                 queuedRequests.decrementAndGet();
-                ctx.writeAndFlush(response);
+
+                // TODO: aggregate the flush
+                if (!ctx.channel().isWritable()) {
+                    synchronized (responseQueue) {
+                        responseQueue.add(response);
+                    }
+                } else {
+                    ctx.writeAndFlush(response);
+                }
             }
 
             @Override
@@ -166,6 +154,20 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 return;
             }
         });
+    }
+
+    @Override
+    public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+        if (!ctx.channel().isWritable()) {
+            return;
+        }
+
+        synchronized (responseQueue) {
+            while (responseQueue.size() != 0 && ctx.channel().isWritable()) {
+                ResponseMessage res = responseQueue.remove(0);
+                ctx.writeAndFlush(res);
+            }
+        }
     }
 
     private class CallableHandler implements Callable<ResponseMessage> {

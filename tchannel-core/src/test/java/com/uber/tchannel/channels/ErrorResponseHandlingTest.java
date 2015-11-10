@@ -86,49 +86,6 @@ public class ErrorResponseHandlingTest {
         client.shutdown();
     }
 
-    @Test
-    public void testRateLimiting()  throws Exception {
-        InetAddress host = InetAddress.getByName("127.0.0.1");
-
-        // create server
-        final TChannel server = new TChannel.Builder("server")
-            .setServerHost(host)
-            .setMaxQueuedRequests(0)
-            .build();
-        final SubChannel subServer = server.makeSubChannel("server")
-            .register("echo", new EchoHandler());
-        server.listen();
-
-        int port = server.getListeningPort();
-
-        // create client
-        final TChannel client = new TChannel.Builder("client")
-            .setServerHost(host)
-            .build();
-        SubChannel subClient = client.makeSubChannel("server");
-        client.listen();
-
-        RawRequest req = new RawRequest.Builder("server", "echo1")
-            .setHeader("title")
-            .setBody("hello")
-            .setId(1000)
-            .setTimeout(2000)
-            .build();
-
-        ListenableFuture<RawResponse> future = subClient.send(
-            req,
-            host,
-            port
-        );
-
-        RawResponse res = future.get();
-        assertEquals(ErrorType.Busy, res.getError().getErrorType());
-        assertEquals("Service is busy", res.getError().getMessage());
-
-        server.shutdown();
-        client.shutdown();
-    }
-
     protected  class EchoHandler implements RequestHandler {
         public boolean accessed = false;
 

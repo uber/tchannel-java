@@ -67,7 +67,6 @@ public class PingPongServerBenchmark {
             .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
             .warmupIterations(5)
             .measurementIterations(10)
-            .shouldDoGC(true)
             .forks(1)
             .build();
         new Runner(options).run();
@@ -77,7 +76,6 @@ public class PingPongServerBenchmark {
     public void setup() throws Exception {
 
         this.channel = new TChannel.Builder("ping-server")
-            .setMaxQueuedRequests(20000000)
             .build();
         channel.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
         this.client = new TChannel.Builder("ping-client").build();
@@ -91,6 +89,7 @@ public class PingPongServerBenchmark {
     public void benchmark(final AdditionalCounters counters) throws Exception {
         JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("ping-server", "ping")
             .setBody(new Ping("ping?"))
+            .setTimeout(20000)
             .build();
 
         ListenableFuture<JsonResponse<Pong>> future = this.subClient

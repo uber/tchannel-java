@@ -83,8 +83,13 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
         Request request = outRequest.getRequest();
         this.requestMap.put(request.getId(), outRequest);
-        ctx.writeAndFlush(request);
         setTimer(outRequest);
+
+        // TODO: aggregate the flush
+        while(!ctx.channel().isWritable()) {
+            Thread.yield();
+        }
+        ctx.writeAndFlush(request);
 
         return true;
     }
