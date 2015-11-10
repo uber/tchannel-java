@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
@@ -40,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
 import static java.lang.Thread.sleep;
+import static org.junit.Assert.assertTrue;
 
 public class ConnectionTest {
 
@@ -103,6 +105,38 @@ public class ConnectionTest {
         assertEquals((int)stats.get("connections.out"), 0);
 
         server.shutdown();
+    }
+
+    @Test
+    public void testConnectionFailure() throws Exception {
+
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+
+        // create client
+        final TChannel client = new TChannel.Builder("client")
+            .setServerHost(host)
+            .build();
+        final SubChannel subClient = client.makeSubChannel("server");
+
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setTimeout(2000)
+            .build();
+
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
+            host,
+            8888
+        );
+
+        Response res = (Response)future.get();
+        assertTrue(res.isError());
+        assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
+        assertEquals("Failed to connect to the host", res.getError().getMessage());
+
+        res.release();
+        client.shutdown();
     }
 
     protected  class EchoHandler implements RequestHandler {

@@ -29,15 +29,18 @@ import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.SubPeer;
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.messages.ErrorResponse;
 import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
@@ -137,7 +140,7 @@ public final class SubChannel {
         return conn;
     }
 
-    protected ResponseRouter prepare(
+    protected <V> ListenableFuture<V> sendRequest(
         Request request,
         InetAddress host,
         int port
@@ -155,10 +158,11 @@ public final class SubChannel {
         }
 
         if (!conn.waitForIdentified(this.initTimeout)) {
+            request.release();
             if (conn.lastError() != null) {
-                throw conn.lastError();
+                return createError(request, ErrorType.NetworkError, conn.lastError());
             } else {
-                throw new TChannelConnectionTimeout();
+                return createError(request, ErrorType.NetworkError, new TChannelConnectionTimeout());
             }
         }
 
@@ -169,7 +173,8 @@ public final class SubChannel {
         }
 
         // Get a response router for our outbound channel
-        return conn.channel().pipeline().get(ResponseRouter.class);
+        ResponseRouter router = conn.channel().pipeline().get(ResponseRouter.class);
+        return router.expectResponse(request);
     }
 
     public <T, U> ListenableFuture<ThriftResponse<U>> send(
@@ -180,8 +185,7 @@ public final class SubChannel {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
-        ResponseRouter router = prepare(request, host, port);
-        return router.expectResponse(request);
+        return sendRequest(request, host, port);
     }
 
     public <T, U> ListenableFuture<ThriftResponse<U>> send(
@@ -198,8 +202,7 @@ public final class SubChannel {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
-        ResponseRouter router = prepare(request, host, port);
-        return router.expectResponse(request);
+        return sendRequest(request, host, port);
     }
 
     public <T, U> ListenableFuture<JsonResponse<U>> send(
@@ -216,13 +219,23 @@ public final class SubChannel {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
-        ResponseRouter router = prepare(request, host, port);
-        return router.expectResponse(request);
+        return sendRequest(request, host, port);
     }
 
     public ListenableFuture<RawResponse> send(
         RawRequest request
     ) throws TChannelError {
         return send(request, null, 0);
+    }
+
+    public <V> ListenableFuture<V> createError(Request request, ErrorType errorType, Throwable throwable) {
+        TFuture<V> future = TFuture.create();
+        ArgScheme argScheme = request.getArgScheme();
+        Response response = Response.build(argScheme, new ErrorResponse(
+            request.getId(),
+            errorType,
+            throwable));
+        ResponseRouter.setResponse(future, argScheme, response);
+        return future;
     }
 }
