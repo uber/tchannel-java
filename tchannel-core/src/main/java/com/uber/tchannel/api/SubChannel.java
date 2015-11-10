@@ -235,20 +235,7 @@ public final class SubChannel {
             request.getId(),
             errorType,
             throwable));
-        switch (argScheme) {
-            case RAW:
-                ((TFuture<RawResponse>)future).set((RawResponse) response);
-                break;
-            case JSON:
-                ((TFuture<JsonResponse>)future).set((JsonResponse) response);
-                break;
-            case THRIFT:
-                ((TFuture<ThriftResponse>)future).set((ThriftResponse) response);
-                break;
-            default:
-                ((TFuture<RawResponse>)future).set((RawResponse) response);
-                break;
-        }
+        ResponseRouter.setResponse(future, argScheme, response);
         return future;
     }
 }

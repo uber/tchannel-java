@@ -144,18 +144,22 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
         // release the request
         request.release();
+        setResponse(future, argScheme, res);
+    }
+
+    public static void setResponse(TFuture future, ArgScheme argScheme, Response response) {
         switch (argScheme) {
             case RAW:
-                ((TFuture<RawResponse>)future).set((RawResponse) res);
+                ((TFuture<RawResponse>)future).set((RawResponse) response);
                 break;
             case JSON:
-                ((TFuture<JsonResponse>)future).set((JsonResponse) res);
+                ((TFuture<JsonResponse>)future).set((JsonResponse) response);
                 break;
             case THRIFT:
-                ((TFuture<ThriftResponse>)future).set((ThriftResponse) res);
+                ((TFuture<ThriftResponse>)future).set((ThriftResponse) response);
                 break;
             default:
-                ((TFuture<RawResponse>)future).set((RawResponse) res);
+                ((TFuture<RawResponse>)future).set((RawResponse) response);
                 break;
         }
     }

@@ -30,7 +30,7 @@ public final class ErrorResponse extends ResponseMessage implements TChannelMess
     private final ErrorType errorType;
     private final String message;
     private final long id;
-    private final Throwable throwable;
+    private Throwable throwable;
 
     public ErrorResponse(long id, ErrorType errorType, String message) {
         this.id = id;
@@ -41,10 +41,7 @@ public final class ErrorResponse extends ResponseMessage implements TChannelMess
     }
 
     public ErrorResponse(long id, ErrorType errorType, Throwable throwable) {
-        this.id = id;
-        this.errorType = errorType;
-        this.message = throwable.getMessage();
-        this.type = FrameType.Error;
+        this(id, errorType, throwable.getMessage());
         this.throwable = throwable;
     }
 
