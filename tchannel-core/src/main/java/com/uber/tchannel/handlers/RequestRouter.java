@@ -54,16 +54,13 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     private final TChannel topChannel;
 
     private final AtomicInteger queuedRequests = new AtomicInteger(0);
-    private final int maxQueuedRequests;
     private final ListeningExecutorService listeningExecutorService;
 
     private final List<ResponseMessage> responseQueue = new LinkedList<ResponseMessage>();
 
-    public RequestRouter(TChannel topChannel,
-                         ExecutorService executorService, int maxQueuedRequests) {
+    public RequestRouter(TChannel topChannel, ExecutorService executorService) {
         this.topChannel = topChannel;
         this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
-        this.maxQueuedRequests = maxQueuedRequests;
     }
 
     private RequestHandler getRequestHandler(String service, String endpoint) {
@@ -96,15 +93,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             sendError(ErrorType.BadRequest,
                 "Expected incoming call to have serviceName",
                 request, ctx);
-            return;
-        }
-
-        /** If the current queued request count is greater than the expected queued
-         * request count then send a busy error so that the caller can try a different
-         * node.
-         */
-        if (queuedRequests.get() >= maxQueuedRequests) {
-            sendError(ErrorType.Busy, "Service is busy", request, ctx);
             return;
         }
 

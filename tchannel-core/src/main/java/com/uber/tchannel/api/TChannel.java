@@ -77,7 +77,6 @@ public final class TChannel {
     private String listeningHost = "0.0.0.0";
     private int listeningPort;
     private ExecutorService exectorService;
-    private final int maxQueuedRequests;
     private final int initTimeout;
 
     private Map<String, SubChannel> subChannels = new HashMap<>();
@@ -97,7 +96,6 @@ public final class TChannel {
         this.childGroup = builder.childGroup;
         this.host = builder.host;
         this.port = builder.port;
-        this.maxQueuedRequests = builder.maxQueuedRequests;
         this.initTimeout = builder.initTimeout;
         this.peerManager = new PeerManager(builder.bootstrap(this));
         this.timer = builder.timer;
@@ -177,7 +175,6 @@ public final class TChannel {
         private final HashedWheelTimer timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
 
         private ExecutorService executorService = new ForkJoinPool();
-        private int maxQueuedRequests = Runtime.getRuntime().availableProcessors() * 5;
         private InetAddress host;
         private int port = 0;
         private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
@@ -195,11 +192,6 @@ public final class TChannel {
 
         public Builder setExecutorService(ExecutorService executorService) {
             this.executorService = executorService;
-            return this;
-        }
-
-        public Builder setMaxQueuedRequests(int maxQueuedRequests) {
-            this.maxQueuedRequests = maxQueuedRequests;
             return this;
         }
 
@@ -292,7 +284,7 @@ public final class TChannel {
 
                     // Pass RequestHandlers to the RequestRouter
                     ch.pipeline().addLast("RequestRouter", new RequestRouter(
-                        topChannel, executorService, maxQueuedRequests));
+                        topChannel, executorService));
 
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter(timer));
 
