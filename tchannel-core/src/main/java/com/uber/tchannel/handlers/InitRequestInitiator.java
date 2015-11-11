@@ -25,7 +25,6 @@ package com.uber.tchannel.handlers;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.errors.FatalProtocolError;
 import com.uber.tchannel.errors.ProtocolError;
-import com.uber.tchannel.errors.ProtocolErrorProcessor;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
 import com.uber.tchannel.frames.Frame;
@@ -54,9 +53,12 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Frame> {
                     ctx.pipeline().remove(this);
                     peerManager.setIdentified(ctx.channel(), initResponseFrameMessage.getHeaders());
                 } else {
+
+                    // This will lead to a connection reset
                     throw new FatalProtocolError(
-                            String.format("Expected Protocol version: %d", InitFrame.DEFAULT_VERSION),
-                            new Trace(0, 0, 0, (byte) 0x00)
+                        String.format("Expected Protocol version: %d, got version: %d",
+                            InitFrame.DEFAULT_VERSION, initResponseFrameMessage.getVersion()),
+                        new Trace(0, 0, 0, (byte) 0x00)
                     );
                 }
 
@@ -64,24 +66,11 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Frame> {
 
             default:
 
+                // This will lead to a connection reset
                 throw new FatalProtocolError(
-                        "Must not send any data until receiving InitFrame Response",
-                        new Trace(0, 0, 0, (byte) 0x00)
+                    "Frame recieved before Init Response",
+                    new Trace(0, 0, 0, (byte) 0x00)
                 );
-
         }
     }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-
-        if (cause instanceof ProtocolError) {
-            ProtocolError protocolError = (ProtocolError) cause;
-            ProtocolErrorProcessor.handleError(ctx, protocolError);
-        } else {
-            super.exceptionCaught(ctx, cause);
-        }
-
-    }
-
 }

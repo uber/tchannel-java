@@ -22,18 +22,18 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.channels.PeerManager;
-import com.uber.tchannel.errors.FatalProtocolError;
+import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.errors.ProtocolError;
-import com.uber.tchannel.errors.ProtocolErrorProcessor;
 import com.uber.tchannel.frames.Frame;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
-import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+
+import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
 public class InitRequestHandler extends SimpleChannelInboundHandler<Frame> {
 
@@ -53,47 +53,35 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Frame> {
                 InitRequestFrame initRequestFrameMessage = (InitRequestFrame) frame;
 
                 if (initRequestFrameMessage.getVersion() == InitFrame.DEFAULT_VERSION) {
+
                     InitResponseFrame initResponseFrame = new InitResponseFrame(
-                            initRequestFrameMessage.getId(),
-                            InitFrame.DEFAULT_VERSION
+                        initRequestFrameMessage.getId(),
+                        InitFrame.DEFAULT_VERSION
                     );
+
                     initResponseFrame.setHostPort(this.peerManager.getHostPort());
+
                     // TODO: figure out what to put here
                     initResponseFrame.setProcessName("java-process");
                     ChannelFuture f = ctx.writeAndFlush(initResponseFrame);
                     f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                     ctx.pipeline().remove(this);
                     peerManager.setIdentified(ctx.channel(), initRequestFrameMessage.getHeaders());
+
                 } else {
-                    // TODO: response ProtocolError
-                    throw new FatalProtocolError(
-                            String.format("Expected Protocol version: %d", InitFrame.DEFAULT_VERSION),
-                            new Trace(0, 0, 0, (byte) 0x00)
-                    );
+                    sendError(ErrorType.FatalProtocolError,
+                        String.format("Expected Protocol version: %d, got version: %d", InitFrame.DEFAULT_VERSION,
+                            initRequestFrameMessage.getVersion()),
+                        frame.getId(), ctx);
                 }
 
                 break;
 
             default:
-
-                // TODO: should send back ProtocolError
-                throw new FatalProtocolError(
-                        "Must not send any data until receiving InitFrame Request",
-                        new Trace(0, 0, 0, (byte) 0x00)
-                );
-
+                sendError(ErrorType.FatalProtocolError,
+                    "The first frame should be an Init Request",
+                    frame.getId(), ctx);
+                break;
         }
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-
-        if (cause instanceof ProtocolError) {
-            ProtocolError protocolError = (ProtocolError) cause;
-            ProtocolErrorProcessor.handleError(ctx, protocolError);
-        } else {
-            super.exceptionCaught(ctx, cause);
-        }
-
     }
 }

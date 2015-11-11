@@ -23,6 +23,7 @@
 package com.uber.tchannel.channels;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.handlers.ResponseRouter;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
@@ -36,7 +37,7 @@ public class Connection {
     public Direction direction = Direction.NONE;
     public ConnectionState state = ConnectionState.UNCONNECTED;
 
-    private final Peer peer;
+    private Peer peer;
     private final Channel channel;
     private String remoteAddress = null;
     private TChannelError lastError = null;
@@ -154,6 +155,11 @@ public class Connection {
     }
 
     public synchronized void close() {
+        ResponseRouter responseRouter = channel.pipeline().get(ResponseRouter.class);
+        if (responseRouter != null) {
+            responseRouter.clean();
+        }
+
         channel.close();
         this.state = ConnectionState.DESTROYED;
     }
@@ -165,6 +171,9 @@ public class Connection {
 
     public Peer getPeer() {
         return peer;
+    }
+    public void setPeer(Peer peer) {
+        this.peer = peer;
     }
 
     public enum Direction {

@@ -134,10 +134,9 @@ public class InitDefaultRequestHandlerTest {
         ErrorFrame errorFrame = channel.readOutbound();
         assertNotNull(errorFrame);
         assertThat(errorFrame.getType(), is(ErrorType.FatalProtocolError));
+        assertThat(errorFrame.getMessage(), containsString("The first frame should be an Init Request"));
 
-        this.expectedClosedChannelException.expect(ClosedChannelException.class);
         channel.writeOutbound();
-
     }
 
     @Test
@@ -157,12 +156,11 @@ public class InitDefaultRequestHandlerTest {
 
         channel.writeInbound(initRequestFrame);
         ErrorFrame errorFrame = channel.readOutbound();
+
         assertNotNull(errorFrame);
         assertThat(errorFrame.getType(), is(ErrorType.FatalProtocolError));
-        assertThat(errorFrame.getMessage(), containsString("version"));
+        assertThat(errorFrame.getMessage(), containsString("Expected Protocol version: 2, got version: 1"));
 
-        this.expectedClosedChannelException.expect(ClosedChannelException.class);
         channel.writeOutbound();
-
     }
 }

@@ -45,7 +45,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
@@ -53,7 +52,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private final TChannel topChannel;
 
-    private final AtomicInteger queuedRequests = new AtomicInteger(0);
     private final ListeningExecutorService listeningExecutorService;
 
     private final List<ResponseMessage> responseQueue = new LinkedList<ResponseMessage>();
@@ -115,9 +113,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             return;
         }
 
-        // Increment the number of queued requests.
-        queuedRequests.getAndIncrement();
-
         // Handle the request in a separate thread and get a future to it
         ListenableFuture<ResponseMessage> responseFuture = listeningExecutorService.submit(
                 new CallableHandler(handler, request));
@@ -125,10 +120,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         Futures.addCallback(responseFuture, new FutureCallback<ResponseMessage>() {
             @Override
             public void onSuccess(ResponseMessage response) {
-
-                // Since the request was handled, decrement the queued requests count
-                queuedRequests.decrementAndGet();
-
                 // TODO: aggregate the flush
                 if (!ctx.channel().isWritable()) {
                     synchronized (responseQueue) {
@@ -145,9 +136,10 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 PrintWriter printWriter = new PrintWriter( writer );
                 throwable.printStackTrace( printWriter );
                 printWriter.flush();
+
+                // TODO: log
                 System.out.println(writer.toString());
 
-                queuedRequests.decrementAndGet();
                 sendError(ErrorType.BadRequest,
                     "Failed to handle the request: " + throwable.getMessage(),
                     request, ctx);

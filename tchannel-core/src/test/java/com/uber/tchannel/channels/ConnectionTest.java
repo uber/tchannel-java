@@ -36,6 +36,7 @@ import org.junit.Test;
 
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -211,11 +212,70 @@ public class ConnectionTest {
         assertEquals((int)stats.get("connections.out"), 0);
     }
 
+    @Test
+    public void testCleanupDuringTimeout() throws Exception {
+
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+
+        // create server
+        final TChannel server = new TChannel.Builder("server")
+            .setServerHost(host)
+            .build();
+        final SubChannel subServer = server.makeSubChannel("server")
+            .register("echo", new EchoHandler());
+        server.listen();
+
+        int port = server.getListeningPort();
+
+        // create client
+        final TChannel client = new TChannel.Builder("client")
+            .setServerHost(host)
+            .build();
+        final SubChannel subClient = client.makeSubChannel("server");
+        client.listen();
+
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setTimeout(2000)
+            .build();
+
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
+            host,
+            port
+        );
+
+        client.shutdown();
+        server.shutdown();
+
+        RawResponse res = future.get();
+        assertEquals(true, res.isError());
+        assertEquals("Connection was reset due to network error", res.getError().getMessage());
+        assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
+    }
+
     protected  class EchoHandler implements RequestHandler {
         public boolean accessed = false;
+        protected boolean delayed = false;
+
+        public EchoHandler() {}
+
+        public EchoHandler(boolean delayed) {
+            this.delayed = delayed;
+        }
+
 
         @Override
         public RawResponse handle(Request request) {
+
+            if (delayed) {
+                try {
+                    sleep(100);
+                } catch (Exception ex) {
+                }
+            }
+
             request.getArg2().retain();
             request.getArg3().retain();
             RawResponse response = new RawResponse.Builder(request)

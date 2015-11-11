@@ -35,7 +35,6 @@ import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.ResponseMessage;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
-import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.HashedWheelTimer;
@@ -43,13 +42,16 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage> {
 
     private final HashedWheelTimer timer;
+    private AtomicBoolean destroyed = new AtomicBoolean(false);
 
     private final Map<Long, OutRequest> requestMap = new ConcurrentHashMap<>();
 
@@ -69,6 +71,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     public <V> ListenableFuture<V> expectResponse(Request request) {
         int messageId = idGenerator.incrementAndGet();
         request.setId(messageId);
+        if (this.destroyed.get()) {
+            return createError(request, ErrorType.NetworkError, "Connection already closed");
+        }
+
         TFuture<V> future = TFuture.create();
         OutRequest<V> outRequest = new OutRequest<V>(request, future);
         send(outRequest);
@@ -119,7 +125,6 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, ResponseMessage response) {
-
         OutRequest outRequest = this.requestMap.remove(response.getId());
         if (outRequest == null) {
             response.release();
@@ -159,6 +164,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         setResponse(future, argScheme, res);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public static void setResponse(TFuture future, ArgScheme argScheme, Response response) {
         switch (argScheme) {
             case RAW:
@@ -176,9 +182,44 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         }
     }
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        // TODO: logging instead of print
-        TChannelUtilities.PrintException(cause);
+    public void clean() {
+        if (!destroyed.compareAndSet(false, true)) {
+            return;
+        }
+
+        Set<Long> keys = requestMap.keySet();
+        for (long key : keys) {
+            OutRequest outRequest = requestMap.remove(key);
+            TFuture future = outRequest.getFuture();
+            Request request = outRequest.getRequest();
+            ArgScheme argScheme = request.getArgScheme();
+            Response response = Response.build(argScheme, new ErrorResponse(
+                request.getId(),
+                ErrorType.NetworkError,
+                "Connection was reset due to network error"));
+            setResponse(future, argScheme, response);
+        }
+    }
+
+    public static <V> ListenableFuture<V> createError(Request request, ErrorType errorType, Throwable throwable) {
+        TFuture<V> future = TFuture.create();
+        ArgScheme argScheme = request.getArgScheme();
+        Response response = Response.build(argScheme, new ErrorResponse(
+            request.getId(),
+            errorType,
+            throwable));
+        setResponse(future, argScheme, response);
+        return future;
+    }
+
+    public static <V> ListenableFuture<V> createError(Request request, ErrorType errorType, String message) {
+        TFuture<V> future = TFuture.create();
+        ArgScheme argScheme = request.getArgScheme();
+        Response response = Response.build(argScheme, new ErrorResponse(
+            request.getId(),
+            errorType,
+            message));
+        setResponse(future, argScheme, response);
+        return future;
     }
 }
