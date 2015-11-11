@@ -73,6 +73,11 @@ public class PeerManager {
         return peers.get(address);
     }
 
+    public Peer getPeer(Channel channel) {
+        SocketAddress address = channel.remoteAddress();
+        return peers.get(address);
+    }
+
     public Connection connectTo(SocketAddress address) throws TChannelError {
         Peer peer = findOrNewPeer(address);
         return peer.connect(this.clientBootstrap, Connection.Direction.OUT);
@@ -131,7 +136,7 @@ public class PeerManager {
         Connection conn = get(channel);
         if (conn == null) {
             // Handle in connection
-            conn = new Connection(channel, Connection.Direction.IN);
+            conn = new Connection(getPeer(channel), channel, Connection.Direction.IN);
         }
 
         conn.setIndentified(headers);
@@ -149,7 +154,7 @@ public class PeerManager {
         // TODO: log the errror ...
     }
 
-    public void close() throws InterruptedException {
+    public void close() {
         for (SocketAddress addr : peers.keySet()) {
             peers.get(addr).close();
         }
@@ -165,6 +170,7 @@ public class PeerManager {
         return hostPort;
     }
 
+    // TODO: peer stats & reaper
     public Map<String, Integer> getStats() {
         int in = 0;
         int out = 0;

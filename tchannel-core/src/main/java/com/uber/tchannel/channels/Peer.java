@@ -68,7 +68,7 @@ public class Peer {
             return conn;
         }
 
-        return add(new Connection(channel, direction));
+        return add(new Connection(this, channel, direction));
     }
 
     public Connection handleActiveOutConnection(ChannelHandlerContext ctx) {
@@ -154,7 +154,7 @@ public class Peer {
         return connections.get(channelId);
     }
 
-    public void close() throws InterruptedException {
+    public void close() {
         for (ChannelId id : connections.keySet()) {
             Connection conn = connections.get(id);
             if (conn != null) {

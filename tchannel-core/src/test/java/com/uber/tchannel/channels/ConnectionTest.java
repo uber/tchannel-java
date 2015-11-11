@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 public class ConnectionTest {
 
     @Test
-    public void testConnectionReset() throws Exception {
+    public void testConnectionClientReset() throws Exception {
 
         InetAddress host = InetAddress.getByName("127.0.0.1");
 
@@ -108,6 +108,68 @@ public class ConnectionTest {
     }
 
     @Test
+    public void testConnectionServerReset() throws Exception {
+
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+
+        // create server
+        final TChannel server = new TChannel.Builder("server")
+            .setServerHost(host)
+            .build();
+        final SubChannel subServer = server.makeSubChannel("server")
+            .register("echo", new EchoHandler());
+        server.listen();
+
+        int port = server.getListeningPort();
+
+        // create client
+        final TChannel client = new TChannel.Builder("client")
+            .setServerHost(host)
+            .build();
+        final SubChannel subClient = client.makeSubChannel("server");
+        client.listen();
+
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setTimeout(2000)
+            .build();
+
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
+            host,
+            port
+        );
+
+        Response res = (Response)future.get();
+        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
+        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
+        res.release();
+
+        // checking the connections
+        Map<String, Integer> stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 1);
+
+        stats = server.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 1);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        server.shutdown();
+        sleep(100);
+
+        stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        stats = server.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        client.shutdown();
+    }
+
+    @Test
     public void testConnectionFailure() throws Exception {
 
         InetAddress host = InetAddress.getByName("127.0.0.1");
@@ -135,8 +197,18 @@ public class ConnectionTest {
         assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
         assertEquals("Failed to connect to the host", res.getError().getMessage());
 
+        // checking the connections
+        Map<String, Integer> stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
         res.release();
         client.shutdown();
+        sleep(100);
+
+        stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
     }
 
     protected  class EchoHandler implements RequestHandler {

@@ -159,6 +159,7 @@ public final class SubChannel {
 
         if (!conn.waitForIdentified(this.initTimeout)) {
             request.release();
+            conn.clean();
             if (conn.lastError() != null) {
                 return createError(request, ErrorType.NetworkError, conn.lastError());
             } else {

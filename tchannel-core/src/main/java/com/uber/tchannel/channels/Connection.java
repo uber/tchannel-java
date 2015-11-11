@@ -36,11 +36,13 @@ public class Connection {
     public Direction direction = Direction.NONE;
     public ConnectionState state = ConnectionState.UNCONNECTED;
 
+    private final Peer peer;
     private final Channel channel;
     private String remoteAddress = null;
     private TChannelError lastError = null;
 
-    public Connection(Channel channel, Direction direction) {
+    public Connection(Peer peer, Channel channel, Direction direction) {
+        this.peer = peer;
         this.channel = channel;
         this.direction = direction;
         if (channel.isActive() && this.state == ConnectionState.UNCONNECTED) {
@@ -144,14 +146,25 @@ public class Connection {
             }
         } catch (InterruptedException ex) {
             // doesn't matter if we got interrupted here ...
+            Thread.currentThread().interrupt();  // set interrupt flag
+            // TODO: log here
         }
 
         return this.state == ConnectionState.IDENTIFIED;
     }
 
-    public synchronized void close() throws InterruptedException {
+    public synchronized void close() {
         channel.close();
         this.state = ConnectionState.DESTROYED;
+    }
+
+    public void clean() {
+        this.close();
+        this.peer.remove(this);
+    }
+
+    public Peer getPeer() {
+        return peer;
     }
 
     public enum Direction {
