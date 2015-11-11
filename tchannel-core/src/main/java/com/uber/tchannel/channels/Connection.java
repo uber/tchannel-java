@@ -23,6 +23,7 @@
 package com.uber.tchannel.channels;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import io.netty.channel.Channel;
 
@@ -158,6 +159,11 @@ public class Connection {
         ResponseRouter responseRouter = channel.pipeline().get(ResponseRouter.class);
         if (responseRouter != null) {
             responseRouter.clean();
+        }
+
+        RequestRouter requestRouter = channel.pipeline().get(RequestRouter.class);
+        if (requestRouter != null) {
+            requestRouter.clean();
         }
 
         channel.close();

@@ -45,12 +45,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
 public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private final TChannel topChannel;
+    private AtomicBoolean destroyed = new AtomicBoolean(false);
 
     private final ListeningExecutorService listeningExecutorService;
 
@@ -73,7 +75,13 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     }
 
     @Override
-    protected void messageReceived(final ChannelHandlerContext ctx, final Request request) throws Exception {
+    protected void messageReceived(final ChannelHandlerContext ctx, final Request request) {
+
+        // There is nothing to do if the connection is already distroyed.
+        if (destroyed.get()) {
+            request.release();
+            return;
+        }
 
         final ArgScheme argScheme = ArgScheme.toScheme(
                 request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
@@ -132,13 +140,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
             @Override
             public void onFailure(Throwable throwable) {
-                StringWriter writer = new StringWriter();
-                PrintWriter printWriter = new PrintWriter( writer );
-                throwable.printStackTrace( printWriter );
-                printWriter.flush();
-
-                // TODO: log
-                System.out.println(writer.toString());
+                // TODO: log the exception
 
                 sendError(ErrorType.BadRequest,
                     "Failed to handle the request: " + throwable.getMessage(),
@@ -155,10 +157,16 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         }
 
         synchronized (responseQueue) {
-            while (responseQueue.size() != 0 && ctx.channel().isWritable()) {
+            while (!responseQueue.isEmpty() && ctx.channel().isWritable()) {
                 ResponseMessage res = responseQueue.remove(0);
                 ctx.writeAndFlush(res);
             }
+        }
+    }
+
+    public void clean() {
+        if (!destroyed.compareAndSet(false, true)) {
+            return;
         }
     }
 
