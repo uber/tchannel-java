@@ -22,6 +22,8 @@
 
 package com.uber.tchannel.channels;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
@@ -38,10 +40,12 @@ import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
 import static java.lang.Thread.sleep;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ConnectionTest {
@@ -255,9 +259,96 @@ public class ConnectionTest {
         assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
     }
 
+    @Test
+    public void testResetOnTimeout() throws Exception {
+
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+
+        // create server
+        final TChannel server = new TChannel.Builder("server")
+            .setServerHost(host)
+            .build();
+        EchoHandler echoHandler = new EchoHandler(true);
+        final SubChannel subServer = server.makeSubChannel("server")
+            .register("echo", echoHandler);
+        server.listen();
+
+        int port = server.getListeningPort();
+
+        // create client
+        final TChannel client = new TChannel.Builder("client")
+            .setServerHost(host)
+            .build();
+        final SubChannel subClient = client.makeSubChannel("server");
+        client.listen();
+
+
+        final AtomicInteger counter = new AtomicInteger(0);
+        for (int i = 0; i < 10; i++) {
+            RawRequest req = new RawRequest.Builder("server", "echo")
+                .setHeader("title")
+                .setBody("hello")
+                .setTimeout(5)
+                .build();
+
+            ListenableFuture<RawResponse> future = subClient.send(
+                req,
+                host,
+                port
+            );
+
+            Futures.addCallback(future, new FutureCallback<RawResponse>() {
+                @Override
+                public void onSuccess(RawResponse response) {
+                    if (counter.incrementAndGet() < 10) {
+                        assertEquals(ErrorType.Timeout, response.getError().getErrorType());
+                    } else {
+                        assertEquals(ErrorType.NetworkError, response.getError().getErrorType());
+                        assertEquals("Connection was reset due to network error", response.getError().getMessage());
+                    }
+
+                    response.release();
+                }
+
+                @Override
+                public void onFailure(Throwable throwable) {
+                    // we should never reach here
+                    assertTrue(false);
+                    System.out.println(throwable.getMessage());
+                }
+            });
+        }
+
+        sleep(500);
+
+        // Connection should still work after reset
+        echoHandler.setDelayed(false);
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setTimeout(20000)
+            .build();
+
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
+            host,
+            port
+        );
+
+        RawResponse res = future.get();
+        assertFalse(res.isError());
+        assertEquals("title", res.getHeader());
+        assertEquals("hello", res.getBody());
+
+        res.release();
+
+        client.shutdown();
+        server.shutdown();
+    }
+
     protected  class EchoHandler implements RequestHandler {
         public boolean accessed = false;
-        protected boolean delayed = false;
+        private boolean delayed = false;
 
         public EchoHandler() {}
 
@@ -265,13 +356,16 @@ public class ConnectionTest {
             this.delayed = delayed;
         }
 
+        public void setDelayed(boolean delayed) {
+            this.delayed = delayed;
+        }
 
         @Override
         public RawResponse handle(Request request) {
 
             if (delayed) {
                 try {
-                    sleep(100);
+                    sleep(300);
                 } catch (Exception ex) {
                 }
             }

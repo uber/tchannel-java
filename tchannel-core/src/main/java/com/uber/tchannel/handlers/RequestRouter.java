@@ -39,20 +39,16 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
 public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private final TChannel topChannel;
-    private AtomicBoolean destroyed = new AtomicBoolean(false);
 
     private final ListeningExecutorService listeningExecutorService;
 
@@ -78,7 +74,9 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     protected void messageReceived(final ChannelHandlerContext ctx, final Request request) {
 
         // There is nothing to do if the connection is already distroyed.
-        if (destroyed.get()) {
+        if (!ctx.channel().isActive()) {
+            // TODO: log
+            System.out.println("Drop request when channel is inActive");
             request.release();
             return;
         }
@@ -128,6 +126,11 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         Futures.addCallback(responseFuture, new FutureCallback<ResponseMessage>() {
             @Override
             public void onSuccess(ResponseMessage response) {
+                if (!ctx.channel().isActive()) {
+                    response.release();
+                    return;
+                }
+
                 // TODO: aggregate the flush
                 if (!ctx.channel().isWritable()) {
                     synchronized (responseQueue) {
@@ -141,7 +144,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             @Override
             public void onFailure(Throwable throwable) {
                 // TODO: log the exception
-
                 sendError(ErrorType.BadRequest,
                     "Failed to handle the request: " + throwable.getMessage(),
                     request, ctx);
@@ -164,11 +166,19 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         }
     }
 
-    public void clean() {
-        if (!destroyed.compareAndSet(false, true)) {
-            return;
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+
+        // clean up the queue
+        synchronized (responseQueue) {
+            while (!responseQueue.isEmpty()) {
+                ResponseMessage res = responseQueue.remove(0);
+                res.release();
+            }
         }
     }
+
 
     private class CallableHandler implements Callable<ResponseMessage> {
         private final Request request;

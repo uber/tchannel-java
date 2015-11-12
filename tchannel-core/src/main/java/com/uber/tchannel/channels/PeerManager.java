@@ -152,12 +152,12 @@ public class PeerManager {
     }
 
     public void handleConnectionErrors(Channel channel, Throwable cause) {
+        // TODO: log the errror ...
+        System.out.println("Resetting connection due to the error of: " + cause.getMessage());
         Connection conn = remove(channel);
         if (conn != null) {
             conn.clean();
         }
-
-        // TODO: log the errror ...
     }
 
     public void close() {

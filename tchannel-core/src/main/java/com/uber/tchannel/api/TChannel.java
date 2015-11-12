@@ -295,7 +295,7 @@ public final class TChannel {
                     ch.pipeline().addLast("RequestRouter", new RequestRouter(
                         topChannel, executorService));
 
-                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter(timer));
+                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel.getPeerManager(), timer));
 
                     // Register Channels as they are created.
                     ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(topChannel.getPeerManager()));

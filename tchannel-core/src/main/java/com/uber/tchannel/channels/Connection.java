@@ -161,11 +161,6 @@ public class Connection {
             responseRouter.clean();
         }
 
-        RequestRouter requestRouter = channel.pipeline().get(RequestRouter.class);
-        if (requestRouter != null) {
-            requestRouter.clean();
-        }
-
         channel.close();
         this.state = ConnectionState.DESTROYED;
     }

@@ -22,27 +22,12 @@
 
 package com.uber.tchannel.api.errors;
 
-public class TChannelError extends Exception {
-    public static final String ERROR_INTERRUPTED = "tchannel.interrupted";
-    public static final String ERROR_WRAPPED = "tchannel.wrapped";
-
-    public static final String ERROR_INIT_TIMEOUT = "tchannel.connection.timeout";
-    public static final String ERROR_CONNECTION_RESET = "tchannel.connection.reset";
-    public static final String ERROR_CONNECTION_FAILURE = "tchannel.socket";
-    public static final String ERROR_NO_PEER_AVAILABLE = "tchannel.no-peer-available";
-
-    public final String type;
-    public final Throwable subError;
-
-    public TChannelError(String message, String type, Throwable subError) {
-        super(message);
-        this.type = type;
-        this.subError = subError;
+public class TChannelConnectionReset extends TChannelError {
+    public TChannelConnectionReset() {
+        super("Connection reset error", TChannelError.ERROR_CONNECTION_RESET);
     }
 
-    public TChannelError(String message, String type) {
-        super(message);
-        this.type = type;
-        this.subError = null;
+    public TChannelConnectionReset(String message) {
+        super(message, TChannelError.ERROR_CONNECTION_RESET);
     }
 }
