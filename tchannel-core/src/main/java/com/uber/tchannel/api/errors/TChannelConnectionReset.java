@@ -20,40 +20,14 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.errors;
+package com.uber.tchannel.api.errors;
 
-import com.uber.tchannel.frames.ErrorFrame;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
+public class TChannelConnectionReset extends TChannelError {
+    public TChannelConnectionReset() {
+        super("Connection reset error", TChannelError.ERROR_CONNECTION_RESET);
+    }
 
-public class ProtocolErrorProcessor {
-
-    public static void handleError(ChannelHandlerContext ctx, ProtocolError protocolError) {
-        ChannelFuture f = ctx.writeAndFlush(new ErrorFrame(
-                protocolError.getId(),
-                protocolError.getErrorType(),
-                protocolError.getTrace(),
-                protocolError.getMessage()
-        ));
-        switch (protocolError.getErrorType()) {
-
-            case Invalid:
-            case Timeout:
-            case Cancelled:
-            case Busy:
-            case Declined:
-            case UnexpectedError:
-            case BadRequest:
-            case NetworkError:
-            case Unhealthy:
-                break;
-            case FatalProtocolError:
-                f.addListener(ChannelFutureListener.CLOSE);
-                break;
-            default:
-                break;
-        }
-
+    public TChannelConnectionReset(String message) {
+        super(message, TChannelError.ERROR_CONNECTION_RESET);
     }
 }

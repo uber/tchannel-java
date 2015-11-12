@@ -159,10 +159,11 @@ public final class SubChannel {
 
         if (!conn.waitForIdentified(this.initTimeout)) {
             request.release();
+            conn.clean();
             if (conn.lastError() != null) {
-                return createError(request, ErrorType.NetworkError, conn.lastError());
+                return ResponseRouter.createError(request, ErrorType.NetworkError, conn.lastError());
             } else {
-                return createError(request, ErrorType.NetworkError, new TChannelConnectionTimeout());
+                return ResponseRouter.createError(request, ErrorType.NetworkError, new TChannelConnectionTimeout());
             }
         }
 
@@ -226,16 +227,5 @@ public final class SubChannel {
         RawRequest request
     ) throws TChannelError {
         return send(request, null, 0);
-    }
-
-    public <V> ListenableFuture<V> createError(Request request, ErrorType errorType, Throwable throwable) {
-        TFuture<V> future = TFuture.create();
-        ArgScheme argScheme = request.getArgScheme();
-        Response response = Response.build(argScheme, new ErrorResponse(
-            request.getId(),
-            errorType,
-            throwable));
-        ResponseRouter.setResponse(future, argScheme, response);
-        return future;
     }
 }

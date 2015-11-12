@@ -39,13 +39,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
@@ -53,7 +50,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private final TChannel topChannel;
 
-    private final AtomicInteger queuedRequests = new AtomicInteger(0);
     private final ListeningExecutorService listeningExecutorService;
 
     private final List<ResponseMessage> responseQueue = new LinkedList<ResponseMessage>();
@@ -75,7 +71,15 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     }
 
     @Override
-    protected void messageReceived(final ChannelHandlerContext ctx, final Request request) throws Exception {
+    protected void messageReceived(final ChannelHandlerContext ctx, final Request request) {
+
+        // There is nothing to do if the connection is already distroyed.
+        if (!ctx.channel().isActive()) {
+            // TODO: log
+            System.out.println("Drop request when channel is inActive");
+            request.release();
+            return;
+        }
 
         final ArgScheme argScheme = ArgScheme.toScheme(
                 request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
@@ -115,9 +119,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             return;
         }
 
-        // Increment the number of queued requests.
-        queuedRequests.getAndIncrement();
-
         // Handle the request in a separate thread and get a future to it
         ListenableFuture<ResponseMessage> responseFuture = listeningExecutorService.submit(
                 new CallableHandler(handler, request));
@@ -125,9 +126,10 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         Futures.addCallback(responseFuture, new FutureCallback<ResponseMessage>() {
             @Override
             public void onSuccess(ResponseMessage response) {
-
-                // Since the request was handled, decrement the queued requests count
-                queuedRequests.decrementAndGet();
+                if (!ctx.channel().isActive()) {
+                    response.release();
+                    return;
+                }
 
                 // TODO: aggregate the flush
                 if (!ctx.channel().isWritable()) {
@@ -141,13 +143,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
             @Override
             public void onFailure(Throwable throwable) {
-                StringWriter writer = new StringWriter();
-                PrintWriter printWriter = new PrintWriter( writer );
-                throwable.printStackTrace( printWriter );
-                printWriter.flush();
-                System.out.println(writer.toString());
-
-                queuedRequests.decrementAndGet();
+                // TODO: log the exception
                 sendError(ErrorType.BadRequest,
                     "Failed to handle the request: " + throwable.getMessage(),
                     request, ctx);
@@ -163,12 +159,26 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         }
 
         synchronized (responseQueue) {
-            while (responseQueue.size() != 0 && ctx.channel().isWritable()) {
+            while (!responseQueue.isEmpty() && ctx.channel().isWritable()) {
                 ResponseMessage res = responseQueue.remove(0);
                 ctx.writeAndFlush(res);
             }
         }
     }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+
+        // clean up the queue
+        synchronized (responseQueue) {
+            while (!responseQueue.isEmpty()) {
+                ResponseMessage res = responseQueue.remove(0);
+                res.release();
+            }
+        }
+    }
+
 
     private class CallableHandler implements Callable<ResponseMessage> {
         private final Request request;

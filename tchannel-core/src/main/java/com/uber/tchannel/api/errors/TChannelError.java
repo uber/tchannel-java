@@ -27,6 +27,7 @@ public class TChannelError extends Exception {
     public static final String ERROR_WRAPPED = "tchannel.wrapped";
 
     public static final String ERROR_INIT_TIMEOUT = "tchannel.connection.timeout";
+    public static final String ERROR_CONNECTION_RESET = "tchannel.connection.reset";
     public static final String ERROR_CONNECTION_FAILURE = "tchannel.socket";
     public static final String ERROR_NO_PEER_AVAILABLE = "tchannel.no-peer-available";
 

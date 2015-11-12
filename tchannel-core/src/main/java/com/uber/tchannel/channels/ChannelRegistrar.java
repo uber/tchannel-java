@@ -51,6 +51,9 @@ public class ChannelRegistrar extends ChannelHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        // TODO: log the exception
+        System.out.println("Exception detected, reseting connection: " + cause.getMessage());
+        cause.printStackTrace();
         this.peerManager.handleConnectionErrors(ctx.channel(), cause);
     }
 }

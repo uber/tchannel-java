@@ -23,6 +23,8 @@
 package com.uber.tchannel.channels;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.handlers.RequestRouter;
+import com.uber.tchannel.handlers.ResponseRouter;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
@@ -36,11 +38,13 @@ public class Connection {
     public Direction direction = Direction.NONE;
     public ConnectionState state = ConnectionState.UNCONNECTED;
 
+    private Peer peer;
     private final Channel channel;
     private String remoteAddress = null;
     private TChannelError lastError = null;
 
-    public Connection(Channel channel, Direction direction) {
+    public Connection(Peer peer, Channel channel, Direction direction) {
+        this.peer = peer;
         this.channel = channel;
         this.direction = direction;
         if (channel.isActive() && this.state == ConnectionState.UNCONNECTED) {
@@ -144,14 +148,33 @@ public class Connection {
             }
         } catch (InterruptedException ex) {
             // doesn't matter if we got interrupted here ...
+            Thread.currentThread().interrupt();  // set interrupt flag
+            // TODO: log here
         }
 
         return this.state == ConnectionState.IDENTIFIED;
     }
 
-    public synchronized void close() throws InterruptedException {
+    public synchronized void close() {
+        ResponseRouter responseRouter = channel.pipeline().get(ResponseRouter.class);
+        if (responseRouter != null) {
+            responseRouter.clean();
+        }
+
         channel.close();
         this.state = ConnectionState.DESTROYED;
+    }
+
+    public void clean() {
+        this.close();
+        this.peer.remove(this);
+    }
+
+    public Peer getPeer() {
+        return peer;
+    }
+    public void setPeer(Peer peer) {
+        this.peer = peer;
     }
 
     public enum Direction {

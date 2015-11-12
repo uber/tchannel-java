@@ -39,6 +39,8 @@ import java.util.Map;
 public class PeerManager {
     private final Bootstrap clientBootstrap;
     private final ConcurrentHashMap<SocketAddress, Peer> peers = new ConcurrentHashMap<>();
+
+    // mapping from channel to actual remote address when client is not ephemeral
     private final ConcurrentHashMap<ChannelId, SocketAddress> channelTable = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ChannelId, Connection> inConnections = new ConcurrentHashMap<>();
     private String hostPort = "0.0.0.0:0";
@@ -70,6 +72,11 @@ public class PeerManager {
     }
 
     public Peer getPeer(SocketAddress address) {
+        return peers.get(address);
+    }
+
+    public Peer getPeer(Channel channel) {
+        SocketAddress address = channel.remoteAddress();
         return peers.get(address);
     }
 
@@ -106,32 +113,32 @@ public class PeerManager {
         peer.handleActiveOutConnection(ctx);
     }
 
-    public void remove(Channel channel) {
+    public Connection remove(Channel channel) {
         SocketAddress address = channel.remoteAddress();
         Peer peer = peers.get(address);
         if (peer != null) {
-            peer.remove(channel);
-            return;
+            return peer.remove(channel);
         }
 
         address = channelTable.remove(channel.id());
         if (address == null) {
-            return;
+            return null;
         }
 
         peer = peers.get(address);
         if (peer != null) {
-            peer.remove(channel);
+            return peer.remove(channel);
         }
 
         // TODO: clean up when conneciton count drops to 0
+        return null;
     }
 
     public void setIdentified(Channel channel, Map<String, String> headers) {
         Connection conn = get(channel);
         if (conn == null) {
             // Handle in connection
-            conn = new Connection(channel, Connection.Direction.IN);
+            conn = new Connection(null, channel, Connection.Direction.IN);
         }
 
         conn.setIndentified(headers);
@@ -139,17 +146,21 @@ public class PeerManager {
             SocketAddress address = conn.getRemoteAddressAsSocketAddress();
             channelTable.put(channel.id(), address);
             Peer peer = findOrNewPeer(address);
+            conn.setPeer(peer);
             peer.add(conn);
         }
     }
 
     public void handleConnectionErrors(Channel channel, Throwable cause) {
-        remove(channel);
-
         // TODO: log the errror ...
+        System.out.println("Resetting connection due to the error of: " + cause.getMessage());
+        Connection conn = remove(channel);
+        if (conn != null) {
+            conn.clean();
+        }
     }
 
-    public void close() throws InterruptedException {
+    public void close() {
         for (SocketAddress addr : peers.keySet()) {
             peers.get(addr).close();
         }
@@ -165,6 +176,7 @@ public class PeerManager {
         return hostPort;
     }
 
+    // TODO: peer stats & reaper
     public Map<String, Integer> getStats() {
         int in = 0;
         int out = 0;

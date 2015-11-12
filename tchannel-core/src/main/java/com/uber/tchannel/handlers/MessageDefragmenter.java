@@ -285,10 +285,4 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
         }
 
     }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        // TODO: logging instead of print
-        TChannelUtilities.PrintException(cause);
-    }
 }

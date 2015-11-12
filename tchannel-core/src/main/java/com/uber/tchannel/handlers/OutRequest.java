@@ -3,6 +3,7 @@ package com.uber.tchannel.handlers;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.messages.ErrorResponse;
 import com.uber.tchannel.messages.Request;
+import io.netty.channel.ChannelFuture;
 import io.netty.util.Timeout;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,6 +16,7 @@ public final class OutRequest<V> {
 
     private AtomicInteger retryCount = new AtomicInteger(0);
     private Timeout timeout = null;
+    private ChannelFuture channelFuture = null;
 
     private ErrorResponse lastError = null;
 
@@ -53,5 +55,22 @@ public final class OutRequest<V> {
 
     public void setLastError(ErrorResponse lastError) {
         this.lastError = lastError;
+    }
+
+    public ChannelFuture getChannelFuture() {
+        return channelFuture;
+    }
+
+    public void setChannelFuture(ChannelFuture channelFuture) {
+        this.channelFuture = channelFuture;
+    }
+
+    public void flushWrite() {
+        try {
+            this.channelFuture.sync();
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();  // set interrupt flag
+            // TODO: log here?
+        }
     }
 }

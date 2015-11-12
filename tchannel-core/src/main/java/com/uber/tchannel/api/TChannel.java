@@ -153,15 +153,24 @@ public final class TChannel {
         return this.makeSubChannel(service, Connection.Direction.NONE);
     }
 
-    public void shutdown(boolean sync) throws InterruptedException, ExecutionException {
+    public void shutdown(boolean sync) {
         timer.stop();
         this.peerManager.close();
         Future bg = this.bossGroup.shutdownGracefully();
         Future cg = this.childGroup.shutdownGracefully();
 
-        if (sync) {
-            bg.get();
-            cg.get();
+        try {
+            if (sync) {
+                bg.get();
+                cg.get();
+            }
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();  // set interrupt flag
+            // TODO: log instead
+            System.out.println("shutdown interrupted");
+        } catch (ExecutionException ee) {
+            // TODO: log instead
+            System.out.println("shutdown runs into an ExecutionException");
         }
     }
 
@@ -286,7 +295,7 @@ public final class TChannel {
                     ch.pipeline().addLast("RequestRouter", new RequestRouter(
                         topChannel, executorService));
 
-                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter(timer));
+                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel.getPeerManager(), timer));
 
                     // Register Channels as they are created.
                     ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(topChannel.getPeerManager()));
