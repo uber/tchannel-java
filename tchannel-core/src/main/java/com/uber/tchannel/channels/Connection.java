@@ -152,7 +152,13 @@ public class Connection {
             // TODO: log here
         }
 
-        return this.state == ConnectionState.IDENTIFIED;
+        boolean result = this.state == ConnectionState.IDENTIFIED;
+        if (!result) {
+            // reset the connection if it failed to identify
+            this.clean();
+        }
+
+        return result;
     }
 
     public synchronized void close() {
