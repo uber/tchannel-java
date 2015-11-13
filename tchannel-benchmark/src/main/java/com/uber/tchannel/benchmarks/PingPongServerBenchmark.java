@@ -66,7 +66,7 @@ public class PingPongServerBenchmark {
         Options options = new OptionsBuilder()
             .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
             .warmupIterations(5)
-            .measurementIterations(10)
+            .measurementIterations(100)
             .forks(1)
             .build();
         new Runner(options).run();
