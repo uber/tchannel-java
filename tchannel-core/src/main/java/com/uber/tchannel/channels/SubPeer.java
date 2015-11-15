@@ -26,7 +26,6 @@ import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.errors.TChannelError;
 
 import java.net.SocketAddress;
-import java.util.Random;
 
 public class SubPeer {
     private static final double SCORE_UNCONNECTED = 1.0;
@@ -39,7 +38,6 @@ public class SubPeer {
     private final SocketAddress remoteAddress;
     private final SubChannel subChannel;
     private final PeerManager peerManager;
-    private final Random random = new Random();
 
     private double score = 0;
     private Connection connection = null;
@@ -61,13 +59,12 @@ public class SubPeer {
         return peerManager.getPeer(remoteAddress);
     }
 
-    public double updateScore() {
-        double fuzz = random.nextDouble() * SCORE_FUZZ;
-
+    public boolean updateScore() {
         Peer peer = getPeer();
+        boolean flag = false;
         if (peer == null) {
-            score = SCORE_UNCONNECTED + fuzz;
-            return score;
+            score = SCORE_UNCONNECTED;
+            return flag;
         }
 
         connection = peer.getConnection(ConnectionState.IDENTIFIED, direction);
@@ -78,11 +75,11 @@ public class SubPeer {
         } else if (direction != Connection.Direction.NONE && direction != connection.direction) {
             score = SCORE_IDENTIFIED;
         } else {
+            flag = true;
             score = SCORE_PREFERRED_DIRECTION;
         }
 
-        score = score + fuzz;
-        return score;
+        return flag;
     }
 
     public Connection getPreferredConnection() {

@@ -23,7 +23,6 @@
 package com.uber.tchannel.channels;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.frames.InitFrame;
-import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import io.netty.channel.Channel;
 
