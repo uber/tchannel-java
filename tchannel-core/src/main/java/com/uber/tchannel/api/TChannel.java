@@ -31,7 +31,6 @@ import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageDefragmenter;
 import com.uber.tchannel.handlers.MessageFragmenter;
-import com.uber.tchannel.handlers.PingHandler;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
@@ -79,6 +78,7 @@ public final class TChannel {
     private ExecutorService exectorService;
     private final int initTimeout;
     private final int resetOnTimeoutLimit;
+    private final int clientMaxPendingRequests;
 
     private Map<String, SubChannel> subChannels = new HashMap<>();
 
@@ -101,6 +101,7 @@ public final class TChannel {
         this.resetOnTimeoutLimit = builder.resetOnTimeoutLimit;
         this.peerManager = new PeerManager(builder.bootstrap(this));
         this.timer = builder.timer;
+        this.clientMaxPendingRequests = builder.clientMaxPendingRequests;
     }
 
     public int getListeningPort() {
@@ -184,6 +185,10 @@ public final class TChannel {
         this.shutdown(true);
     }
 
+    public int getClientMaxPendingRequests() {
+        return clientMaxPendingRequests;
+    }
+
     public static class Builder {
 
         private final String service;
@@ -197,6 +202,7 @@ public final class TChannel {
         private LogLevel logLevel = LogLevel.INFO;
         private int initTimeout = 2000;
         private int resetOnTimeoutLimit = Integer.MAX_VALUE;
+        private int clientMaxPendingRequests = 100000;
 
         public Builder(String service) throws UnknownHostException {
             if (service == null) {
@@ -208,6 +214,11 @@ public final class TChannel {
 
         public Builder setExecutorService(ExecutorService executorService) {
             this.executorService = executorService;
+            return this;
+        }
+
+        public Builder setClientMaxPendingRequests(int clientMaxPendingRequests) {
+            this.clientMaxPendingRequests = clientMaxPendingRequests;
             return this;
         }
 

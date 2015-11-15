@@ -61,6 +61,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     private AtomicInteger timeouts = new AtomicInteger(0);
 
     private final Map<Long, OutRequest> requestMap = new ConcurrentHashMap<>();
+    private final int maxPendingRequests;
 
     private final AtomicInteger idGenerator = new AtomicInteger(0);
     private ChannelHandlerContext ctx;
@@ -69,6 +70,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         this.peerManager = topChannel.getPeerManager();
         this.resetOnTimeoutLimit = topChannel.getResetOnTimeoutLimit();
         this.timer = timer;
+        this.maxPendingRequests = topChannel.getClientMaxPendingRequests();
     }
 
     @Override
@@ -83,6 +85,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         if (this.destroyed.get()) {
             request.release();
             return createError(request, ErrorType.NetworkError, "Connection already closed");
+        } else if (this.requestMap.size() > maxPendingRequests) {
+            request.release();
+            return createError(request, ErrorType.Busy,
+                String.format("Client max pending request limit of %d is reached", maxPendingRequests));
         }
 
         TFuture<V> future = TFuture.create();
@@ -103,8 +109,17 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
         // TODO: aggregate the flush
         while(!ctx.channel().isWritable()) {
+            if (!ctx.channel().isActive()) {
+                messageReceived(ctx, new ErrorResponse(
+                    outRequest.getRequest().getId(),
+                    ErrorType.NetworkError,
+                    "Channel is closed"));
+                return false;
+            }
+
             Thread.yield();
         }
+
         outRequest.setChannelFuture(ctx.writeAndFlush(request));
 
         // TODO: better peer selection and channel write
@@ -215,6 +230,9 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
             if (outRequest == null) {
                 continue;
             }
+
+            // cancel timer
+            outRequest.getTimeout().cancel();
 
             // wait until the send is completed
             outRequest.flushWrite();

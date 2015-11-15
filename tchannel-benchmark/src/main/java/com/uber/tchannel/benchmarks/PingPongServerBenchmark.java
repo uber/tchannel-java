@@ -53,10 +53,11 @@ import static java.lang.Thread.sleep;
 @State(Scope.Thread)
 public class PingPongServerBenchmark {
 
-    TChannel channel;
-    TChannel client;
-    SubChannel subClient;
-    int port;
+    private TChannel channel;
+    private TChannel client;
+    private SubChannel subClient;
+    private int port;
+    private InetAddress host;
 
 //    @Param({ "0", "1", "10" })
     @Param({ "0"})
@@ -66,7 +67,7 @@ public class PingPongServerBenchmark {
         Options options = new OptionsBuilder()
             .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
             .warmupIterations(5)
-            .measurementIterations(100)
+            .measurementIterations(10)
             .forks(1)
             .build();
         new Runner(options).run();
@@ -74,14 +75,20 @@ public class PingPongServerBenchmark {
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
-
+        this.host = InetAddress.getByName("127.0.0.1");
         this.channel = new TChannel.Builder("ping-server")
+            .setServerHost(host)
             .build();
         channel.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
-        this.client = new TChannel.Builder("ping-client").build();
         channel.listen();
-        this.subClient = this.client.makeSubChannel("ping-server");
         this.port = this.channel.getListeningPort();
+
+        this.client = new TChannel.Builder("ping-client")
+            // .setResetOnTimeoutLimit(100)
+            .setClientMaxPendingRequests(200000)
+            .build();
+        this.subClient = this.client.makeSubChannel("ping-server");
+        this.client.listen();
     }
 
     @Benchmark
@@ -95,7 +102,7 @@ public class PingPongServerBenchmark {
         ListenableFuture<JsonResponse<Pong>> future = this.subClient
             .send(
                 request,
-                InetAddress.getLocalHost(),
+                this.host,
                 this.port
             );
         Futures.addCallback(future, new FutureCallback<JsonResponse<Pong>>() {
@@ -110,7 +117,19 @@ public class PingPongServerBenchmark {
                     pongResponse.release();
                 } else {
                     // System.out.println(pongResponse.getError().getMessage());
-                    counters.errorQPS.incrementAndGet();
+                    switch (pongResponse.getError().getErrorType()) {
+                        case Busy:
+                            counters.busyQPS.incrementAndGet();
+                            break;
+                        case Timeout:
+                            counters.timeoutQPS.incrementAndGet();
+                            break;
+                        case NetworkError:
+                            counters.networkQPS.incrementAndGet();
+                            break;
+                        default:
+                            counters.errorQPS.incrementAndGet();
+                    }
                 }
             }
 
@@ -163,6 +182,9 @@ public class PingPongServerBenchmark {
     public static class AdditionalCounters {
         public AtomicInteger actualQPS = new AtomicInteger(0);
         public AtomicInteger errorQPS = new AtomicInteger(0);
+        public AtomicInteger timeoutQPS = new AtomicInteger(0);
+        public AtomicInteger busyQPS = new AtomicInteger(0);
+        public AtomicInteger networkQPS = new AtomicInteger(0);
 
         @Setup(Level.Iteration)
         public void clean() {
@@ -176,6 +198,15 @@ public class PingPongServerBenchmark {
 
         public int errorQPS() {
             return errorQPS.get();
+        }
+        public int timeoutQPS() {
+            return timeoutQPS.get();
+        }
+        public int busyQPS() {
+            return busyQPS.get();
+        }
+        public int networkQPS() {
+            return networkQPS.get();
         }
     }
 }
