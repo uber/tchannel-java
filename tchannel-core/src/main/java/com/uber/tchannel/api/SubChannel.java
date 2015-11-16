@@ -33,14 +33,12 @@ import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.messages.ErrorResponse;
 import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
-import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
@@ -52,6 +50,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public final class SubChannel {
 
@@ -116,16 +115,26 @@ public final class SubChannel {
         return this;
     }
 
+    private final Random random = new Random();
     public SubPeer choosePeer() {
         SubPeer res = null;
-        for (SubPeer peer : peers) {
-            peer.updateScore();
-            if (res == null) {
+        if (peers.size() == 0) {
+            return null;
+        }
+
+        int start = new Random().nextInt(peers.size());
+        int i = start;
+        boolean stop = false;
+        do {
+            i = (i + 1) % peers.size();
+            SubPeer peer = peers.get(i);
+            stop = peer.updateScore();
+            if (stop || res == null) {
                 res = peer;
             } else if (peer.getScore() > res.getScore()) {
                 res = peer;
             }
-        }
+        } while (!stop && i != start);
 
         return res;
     }

@@ -100,7 +100,7 @@ public class Peer {
     }
 
     public Connection connect(Bootstrap bootstrap, Connection.Direction preferredDirection) throws TChannelError {
-        Connection conn = getConnection(ConnectionState.IDENTIFIED);
+        Connection conn = getConnection(ConnectionState.IDENTIFIED, preferredDirection);
         if (conn != null && (
             conn.satisfy(preferredDirection) || preferredDirection == Connection.Direction.IN)) {
             return conn;

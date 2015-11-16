@@ -278,6 +278,7 @@ public class ConnectionTest {
         // create client
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
+            .setResetOnTimeoutLimit(10)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
         client.listen();

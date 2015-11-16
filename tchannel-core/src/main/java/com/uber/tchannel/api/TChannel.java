@@ -31,7 +31,6 @@ import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageDefragmenter;
 import com.uber.tchannel.handlers.MessageFragmenter;
-import com.uber.tchannel.handlers.PingHandler;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
@@ -78,6 +77,8 @@ public final class TChannel {
     private int listeningPort;
     private ExecutorService exectorService;
     private final int initTimeout;
+    private final int resetOnTimeoutLimit;
+    private final int clientMaxPendingRequests;
 
     private Map<String, SubChannel> subChannels = new HashMap<>();
 
@@ -97,8 +98,10 @@ public final class TChannel {
         this.host = builder.host;
         this.port = builder.port;
         this.initTimeout = builder.initTimeout;
+        this.resetOnTimeoutLimit = builder.resetOnTimeoutLimit;
         this.peerManager = new PeerManager(builder.bootstrap(this));
         this.timer = builder.timer;
+        this.clientMaxPendingRequests = builder.clientMaxPendingRequests;
     }
 
     public int getListeningPort() {
@@ -119,6 +122,10 @@ public final class TChannel {
 
     public PeerManager getPeerManager() {
         return this.peerManager;
+    }
+
+    public int getResetOnTimeoutLimit() {
+        return resetOnTimeoutLimit;
     }
 
     public long getInitTimeout() {
@@ -178,6 +185,10 @@ public final class TChannel {
         this.shutdown(true);
     }
 
+    public int getClientMaxPendingRequests() {
+        return clientMaxPendingRequests;
+    }
+
     public static class Builder {
 
         private final String service;
@@ -190,6 +201,8 @@ public final class TChannel {
         private EventLoopGroup childGroup = new NioEventLoopGroup();
         private LogLevel logLevel = LogLevel.INFO;
         private int initTimeout = 2000;
+        private int resetOnTimeoutLimit = Integer.MAX_VALUE;
+        private int clientMaxPendingRequests = 100000;
 
         public Builder(String service) throws UnknownHostException {
             if (service == null) {
@@ -201,6 +214,11 @@ public final class TChannel {
 
         public Builder setExecutorService(ExecutorService executorService) {
             this.executorService = executorService;
+            return this;
+        }
+
+        public Builder setClientMaxPendingRequests(int clientMaxPendingRequests) {
+            this.clientMaxPendingRequests = clientMaxPendingRequests;
             return this;
         }
 
@@ -231,6 +249,11 @@ public final class TChannel {
 
         public Builder setInitTimeout(int initTimeout) {
             this.initTimeout = initTimeout;
+            return this;
+        }
+
+        public Builder setResetOnTimeoutLimit(int resetOnTimeoutLimit) {
+            this.resetOnTimeoutLimit = resetOnTimeoutLimit;
             return this;
         }
 
@@ -295,7 +318,7 @@ public final class TChannel {
                     ch.pipeline().addLast("RequestRouter", new RequestRouter(
                         topChannel, executorService));
 
-                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel.getPeerManager(), timer));
+                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel, timer));
 
                     // Register Channels as they are created.
                     ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(topChannel.getPeerManager()));

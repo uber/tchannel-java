@@ -23,6 +23,7 @@
 package com.uber.tchannel.handlers;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.errors.TChannelConnectionReset;
 import com.uber.tchannel.channels.PeerManager;
@@ -56,17 +57,20 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     private final HashedWheelTimer timer;
     private AtomicBoolean destroyed = new AtomicBoolean(false);
 
-    private static final int timeoutResetLimit = 10;
+    private final int resetOnTimeoutLimit;
     private AtomicInteger timeouts = new AtomicInteger(0);
 
     private final Map<Long, OutRequest> requestMap = new ConcurrentHashMap<>();
+    private final int maxPendingRequests;
 
     private final AtomicInteger idGenerator = new AtomicInteger(0);
     private ChannelHandlerContext ctx;
 
-    public ResponseRouter(PeerManager peerManager, HashedWheelTimer timer) {
-        this.peerManager = peerManager;
+    public ResponseRouter(TChannel topChannel, HashedWheelTimer timer) {
+        this.peerManager = topChannel.getPeerManager();
+        this.resetOnTimeoutLimit = topChannel.getResetOnTimeoutLimit();
         this.timer = timer;
+        this.maxPendingRequests = topChannel.getClientMaxPendingRequests();
     }
 
     @Override
@@ -81,6 +85,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         if (this.destroyed.get()) {
             request.release();
             return createError(request, ErrorType.NetworkError, "Connection already closed");
+        } else if (this.requestMap.size() > maxPendingRequests) {
+            request.release();
+            return createError(request, ErrorType.Busy,
+                String.format("Client max pending request limit of %d is reached", maxPendingRequests));
         }
 
         TFuture<V> future = TFuture.create();
@@ -101,8 +109,17 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
         // TODO: aggregate the flush
         while(!ctx.channel().isWritable()) {
+            if (!ctx.channel().isActive()) {
+                messageReceived(ctx, new ErrorResponse(
+                    outRequest.getRequest().getId(),
+                    ErrorType.NetworkError,
+                    "Channel is closed"));
+                return false;
+            }
+
             Thread.yield();
         }
+
         outRequest.setChannelFuture(ctx.writeAndFlush(request));
 
         // TODO: better peer selection and channel write
@@ -122,11 +139,11 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
             public void run(Timeout timeout) throws Exception {
                 // prevent ByteBuf refCnt leak
                 outRequest.flushWrite();
-                if (timeouts.incrementAndGet() >= timeoutResetLimit) {
+                if (timeouts.incrementAndGet() >= resetOnTimeoutLimit) {
                     // reset on continuous timeouts
                     peerManager.handleConnectionErrors(ctx.channel(),
                         new TChannelConnectionReset(String.format(
-                            "Connection reset due to continous %d timeouts", timeoutResetLimit)));
+                            "Connection reset due to continuous %d timeouts", resetOnTimeoutLimit)));
                     return;
                 }
 
@@ -213,6 +230,9 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
             if (outRequest == null) {
                 continue;
             }
+
+            // cancel timer
+            outRequest.getTimeout().cancel();
 
             // wait until the send is completed
             outRequest.flushWrite();
