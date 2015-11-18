@@ -76,7 +76,7 @@ public final class TChannel {
     private String listeningHost = "0.0.0.0";
     private int listeningPort;
     private ExecutorService exectorService;
-    private final int initTimeout;
+    private final long initTimeout;
     private final int resetOnTimeoutLimit;
     private final int clientMaxPendingRequests;
 
@@ -200,7 +200,7 @@ public final class TChannel {
         private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         private EventLoopGroup childGroup = new NioEventLoopGroup();
         private LogLevel logLevel = LogLevel.INFO;
-        private int initTimeout = 2000;
+        private long initTimeout = -1;
         private int resetOnTimeoutLimit = Integer.MAX_VALUE;
         private int clientMaxPendingRequests = 100000;
 
@@ -247,7 +247,7 @@ public final class TChannel {
             return this;
         }
 
-        public Builder setInitTimeout(int initTimeout) {
+        public Builder setInitTimeout(long initTimeout) {
             this.initTimeout = initTimeout;
             return this;
         }

@@ -52,7 +52,7 @@ public final class ErrorResponse extends ResponseMessage implements TChannelMess
 
     @Override
     public FrameType getType() {
-        return this.getType();
+        return super.getType();
     }
 
     public ErrorType getErrorType() {

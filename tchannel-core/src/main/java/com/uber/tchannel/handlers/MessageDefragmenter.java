@@ -118,7 +118,8 @@ public class MessageDefragmenter extends MessageToMessageDecoder<Frame> {
 
         ArgScheme scheme = ArgScheme.toScheme(frame.getHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
         if (!ArgScheme.isSupported(scheme)) {
-            ErrorFrame error = sendError(ErrorType.BadRequest, "Invalid arg schema", frame.getId(), ctx);
+            ErrorFrame error = sendError(ErrorType.BadRequest,
+                "Expect call request to have Arg Scheme specified", frame.getId(), ctx);
             this.errorMap.put(frame.getId(), error);
             return;
         }

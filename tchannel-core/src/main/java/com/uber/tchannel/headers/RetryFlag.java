@@ -58,6 +58,29 @@ public enum RetryFlag {
         return retryFlags;
     }
 
+    public static String flagsToString(Set<RetryFlag> flags) {
+        StringBuilder sb = new StringBuilder();
+        for (RetryFlag flag : flags) {
+            sb.append(flag.toString());
+        }
+
+        return sb.toString();
+    }
+
+    public static boolean validFlags(String flags) {
+        switch (flags) {
+            case "c":
+            case "t":
+            case "n":
+            case "ct":
+            case "tc":
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
     public char getFlag() {
         return flag;
     }

@@ -27,9 +27,11 @@ import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.Connection;
+import com.uber.tchannel.channels.Peer;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.SubPeer;
 import com.uber.tchannel.errors.ErrorType;
+import com.uber.tchannel.handlers.OutRequest;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
@@ -116,7 +118,7 @@ public final class SubChannel {
     }
 
     private final Random random = new Random();
-    public SubPeer choosePeer() {
+    public SubPeer choosePeer(OutRequest outRequest) {
         SubPeer res = null;
         if (peers.size() == 0) {
             return null;
@@ -128,7 +130,7 @@ public final class SubChannel {
         do {
             i = (i + 1) % peers.size();
             SubPeer peer = peers.get(i);
-            stop = peer.updateScore();
+            stop = peer.updateScore(outRequest);
             if (stop || res == null) {
                 res = peer;
             } else if (peer.getScore() > res.getScore()) {
@@ -136,11 +138,16 @@ public final class SubChannel {
             }
         } while (!stop && i != start);
 
+        outRequest.setUsedPeer(res.getRemoteAddress());
         return res;
     }
 
-    public Connection connect() throws TChannelError {
-        SubPeer peer = choosePeer();
+    public Connection connect(OutRequest outRequest) {
+        SubPeer peer = choosePeer(outRequest);
+        if (peer == null) {
+            return null;
+        }
+
         Connection conn = peer.getPreferredConnection();
         if (conn == null) {
             conn = peer.connectTo();
@@ -149,42 +156,21 @@ public final class SubChannel {
         return conn;
     }
 
-    protected <V> ListenableFuture<V> sendRequest(
-        Request request,
-        InetAddress host,
-        int port
-    ) throws TChannelError {
+    public boolean sendOutRequest(OutRequest outRequest) {
+        boolean res = false;
+        while (true) {
+            if (!outRequest.shouldRetry()) {
+                outRequest.setFuture();
+                break;
+            }
 
-        // Get an outbound channel
-        Connection conn = null;
-
-        if (host != null) {
-            conn = this.peerManager.findOrNew(new InetSocketAddress(host, port));
-        } else if (peers.size() == 0) {
-            throw new TChannelNoPeerAvailable();
-        } else {
-            conn = connect();
-        }
-
-        if (!conn.waitForIdentified(this.initTimeout)) {
-            request.release();
-            conn.clean();
-            if (conn.lastError() != null) {
-                return ResponseRouter.createError(request, ErrorType.NetworkError, conn.lastError());
-            } else {
-                return ResponseRouter.createError(request, ErrorType.NetworkError, new TChannelConnectionTimeout());
+            if (sendOutRequest(outRequest, connect(outRequest))) {
+                res = true;
+                break;
             }
         }
 
-        // Set the ArgScheme as RAW if its not set
-        Map<String, String> transportHeaders = request.getTransportHeaders();
-        if (!transportHeaders.containsKey(TransportHeaders.ARG_SCHEME_KEY)) {
-            request.setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
-        }
-
-        // Get a response router for our outbound channel
-        ResponseRouter router = conn.channel().pipeline().get(ResponseRouter.class);
-        return router.expectResponse(request);
+        return res;
     }
 
     public <T, U> ListenableFuture<ThriftResponse<U>> send(
@@ -236,5 +222,72 @@ public final class SubChannel {
         RawRequest request
     ) throws TChannelError {
         return send(request, null, 0);
+    }
+
+    protected <V> ListenableFuture<V> sendRequest(
+        Request request,
+        InetAddress host,
+        int port
+    ) {
+        OutRequest<V> outRequest = new OutRequest<V>(this, request);
+        if (host != null) {
+            Connection conn = peerManager.findOrNew(new InetSocketAddress(host, port));
+            // No retry for direct connections
+            outRequest.disableRetry();
+            if (!sendOutRequest(outRequest, conn)) {
+                outRequest.setFuture();
+            }
+        } else if (peers.size() == 0) {
+            outRequest.setLastError(ErrorType.BadRequest, new TChannelNoPeerAvailable());
+            outRequest.setFuture();
+        } else {
+            sendOutRequest(outRequest);
+        }
+
+        return outRequest.getFuture();
+    }
+
+    protected boolean sendOutRequest(
+        OutRequest outRequest,
+        Connection connection
+    ) {
+        Request request = outRequest.getRequest();
+
+        // Validate if the ArgScheme is set correctly
+        if (request.getArgScheme() == null) {
+            request.setArgScheme(ArgScheme.RAW);
+            outRequest.setLastError(ErrorType.BadRequest, "Expect call request to have Arg Scheme specified");
+            outRequest.setFuture();
+            return false;
+        }
+
+        // Set the default retry flag if it is not set
+        if (request.getRetryFlags() == null) {
+            request.setRetryFlags("c");
+        }
+
+        long initTimeout = this.initTimeout;
+        if (initTimeout <= 0) {
+            initTimeout = request.getTimeout();
+        }
+
+        if (connection == null) {
+            outRequest.setLastError(ErrorType.BadRequest, new TChannelNoPeerAvailable());
+            outRequest.setFuture();
+            return false;
+        } else if (!connection.waitForIdentified(initTimeout)) {
+            connection.clean();
+            if (connection.lastError() != null) {
+                outRequest.setLastError(ErrorType.NetworkError, connection.lastError());
+            } else {
+                outRequest.setLastError(ErrorType.NetworkError, new TChannelConnectionTimeout());
+            }
+
+            return false;
+        }
+
+        // Get a response router for our outbound channel
+        ResponseRouter router = connection.channel().pipeline().get(ResponseRouter.class);
+        return router.expectResponse(outRequest);
     }
 }

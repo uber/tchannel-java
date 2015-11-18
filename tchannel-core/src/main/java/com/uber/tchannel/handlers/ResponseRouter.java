@@ -22,22 +22,13 @@
 
 package com.uber.tchannel.handlers;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.errors.TChannelConnectionReset;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.messages.ErrorResponse;
-import com.uber.tchannel.messages.JsonRequest;
-import com.uber.tchannel.messages.JsonResponse;
-import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
-import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.ResponseMessage;
-import com.uber.tchannel.messages.ThriftRequest;
-import com.uber.tchannel.messages.ThriftResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.HashedWheelTimer;
@@ -79,30 +70,23 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         this.ctx = ctx;
     }
 
-    public <V> ListenableFuture<V> expectResponse(Request request) {
+    public boolean expectResponse(OutRequest outRequest) {
         int messageId = idGenerator.incrementAndGet();
+        Request request = outRequest.getRequest();
         request.setId(messageId);
         if (this.destroyed.get()) {
-            request.release();
-            return createError(request, ErrorType.NetworkError, "Connection already closed");
+            outRequest.setLastError(ErrorType.NetworkError, "Connection already closed");
+            return false;
         } else if (this.requestMap.size() > maxPendingRequests) {
-            request.release();
-            return createError(request, ErrorType.Busy,
+            outRequest.setLastError(ErrorType.Busy,
                 String.format("Client max pending request limit of %d is reached", maxPendingRequests));
-        }
-
-        TFuture<V> future = TFuture.create();
-        OutRequest<V> outRequest = new OutRequest<V>(request, future);
-        send(outRequest);
-        return future;
-    }
-
-    protected <V> boolean send(OutRequest<V> outRequest) {
-        if (!outRequest.shouldRetry()) {
-            messageReceived(ctx, outRequest.getLastError());
             return false;
         }
 
+        return send(outRequest);
+    }
+
+    protected boolean send(OutRequest outRequest) {
         Request request = outRequest.getRequest();
         this.requestMap.put(request.getId(), outRequest);
         setTimer(outRequest);
@@ -110,7 +94,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         // TODO: aggregate the flush
         while(!ctx.channel().isWritable()) {
             if (!ctx.channel().isActive()) {
-                messageReceived(ctx, new ErrorResponse(
+                handleResponse(new ErrorResponse(
                     outRequest.getRequest().getId(),
                     ErrorType.NetworkError,
                     "Channel is closed"));
@@ -122,17 +106,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
         outRequest.setChannelFuture(ctx.writeAndFlush(request));
 
-        // TODO: better peer selection and channel write
-//        if(!ctx.channel().isWritable()) {
-//            ctx.writeAndFlush(request).syncUninterruptibly();
-//        } else {
-//            ctx.writeAndFlush(request);
-//        }
-
         return true;
     }
 
-    protected <V> void setTimer(final OutRequest<V> outRequest) {
+    protected void setTimer(final OutRequest outRequest) {
         final long start = System.currentTimeMillis();
         Timeout timeout = timer.newTimeout(new TimerTask() {
             @Override
@@ -147,7 +124,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
                     return;
                 }
 
-                messageReceived(ctx, new ErrorResponse(
+                handleResponse(new ErrorResponse(
                     outRequest.getRequest().getId(),
                     ErrorType.Timeout,
                     String.format("Request timeout after %dms", System.currentTimeMillis() - start)));
@@ -157,9 +134,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         outRequest.setTimeout(timeout);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    @Override
-    protected void messageReceived(ChannelHandlerContext ctx, ResponseMessage response) {
+    protected void handleResponse(ResponseMessage response) {
         OutRequest outRequest = this.requestMap.remove(response.getId());
         if (outRequest == null) {
             response.release();
@@ -167,56 +142,12 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
             return;
         }
 
-        outRequest.getTimeout().cancel();
-        TFuture future = outRequest.getFuture();
-        Request request = outRequest.getRequest();
-
-        ArgScheme argScheme = request.getArgScheme();
-        if (argScheme == null) {
-            if (request instanceof JsonRequest) {
-                argScheme = ArgScheme.JSON;
-            } else if (request instanceof ThriftRequest) {
-                argScheme = ArgScheme.THRIFT;
-            } else {
-                argScheme = ArgScheme.RAW;
-            }
-        }
-
-        Response res;
-        if (response.isError()) {
-            outRequest.setLastError((ErrorResponse) response);
-            if (send(outRequest)) {
-                return;
-            }
-
-            res = Response.build(argScheme, (ErrorResponse) response);
-        } else {
-            // Clear timeouts
-            timeouts.set(0);
-            res = (Response) response;
-        }
-
-        // release the request
-        request.release();
-        setResponse(future, argScheme, res);
+        outRequest.handleResponse(response);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void setResponse(TFuture future, ArgScheme argScheme, Response response) {
-        switch (argScheme) {
-            case RAW:
-                ((TFuture<RawResponse>)future).set((RawResponse) response);
-                break;
-            case JSON:
-                ((TFuture<JsonResponse>)future).set((JsonResponse) response);
-                break;
-            case THRIFT:
-                ((TFuture<ThriftResponse>)future).set((ThriftResponse) response);
-                break;
-            default:
-                ((TFuture<RawResponse>)future).set((RawResponse) response);
-                break;
-        }
+    @Override
+    protected void messageReceived(ChannelHandlerContext ctx, ResponseMessage response) {
+        handleResponse(response);
     }
 
     public void clean() {
@@ -231,42 +162,13 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
                 continue;
             }
 
-            // cancel timer
-            outRequest.getTimeout().cancel();
-
             // wait until the send is completed
             outRequest.flushWrite();
-            TFuture future = outRequest.getFuture();
-            Request request = outRequest.getRequest();
-            ArgScheme argScheme = request.getArgScheme();
-            Response response = Response.build(argScheme, new ErrorResponse(
-                request.getId(),
-                ErrorType.NetworkError,
-                "Connection was reset due to network error"));
-            setResponse(future, argScheme, response);
-            request.release();
+
+            // Complete the request
+            outRequest.setLastError(ErrorType.NetworkError,
+                "Connection was reset due to network error");
+            outRequest.setFuture();
         }
-    }
-
-    public static <V> ListenableFuture<V> createError(Request request, ErrorType errorType, Throwable throwable) {
-        TFuture<V> future = TFuture.create();
-        ArgScheme argScheme = request.getArgScheme();
-        Response response = Response.build(argScheme, new ErrorResponse(
-            request.getId(),
-            errorType,
-            throwable));
-        setResponse(future, argScheme, response);
-        return future;
-    }
-
-    public static <V> ListenableFuture<V> createError(Request request, ErrorType errorType, String message) {
-        TFuture<V> future = TFuture.create();
-        ArgScheme argScheme = request.getArgScheme();
-        Response response = Response.build(argScheme, new ErrorResponse(
-            request.getId(),
-            errorType,
-            message));
-        setResponse(future, argScheme, response);
-        return future;
     }
 }

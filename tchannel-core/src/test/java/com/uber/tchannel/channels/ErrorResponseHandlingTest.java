@@ -80,7 +80,7 @@ public class ErrorResponseHandlingTest {
 
         RawResponse res = future.get();
         assertEquals(ErrorType.BadRequest, res.getError().getErrorType());
-        assertEquals("Invalid arg schema", res.getError().getMessage());
+        assertEquals("Expect call request to have Arg Scheme specified", res.getError().getMessage());
         res.release();
 
         server.shutdown();

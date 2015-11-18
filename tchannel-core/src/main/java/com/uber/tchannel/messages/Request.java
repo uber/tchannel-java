@@ -24,6 +24,7 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.RetryFlag;
 import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -31,6 +32,7 @@ import io.netty.util.CharsetUtil;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public abstract class Request implements RawMessage {
@@ -83,18 +85,6 @@ public abstract class Request implements RawMessage {
         return type;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public long getTTL() {
-        return ttl;
-    }
-
-    public String getService() {
-        return this.service;
-    }
-
     @Override
     public ByteBuf getArg1() {
         return arg1;
@@ -108,6 +98,37 @@ public abstract class Request implements RawMessage {
     @Override
     public ByteBuf getArg3() {
         return arg3;
+    }
+
+    @Override
+    public Map<String, String> getTransportHeaders() {
+        return this.transportHeaders;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "<%s id=%d service=%s transportHeaders=%s arg1=%s arg2=%s arg3=%s>",
+            this.getClass().getSimpleName(),
+            this.id,
+            this.service,
+            this.transportHeaders,
+            this.arg1.toString(CharsetUtil.UTF_8),
+            this.arg2.toString(CharsetUtil.UTF_8),
+            this.arg3.toString(CharsetUtil.UTF_8)
+        );
+    }
+
+    public final void setId(int id) {
+        this.id = id;
+    }
+
+    public final long getTTL() {
+        return ttl;
+    }
+
+    public final String getService() {
+        return this.service;
     }
 
     public final void appendArg2(ByteBuf arg) {
@@ -130,26 +151,14 @@ public abstract class Request implements RawMessage {
         return retryLimit;
     }
 
-    @Override
-    public Map<String, String> getTransportHeaders() {
-        return this.transportHeaders;
+    public final void reset() {
+        // reset the read index for retries
+        arg1.resetReaderIndex();
+        arg2.resetReaderIndex();
+        arg3.resetReaderIndex();
     }
 
-    @Override
-    public String toString() {
-        return String.format(
-            "<%s id=%d service=%s transportHeaders=%s arg1=%s arg2=%s arg3=%s>",
-            this.getClass().getSimpleName(),
-            this.id,
-            this.service,
-            this.transportHeaders,
-            this.arg1.toString(CharsetUtil.UTF_8),
-            this.arg2.toString(CharsetUtil.UTF_8),
-            this.arg3.toString(CharsetUtil.UTF_8)
-        );
-    }
-
-    public void release() {
+    public final void release() {
         if (arg1 != null) {
             arg1.release();
             arg1 = null;
@@ -166,7 +175,7 @@ public abstract class Request implements RawMessage {
         }
     }
 
-    public String getEndpoint() {
+    public final String getEndpoint() {
         if (this.endpoint == null) {
             this.endpoint = this.arg1.toString(CharsetUtil.UTF_8);
         }
@@ -176,6 +185,26 @@ public abstract class Request implements RawMessage {
 
     public final ArgScheme getArgScheme() {
         return ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
+    }
+
+    public final void setArgScheme(ArgScheme argScheme) {
+        setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, argScheme.getScheme());
+    }
+
+    public final String getRetryFlags() {
+        return transportHeaders.get(TransportHeaders.RETRY_FLAGS_KEY);
+    }
+
+    public final void setRetryFlags(Set<RetryFlag> flags) {
+        setRetryFlags(RetryFlag.flagsToString(flags));
+    }
+
+    public final void setRetryFlags(String flags) {
+        if (!RetryFlag.validFlags(flags)) {
+            throw new UnsupportedOperationException("Invalid retry flag: " + flags);
+        }
+
+        setTransportHeader(TransportHeaders.RETRY_FLAGS_KEY, flags);
     }
 
     public static Request build(long id, long ttl,
@@ -230,7 +259,8 @@ public abstract class Request implements RawMessage {
         */
         private long ttl = 100;
 
-        protected int retryLimit = 0;
+        // Default: initial request + 4 retries
+        protected int retryLimit = 4;
 
         public Builder(String service, String endpoint) {
             this.service = service;

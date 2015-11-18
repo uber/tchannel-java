@@ -49,7 +49,7 @@ public class PeerManager {
         this.clientBootstrap = clientBootstrap;
     }
 
-    public Connection findOrNew(SocketAddress address) throws TChannelError {
+    public Connection findOrNew(SocketAddress address) {
         Peer peer = peers.get(address);
         if (peer == null) {
             peer = new Peer(this, address);
@@ -80,7 +80,7 @@ public class PeerManager {
         return peers.get(address);
     }
 
-    public Connection connectTo(SocketAddress address) throws TChannelError {
+    public Connection connectTo(SocketAddress address) {
         Peer peer = findOrNewPeer(address);
         return peer.connect(this.clientBootstrap, Connection.Direction.OUT);
     }
