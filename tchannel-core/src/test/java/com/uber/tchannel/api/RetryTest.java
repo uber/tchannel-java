@@ -60,7 +60,6 @@ public class RetryTest {
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")
             .setBody("hello")
-            .setTimeout(100)
             .build();
         req.release();
         exception.expect(UnsupportedOperationException.class);
