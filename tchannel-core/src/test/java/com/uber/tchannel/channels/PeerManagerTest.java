@@ -108,6 +108,85 @@ public class PeerManagerTest {
     }
 
     @Test
+    public void testConnectionPooling() throws Exception {
+
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+
+        // create server
+        final TChannel server = new TChannel.Builder("server")
+            .setServerHost(host)
+            .build();
+        server.makeSubChannel("server").register("echo", new EchoHandler());
+        server.makeSubChannel("server2").register("echo", new EchoHandler());
+        server.listen();
+
+        int port = server.getListeningPort();
+
+        // create client
+        final TChannel client = new TChannel.Builder("client")
+            .setServerHost(host)
+            .build();
+        final SubChannel subClient = client.makeSubChannel("server");
+        final SubChannel subClient2 = client.makeSubChannel("server2");
+        client.listen();
+
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setTimeout(2000)
+            .build();
+
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
+            host,
+            port
+        );
+
+        RawResponse res = future.get();
+        assertEquals(res.getHeader(), "title");
+        assertEquals(res.getBody(), "hello");
+        res.release();
+
+        req = new RawRequest.Builder("server2", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setTimeout(2000)
+            .build();
+
+        future = subClient.send(
+            req,
+            host,
+            port
+        );
+
+        res = future.get();
+        assertEquals(res.getHeader(), "title");
+        assertEquals(res.getBody(), "hello");
+        res.release();
+
+        // checking the connections
+        Map<String, Integer> stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 1);
+
+        stats = server.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 1);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        client.shutdown();
+        server.shutdown();
+
+        stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        stats = server.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+    }
+
+    @Test
     public void testWithPeerSelection() throws Exception {
 
         InetAddress host = InetAddress.getByName("127.0.0.1");
