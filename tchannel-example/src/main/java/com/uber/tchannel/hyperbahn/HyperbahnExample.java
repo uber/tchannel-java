@@ -25,13 +25,13 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 import com.uber.tchannel.ping.PingRequestHandler;
@@ -63,31 +63,21 @@ public class HyperbahnExample {
         // register the service handler
         hyperbahn.makeClientChannel("javaServer").register("ping", new PingRequestHandler());
 
-        final ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture;
+        final ListenableFuture<JsonResponse<AdvertiseResponse>> future = hyperbahn.advertise();
 
-        try {
-            responseFuture = hyperbahn.advertise();
-        } catch (TChannelError ex) {
-            System.out.println("Advertise failure: " + ex.toString());
-            tchannel.shutdown();
-            hyperbahn.shutdown();
-            return;
-        }
-
-        responseFuture.addListener(new Runnable() {
+        Futures.addCallback(future, new FutureCallback<JsonResponse<AdvertiseResponse>>() {
             @Override
-            public void run() {
-                try {
-                    JsonResponse<AdvertiseResponse> response = responseFuture.get();
+            public void onSuccess(JsonResponse<AdvertiseResponse> response) {
+                if (!response.isError()) {
                     System.out.println("Got response. All set: " + response.getBody(AdvertiseResponse.class).toString());
-                } catch (Exception ex) {
-                    System.out.println("ErrorFrame happened: " + ex.getMessage());
+                } else {
+                    System.out.println("Error happened: " + response.getError().getMessage());
                 }
             }
-        }, new Executor() {
+
             @Override
-            public void execute(Runnable command) {
-                command.run();
+            public void onFailure(Throwable throwable) {
+                System.out.println("Error happened: " + throwable.getMessage());
             }
         });
 

@@ -27,7 +27,6 @@ import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.Connection;
-import com.uber.tchannel.channels.Peer;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.SubPeer;
 import com.uber.tchannel.errors.ErrorType;
@@ -194,7 +193,7 @@ public final class SubChannel {
         JsonRequest<T> request,
         InetAddress host,
         int port
-    ) throws TChannelError {
+    ) {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
@@ -203,7 +202,7 @@ public final class SubChannel {
 
     public <T, U> ListenableFuture<JsonResponse<U>> send(
         JsonRequest<T> request
-    ) throws TChannelError {
+    ) {
         return send(request, null, 0);
     }
 
@@ -211,7 +210,7 @@ public final class SubChannel {
         RawRequest request,
         InetAddress host,
         int port
-    ) throws TChannelError {
+    ) {
         // Set the "cn" header
         // TODO: should make "cn" an option
         request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
@@ -220,7 +219,7 @@ public final class SubChannel {
 
     public ListenableFuture<RawResponse> send(
         RawRequest request
-    ) throws TChannelError {
+    ) {
         return send(request, null, 0);
     }
 

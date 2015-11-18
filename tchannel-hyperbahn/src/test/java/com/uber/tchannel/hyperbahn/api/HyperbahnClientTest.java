@@ -37,10 +37,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
+import static java.lang.Thread.sleep;
+import static org.junit.Assert.assertTrue;
 
 public class HyperbahnClientTest {
 
@@ -63,7 +65,31 @@ public class HyperbahnClientTest {
         JsonResponse<AdvertiseResponse> response = responseFuture.get();
 
         assertNotNull(response);
-        assertEquals(responseHandler.requestReceived, true);
+        assertEquals(1, responseHandler.requestsReceived);
+
+        tchannel.shutdown();
+        server.shutdown();
+    }
+
+    @Test
+    public void testMultiAdvertise() throws Exception {
+        AdvertiseResponseHandler responseHandler = new AdvertiseResponseHandler();
+        TChannel server = createMockHyperbahn(responseHandler);
+
+        TChannel tchannel = new TChannel.Builder("hyperbahn-service").build();
+
+        List<InetSocketAddress> routers = new ArrayList<InetSocketAddress>() {{
+            add(new InetSocketAddress("127.0.0.1", 8888));
+        }};
+
+        HyperbahnClient hyperbahnClient = new HyperbahnClient.Builder("service", tchannel)
+            .setRouters(routers)
+            .setAdvertiseInterval(100)
+            .build();
+        hyperbahnClient.advertise();
+
+        sleep(500);
+        assertTrue(responseHandler.requestsReceived >= 3);
 
         tchannel.shutdown();
         server.shutdown();
@@ -82,11 +108,11 @@ public class HyperbahnClientTest {
     }
 
     public class AdvertiseResponseHandler extends JSONRequestHandler<AdvertiseRequest, AdvertiseResponse> {
-        public boolean requestReceived = false;
+        public int requestsReceived = 0;
 
         @Override
         public JsonResponse<AdvertiseResponse> handleImpl(JsonRequest<AdvertiseRequest> request) {
-            requestReceived = true;
+            requestsReceived++;
             return new JsonResponse.Builder<AdvertiseResponse>(request)
                 .setBody(new AdvertiseResponse(10))
                 .build();
