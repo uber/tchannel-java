@@ -31,18 +31,17 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
@@ -64,7 +63,7 @@ public final class HyperbahnClient {
 
     private Timer advertiseTimer = new Timer(true);
 
-    private static final long requestTimeout = 500;
+    private static final long requestTimeout = 1000;
 
     private HyperbahnClient(Builder builder) {
         this.service = builder.service;
@@ -82,7 +81,7 @@ public final class HyperbahnClient {
         return subChannel;
     }
 
-    public ListenableFuture<JsonResponse<AdvertiseResponse>> advertise() throws TChannelError {
+    public ListenableFuture<JsonResponse<AdvertiseResponse>> advertise() {
 
         final AdvertiseRequest advertiseRequest = new AdvertiseRequest();
         advertiseRequest.addService(service, 0);
@@ -94,51 +93,39 @@ public final class HyperbahnClient {
         )
             .setBody(advertiseRequest)
             .setTimeout(requestTimeout)
-            .setRetryLimit(3)
+            .setRetryLimit(4)
             .build();
 
         Runnable runable = null;
-        ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture = null;
-        try {
-            final ListenableFuture<JsonResponse<AdvertiseResponse>> future = responseFuture = hyperbahnChannel.send(request);
-            runable = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        JsonResponse<AdvertiseResponse> response = future.get();
-                        // TODO: fix this hack
-                        response.getHeaders();
-                        response.getBody(AdvertiseResponse.class);
-                        response.release();
-                    } catch (Exception ex) {
-                        logger.error("Advertise failure: " + ex.toString());
-                    }
-
-                    if (destroyed.get()) {
-                        return;
-                    }
-
-                    scheduleAdvertise();
-                }
-            };
-        } catch (TChannelError ex) {
-            // TODO: should be moved into tchanne as retry ...
-            this.logger.error("Advertise failure: " + ex.toString());
-
-            // re-throw for now
-            // TODO: should really handle internally
-            throw ex;
-        }
-
-        responseFuture.addListener(runable, new Executor() {
+        final ListenableFuture<JsonResponse<AdvertiseResponse>> future = hyperbahnChannel.send(request);
+        Futures.addCallback(future, new FutureCallback<JsonResponse<AdvertiseResponse>>() {
             @Override
-            public void execute(Runnable command) {
-                command.run();
+            public void onSuccess(JsonResponse<AdvertiseResponse> response) {
+                if (!response.isError()) {
+                    // TODO: fix this hack
+                    response.getHeaders();
+                    response.getBody(AdvertiseResponse.class);
+                    response.release();
+                } else {
+                    logger.error("Failed to advertise to Hyperbahn: %s - %s",
+                        response.getError().getErrorType(),
+                        response.getError().getMessage());
+                }
+
+                if (destroyed.get()) {
+                    return;
+                }
+
+                scheduleAdvertise();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                logger.error("Failed to advertise to Hyperbahn: %s", throwable.getMessage());
             }
         });
 
-        return responseFuture;
-
+        return future;
     }
 
     private void scheduleAdvertise() {
@@ -149,11 +136,7 @@ public final class HyperbahnClient {
         advertiseTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture = advertise();
-                } catch (Exception ex) {
-                    logger.error(service + " failed to advertise. " + ex.getMessage());
-                }
+                advertise();
             }
         }, advertiseInterval);
     }
@@ -201,7 +184,7 @@ public final class HyperbahnClient {
             return this;
         }
 
-        public Builder advertiseInterval(long advertiseInterval) {
+        public Builder setAdvertiseInterval(long advertiseInterval) {
             this.advertiseInterval = advertiseInterval;
             return this;
         }

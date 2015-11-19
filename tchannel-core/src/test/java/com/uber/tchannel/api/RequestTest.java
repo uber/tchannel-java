@@ -147,6 +147,7 @@ public class RequestTest {
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
             .setLogLevel(LogLevel.INFO)
+            .setInitTimeout(2000)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {

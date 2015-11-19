@@ -24,6 +24,7 @@ package com.uber.tchannel.channels;
 
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.errors.TChannelError;
+import com.uber.tchannel.handlers.OutRequest;
 
 import java.net.SocketAddress;
 
@@ -59,7 +60,13 @@ public class SubPeer {
         return peerManager.getPeer(remoteAddress);
     }
 
-    public boolean updateScore() {
+    public boolean updateScore(OutRequest outRequest) {
+        if (outRequest.isUsedPeer(remoteAddress)) {
+            // if we have used this peer, it should be given a lower score
+            score = SCORE_UNCONNECTED - 0.1;
+            return false;
+        }
+
         Peer peer = getPeer();
         boolean flag = false;
         if (peer == null) {
@@ -90,7 +97,7 @@ public class SubPeer {
         return score;
     }
 
-    public Connection connectTo() throws TChannelError {
+    public Connection connectTo() {
         return peerManager.connectTo(remoteAddress);
     }
 

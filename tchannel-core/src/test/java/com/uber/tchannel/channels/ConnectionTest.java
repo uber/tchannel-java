@@ -37,6 +37,8 @@ import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
@@ -217,6 +219,51 @@ public class ConnectionTest {
     }
 
     @Test
+    public void testPeerConnectionFailure() throws Exception {
+
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+
+        // create client
+        final TChannel client = new TChannel.Builder("client")
+            .setServerHost(host)
+            .build();
+        final SubChannel subClient = client.makeSubChannel("server");
+        subClient.setPeers(new ArrayList<InetSocketAddress>(){
+            {
+                add(new InetSocketAddress("127.0.0.1", 8888));
+            }
+        });
+
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader("title")
+            .setBody("hello")
+            .setTimeout(2000)
+            .build();
+
+        ListenableFuture<RawResponse> future = subClient.send(
+            req
+        );
+
+        Response res = (Response)future.get();
+        assertTrue(res.isError());
+        assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
+        assertEquals("Failed to connect to the host", res.getError().getMessage());
+
+        // checking the connections
+        Map<String, Integer> stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        res.release();
+        client.shutdown();
+        sleep(100);
+
+        stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+    }
+
+    @Test
     public void testCleanupDuringTimeout() throws Exception {
 
         InetAddress host = InetAddress.getByName("127.0.0.1");
@@ -278,6 +325,7 @@ public class ConnectionTest {
         // create client
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
+            .setInitTimeout(2000)
             .setResetOnTimeoutLimit(10)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
@@ -383,5 +431,3 @@ public class ConnectionTest {
         }
     }
 }
-
-

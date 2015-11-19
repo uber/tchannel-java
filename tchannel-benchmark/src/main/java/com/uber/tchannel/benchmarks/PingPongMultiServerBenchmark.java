@@ -114,6 +114,7 @@ public class PingPongMultiServerBenchmark {
         JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("ping-server", "ping")
             .setBody(new Ping("ping?"))
             .setTimeout(20000)
+            .setRetryLimit(0)
             .build();
 
         ListenableFuture<JsonResponse<Pong>> future = this.subClient.send(request);

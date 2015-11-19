@@ -99,7 +99,7 @@ public class Peer {
         return conn;
     }
 
-    public Connection connect(Bootstrap bootstrap, Connection.Direction preferredDirection) throws TChannelError {
+    public Connection connect(Bootstrap bootstrap, Connection.Direction preferredDirection) {
         Connection conn = getConnection(ConnectionState.IDENTIFIED, preferredDirection);
         if (conn != null && (
             conn.satisfy(preferredDirection) || preferredDirection == Connection.Direction.IN)) {
@@ -123,7 +123,7 @@ public class Peer {
         return connection;
     }
 
-    public Connection connect(Bootstrap bootstrap) throws TChannelError {
+    public Connection connect(Bootstrap bootstrap) {
         return connect(bootstrap, Connection.Direction.NONE);
     }
 
