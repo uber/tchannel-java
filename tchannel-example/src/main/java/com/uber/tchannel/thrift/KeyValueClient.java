@@ -74,7 +74,7 @@ public class KeyValueClient {
                 8888
             );
 
-        future.get(100, TimeUnit.MILLISECONDS);
+        future.get();
     }
 
     public static String getValue(
@@ -95,7 +95,7 @@ public class KeyValueClient {
                 8888
             );
 
-        ThriftResponse<KeyValue.getValue_result> getResult = future.get(100, TimeUnit.MILLISECONDS);
+        ThriftResponse<KeyValue.getValue_result> getResult = future.get();
 
         String value = getResult.getBody(KeyValue.getValue_result.class).getSuccess();
         NotFoundError err = getResult.getBody(KeyValue.getValue_result.class).getNotFound();
