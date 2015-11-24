@@ -23,6 +23,7 @@ package com.uber.tchannel.frames;
 
 import com.uber.tchannel.codecs.CodecUtils;
 import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.tracing.Trace;
@@ -32,9 +33,9 @@ import io.netty.channel.ChannelHandlerContext;
 
 public final class ErrorFrame extends Frame {
 
-    private final ErrorType errorType;
-    private final Trace tracing;
-    private final String message;
+    private ErrorType errorType;
+    private Trace tracing;
+    private String message;
 
     /**
      * Designated Constructor
@@ -49,6 +50,10 @@ public final class ErrorFrame extends Frame {
         this.errorType = errorType;
         this.tracing = tracing;
         this.message = message;
+    }
+
+    protected ErrorFrame(long id) {
+        this.id = id;
     }
 
     /**
@@ -105,6 +110,18 @@ public final class ErrorFrame extends Frame {
         CodecUtils.encodeString(getMessage(), buffer);
 
         return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        // code:1
+        errorType = ErrorType.fromByte(tFrame.payload.readByte());
+
+        // tracing:25
+        tracing = CodecUtils.decodeTrace(tFrame.payload);
+
+        // message~2
+        message = CodecUtils.decodeString(tFrame.payload);
     }
 
     public static ErrorFrame sendError(ErrorType type,

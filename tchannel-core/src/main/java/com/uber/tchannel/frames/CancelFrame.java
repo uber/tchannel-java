@@ -22,15 +22,16 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
 public final class CancelFrame extends Frame {
 
-    private final long ttl;
-    private final Trace tracing;
-    private final String why;
+    private long ttl;
+    private Trace tracing;
+    private String why;
 
     /**
      * Designated Constructor
@@ -45,6 +46,10 @@ public final class CancelFrame extends Frame {
         this.ttl = ttl;
         this.tracing = tracing;
         this.why = why;
+    }
+
+    protected CancelFrame(long id) {
+        this.id = id;
     }
 
     public long getTTL() {
@@ -74,6 +79,20 @@ public final class CancelFrame extends Frame {
         CodecUtils.encodeString(getWhy(), buffer);
 
         return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        // ttl:4
+        ttl = tFrame.payload.readUnsignedInt();
+
+        // tracing:25
+        tracing = CodecUtils.decodeTrace(tFrame.payload);
+
+        // why~2
+        why = CodecUtils.decodeString(tFrame.payload);
+
+        tFrame.release();
     }
 
     public String getWhy() {

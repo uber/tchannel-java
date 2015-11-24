@@ -23,6 +23,7 @@ package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
@@ -35,6 +36,10 @@ public final class CallRequestContinueFrame extends CallFrame {
         this.checksumType = checksumType;
         this.checksum = checksum;
         this.payload = payload;
+    }
+
+    protected CallRequestContinueFrame(long id) {
+        this.id = id;
     }
 
     @Override
@@ -79,5 +84,22 @@ public final class CallRequestContinueFrame extends CallFrame {
         CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
 
         return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+
+        // flags:1
+        flags = tFrame.payload.readByte();
+
+        // csumtype:1
+        checksumType = ChecksumType.fromByte(tFrame.payload.readByte());
+
+        // (csum:4){0,1}
+        checksum = CodecUtils.decodeChecksum(checksumType, tFrame.payload);
+
+        // {continuation}
+        int payloadSize = tFrame.size - tFrame.payload.readerIndex();
+        payload = tFrame.payload.readSlice(payloadSize);
     }
 }

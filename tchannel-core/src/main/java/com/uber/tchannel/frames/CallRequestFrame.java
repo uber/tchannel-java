@@ -23,6 +23,7 @@ package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.tracing.Trace;
@@ -49,10 +50,10 @@ import java.util.Map;
  */
 public final class CallRequestFrame extends CallFrame {
 
-    private final long ttl;
-    private final Trace tracing;
-    private final String service;
-    private final Map<String, String> headers;
+    private long ttl;
+    private Trace tracing;
+    private String service;
+    private Map<String, String> headers;
 
     public CallRequestFrame(long id, byte flags, long ttl, Trace tracing, String service, Map<String, String> headers,
                             ChecksumType checksumType, int checksum, ByteBuf payload) {
@@ -76,6 +77,10 @@ public final class CallRequestFrame extends CallFrame {
         this.headers = headers;
         this.checksumType = checksumType;
         this.checksum = checksum;
+    }
+
+    protected CallRequestFrame(long id) {
+        this.id = id;
     }
 
     @Override
@@ -157,5 +162,34 @@ public final class CallRequestFrame extends CallFrame {
         CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
 
         return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+
+        // flags:1
+        flags = tFrame.payload.readByte();
+
+        // ttl:4
+        ttl = tFrame.payload.readUnsignedInt();
+
+        // tracing:25
+        tracing = CodecUtils.decodeTrace(tFrame.payload);
+
+        // service~1
+        service = CodecUtils.decodeSmallString(tFrame.payload);
+
+        // nh:1 (hk~1, hv~1){nh}
+        headers = CodecUtils.decodeSmallHeaders(tFrame.payload);
+
+        // csumtype:1
+        checksumType = ChecksumType.fromByte(tFrame.payload.readByte());
+
+        // (csum:4){0,1}
+        checksum = CodecUtils.decodeChecksum(checksumType, tFrame.payload);
+
+        // arg1~2 arg2~2 arg3~2
+        int payloadSize = tFrame.size - tFrame.payload.readerIndex();
+        payload = tFrame.payload.readSlice(payloadSize);
     }
 }

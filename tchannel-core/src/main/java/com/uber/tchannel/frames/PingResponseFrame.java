@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.frames;
 
+import com.uber.tchannel.codecs.TFrame;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -46,5 +47,10 @@ public final class PingResponseFrame extends PingFrame {
     @Override
     public ByteBuf encodeHeader(ByteBufAllocator allocator) {
         return Unpooled.EMPTY_BUFFER;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        tFrame.release();
     }
 }

@@ -43,9 +43,9 @@ import java.util.Map;
  */
 public final class CallResponseFrame extends CallFrame {
 
-    private final ResponseCode responseCode;
-    private final Trace tracing;
-    private final Map<String, String> headers;
+    private ResponseCode responseCode;
+    private Trace tracing;
+    private Map<String, String> headers;
 
     public CallResponseFrame(long id, byte flags, ResponseCode responseCode, Trace tracing, Map<String, String> headers,
                              ChecksumType checksumType, int checksum, ByteBuf payload) {
@@ -67,6 +67,10 @@ public final class CallResponseFrame extends CallFrame {
         this.headers = headers;
         this.checksumType = checksumType;
         this.checksum = checksum;
+    }
+
+    protected CallResponseFrame(long id) {
+        this.id = id;
     }
 
     public boolean ok() {
@@ -150,5 +154,31 @@ public final class CallResponseFrame extends CallFrame {
         CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
 
         return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+
+        // flags:1
+        flags = tFrame.payload.readByte();
+
+        // code:1
+        responseCode = ResponseCode.fromByte(tFrame.payload.readByte());
+
+        // tracing:25
+        tracing = CodecUtils.decodeTrace(tFrame.payload);
+
+        // headers -> nh:1 (hk~1, hv~1){nh}
+        headers = CodecUtils.decodeSmallHeaders(tFrame.payload);
+
+        // csumtype:1
+        checksumType = ChecksumType.fromByte(tFrame.payload.readByte());
+
+        // (csum:4){0,1}
+        checksum = CodecUtils.decodeChecksum(checksumType, tFrame.payload);
+
+        // arg1~2 arg2~2 arg3~2
+        int payloadSize = tFrame.size - tFrame.payload.readerIndex();
+        payload = tFrame.payload.readSlice(payloadSize);
     }
 }

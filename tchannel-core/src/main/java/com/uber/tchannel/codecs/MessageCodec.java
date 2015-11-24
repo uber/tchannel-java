@@ -71,39 +71,10 @@ public final class MessageCodec {
         return frame;
     }
 
-    public static Frame decode(TFrame frame) throws TChannelError {
-        FrameType type = FrameType.fromByte(frame.type);
-
-        if (type == null) {
-            throw new TChannelProtocol("Cannot read the frame type");
-        }
-
-        switch (type) {
-            case CallRequest:
-                return CallRequestCodec.decode(frame);
-            case CallRequestContinue:
-                return CallRequestContinueCodec.decode(frame);
-            case CallResponse:
-                return CallResponseCodec.decode(frame);
-            case CallResponseContinue:
-                return CallResponseContinueCodec.decode(frame);
-            case Cancel:
-                return CancelCodec.decode(frame);
-            case Claim:
-                return ClaimCodec.decode(frame);
-            case Error:
-                return ErrorCodec.decode(frame);
-            case InitRequest:
-                return InitRequestCodec.decode(frame);
-            case InitResponse:
-                return InitResponseCodec.decode(frame);
-            case PingRequest:
-                return PingRequestCodec.decode(frame);
-            case PingResponse:
-                return PingResponseCodec.decode(frame);
-            default:
-                throw new TChannelCodec(String.format("Unknown FrameType: %s", type));
-        }
+    public static Frame decode(TFrame tFrame) throws TChannelError {
+        Frame frame = Frame.create(tFrame);
+        frame.decode(tFrame);
+        return frame;
     }
 
     public static TChannelMessage decodeCallFrames(List<CallFrame> frames) {

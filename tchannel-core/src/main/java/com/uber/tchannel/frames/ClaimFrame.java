@@ -22,14 +22,15 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
 public final class ClaimFrame extends Frame {
 
-    private final long ttl;
-    private final Trace tracing;
+    private long ttl;
+    private Trace tracing;
 
     /**
      * Designated Constructor
@@ -43,6 +44,10 @@ public final class ClaimFrame extends Frame {
         this.ttl = ttl;
         this.tracing = tracing;
 
+    }
+
+    public ClaimFrame(long id) {
+        this.id = id;
     }
 
     public FrameType getType() {
@@ -68,5 +73,15 @@ public final class ClaimFrame extends Frame {
         CodecUtils.encodeTrace(getTracing(), buffer);
 
         return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        // ttl: 4
+        ttl = tFrame.payload.readUnsignedInt();
+
+        // tracing: 25
+        tracing = CodecUtils.decodeTrace(tFrame.payload);
+        tFrame.release();
     }
 }

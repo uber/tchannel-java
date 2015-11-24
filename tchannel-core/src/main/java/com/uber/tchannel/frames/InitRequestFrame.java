@@ -22,6 +22,8 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
+import com.uber.tchannel.errors.ErrorType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
@@ -34,13 +36,17 @@ import java.util.Map;
  */
 public final class InitRequestFrame extends InitFrame {
 
-    private final int version;
-    private final Map<String, String> headers;
+    private int version;
+    private Map<String, String> headers;
 
     public InitRequestFrame(long id, int version, Map<String, String> headers) {
         this.id = id;
         this.version = version;
         this.headers = headers;
+    }
+
+    protected InitRequestFrame(long id) {
+        this.id = id;
     }
 
     public int getVersion() {
@@ -93,5 +99,14 @@ public final class InitRequestFrame extends InitFrame {
         CodecUtils.encodeHeaders(getHeaders(), buffer);
 
         return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        // version:2
+        version = tFrame.payload.readUnsignedShort();
+
+        // headers -> nh:2 (key~2 value~2){nh}
+        headers = CodecUtils.decodeHeaders(tFrame.payload);
     }
 }
