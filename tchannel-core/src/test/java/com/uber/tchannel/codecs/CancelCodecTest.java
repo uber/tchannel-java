@@ -23,7 +23,7 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.frames.CancelFrame;
 import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -34,25 +34,19 @@ public class CancelCodecTest {
     @Test
     public void testEncodeDecode() throws Exception {
 
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new CancelCodec()
-        );
-
         CancelFrame cancelFrame = new CancelFrame(Integer.MAX_VALUE, Integer.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03), "Whoopsies");
 
-        channel.writeOutbound(cancelFrame);
-        channel.writeInbound(channel.readOutbound());
-
-        CancelFrame newCancelFrame = channel.readInbound();
+        CancelFrame newCancelFrame = (CancelFrame)MessageCodec.decode(
+            CodecTestUtil.encodeDecode(MessageCodec.encode(
+                PooledByteBufAllocator.DEFAULT, cancelFrame
+            ))
+        );
 
         assertEquals(cancelFrame.getId(), newCancelFrame.getId());
         assertEquals(cancelFrame.getTTL(), newCancelFrame.getTTL());
         assertTrue(newCancelFrame.getTTL() > 0);
         assertEquals(cancelFrame.getTracing().traceId, newCancelFrame.getTracing().traceId);
         assertEquals(cancelFrame.getWhy(), newCancelFrame.getWhy());
-
     }
 
     @Test

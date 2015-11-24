@@ -22,14 +22,19 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.CallFrame;
 import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.messages.RawRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import jdk.nashorn.internal.codegen.CompilerConstants;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertNull;
@@ -70,13 +75,14 @@ public class FrameFragmenterTest {
         channel.writeOutbound(rawRequest);
 
         for (int i = 0; i < 4; i++) {
-            CallRequestFrame req = channel.readOutbound();
-            assertNotNull(req);
+            CallFrame req = (CallFrame) MessageCodec.decode((TFrame) channel.readOutbound());
             req.release();
+            assertNotNull(req);
         }
 
         CallRequestFrame req = channel.readOutbound();
         assertNull(req);
+
         rawRequest.release();
     }
 

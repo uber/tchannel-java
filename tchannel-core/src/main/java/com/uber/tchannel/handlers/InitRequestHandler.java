@@ -22,20 +22,19 @@
 package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.channels.PeerManager;
+import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.errors.ProtocolError;
 import com.uber.tchannel.frames.Frame;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
-public class InitRequestHandler extends SimpleChannelInboundHandler<Frame> {
+public class InitRequestHandler extends SimpleChannelInboundHandler<TFrame> {
 
     private final PeerManager peerManager;
 
@@ -44,9 +43,11 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Frame> {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, Frame frame) throws Exception {
+    public void messageReceived(ChannelHandlerContext ctx, TFrame tframe) throws Exception {
 
-        switch (frame.getMessageType()) {
+        Frame frame = MessageCodec.decode(tframe);
+
+        switch (frame.getType()) {
 
             case InitRequest:
 
@@ -63,8 +64,7 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<Frame> {
 
                     // TODO: figure out what to put here
                     initResponseFrame.setProcessName("java-process");
-                    ChannelFuture f = ctx.writeAndFlush(initResponseFrame);
-                    f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                    MessageCodec.write(ctx, initResponseFrame);
                     ctx.pipeline().remove(this);
                     peerManager.setIdentified(ctx.channel(), initRequestFrameMessage.getHeaders());
 

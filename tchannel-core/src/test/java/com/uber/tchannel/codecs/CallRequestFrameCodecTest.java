@@ -24,8 +24,8 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.frames.CallRequestFrame;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
@@ -36,18 +36,16 @@ public class CallRequestFrameCodecTest {
     @Test
     public void testEncodeDecode() throws Exception {
 
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new CallRequestCodec()
-        );
-
         CallRequestFrame callRequestFrame = Fixtures.callRequest(42, false, Unpooled.wrappedBuffer("Hello, World!".getBytes()));
+        CallRequestFrame inboundCallRequestFrame =
+            (CallRequestFrame) MessageCodec.decode(
+                CodecTestUtil.encodeDecode(
+                    MessageCodec.encode(
+                        ByteBufAllocator.DEFAULT, callRequestFrame
+                    )
+                )
+            );
 
-        channel.writeOutbound(callRequestFrame);
-        channel.writeInbound(channel.readOutbound());
-
-        CallRequestFrame inboundCallRequestFrame = channel.readInbound();
         assertEquals("Hello, World!", inboundCallRequestFrame.getPayload().toString(CharsetUtil.UTF_8));
         inboundCallRequestFrame.getPayload().release();
     }

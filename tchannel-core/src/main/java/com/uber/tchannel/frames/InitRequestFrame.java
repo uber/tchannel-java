@@ -21,6 +21,10 @@
  */
 package com.uber.tchannel.frames;
 
+import com.uber.tchannel.codecs.CodecUtils;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+
 import java.util.Map;
 
 /**
@@ -28,9 +32,8 @@ import java.util.Map;
  * and describe the service names on both ends. In the future, we will likely use this to negotiate authentication
  * and authorization between services.
  */
-public final class InitRequestFrame implements InitFrame {
+public final class InitRequestFrame extends InitFrame {
 
-    private final long id;
     private final int version;
     private final Map<String, String> headers;
 
@@ -48,11 +51,7 @@ public final class InitRequestFrame implements InitFrame {
         return this.headers;
     }
 
-    public long getId() {
-        return this.id;
-    }
-
-    public FrameType getMessageType() {
+    public FrameType getType() {
         return FrameType.InitRequest;
     }
 
@@ -82,4 +81,17 @@ public final class InitRequestFrame implements InitFrame {
         );
     }
 
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        // Allocate new ByteBuf
+        ByteBuf buffer = allocator.buffer(256);
+
+        // version:2
+        buffer.writeShort(getVersion());
+
+        // headers -> nh:2 (key~2 value~2){nh}
+        CodecUtils.encodeHeaders(getHeaders(), buffer);
+
+        return buffer;
+    }
 }

@@ -23,25 +23,21 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.frames.CallResponseContinue;
+import com.uber.tchannel.frames.CallResponseContinueFrame;
 import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.buffer.ByteBufAllocator;
 
-import java.util.List;
+public final class CallResponseContinueCodec {
 
-public final class CallResponseContinueCodec extends MessageToMessageCodec<TFrame, CallResponseContinue> {
-
-    @Override
-    protected void encode(ChannelHandlerContext ctx, CallResponseContinue msg, List<Object> out) throws Exception {
+    public static TFrame encode(ByteBufAllocator allocator, CallResponseContinueFrame msg) {
         /**
          * Allocate a buffer for the rest of the pipeline
          *
          * TODO: Figure out sane initial buffer size allocation. We could calculate this dynamically based off of the
          * average payload size of the current connection.
          */
-        ByteBuf buffer = ctx.alloc().buffer();
+        ByteBuf buffer = allocator.buffer();
 
         // flags:1
         buffer.writeByte(msg.getFlags());
@@ -56,11 +52,11 @@ public final class CallResponseContinueCodec extends MessageToMessageCodec<TFram
         buffer.writeBytes(msg.getPayload());
 
         TFrame frame = new TFrame(buffer.writerIndex(), FrameType.CallResponseContinue, msg.getId(), buffer);
-        out.add(frame);
+        msg.release();
+        return frame;
     }
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
+    public static CallResponseContinueFrame decode(TFrame frame) {
         // flags:1
         byte flags = frame.payload.readByte();
 
@@ -73,10 +69,10 @@ public final class CallResponseContinueCodec extends MessageToMessageCodec<TFram
         // {continuation}
         int payloadSize = frame.size - frame.payload.readerIndex();
         ByteBuf payload = frame.payload.readSlice(payloadSize);
-        payload.retain();
+//        payload.retain();
 
-        CallResponseContinue req = new CallResponseContinue(frame.id, flags, checksumType, checksum, payload);
-        out.add(req);
+        CallResponseContinueFrame req = new CallResponseContinueFrame(frame.id, flags, checksumType, checksum, payload);
+        return req;
     }
 
 }

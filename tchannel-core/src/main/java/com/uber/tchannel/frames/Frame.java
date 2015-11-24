@@ -22,10 +22,18 @@
 
 package com.uber.tchannel.frames;
 
-public interface Frame {
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 
-    long getId();
+public abstract class Frame {
+    protected long id = -1;
 
-    FrameType getMessageType();
+    public final long getId() {
+        return id;
+    }
+
+    public abstract FrameType getType();
+
+    public abstract ByteBuf encodeHeader(ByteBufAllocator allocator);
 
 }

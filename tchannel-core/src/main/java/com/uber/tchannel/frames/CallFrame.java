@@ -22,24 +22,125 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
+import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
+import io.netty.buffer.Unpooled;
+import org.omg.PortableInterceptor.ClientRequestInterceptorOperations;
 
-public interface CallFrame extends ByteBufHolder, Frame {
+import java.lang.management.PlatformLoggingMXBean;
+import java.util.ArrayList;
+import java.util.List;
 
-    byte MORE_FRAGMENTS_REMAIN_MASK = (byte) 0x01;
-    short MAX_ARG1_LENGTH = 16384;
+public abstract class CallFrame extends Frame implements ByteBufHolder {
 
-    boolean moreFragmentsFollow();
+    public static final byte MORE_FRAGMENTS_REMAIN_MASK = (byte) 0x01;
+    public static final short MAX_ARG1_LENGTH = 16384;
 
-    byte getFlags();
+    protected byte flags = 0;
+    protected ByteBuf payload = null;
+    protected ChecksumType checksumType = ChecksumType.NoChecksum;
+    protected int checksum = 0;
 
-    ChecksumType getChecksumType();
+    public final byte getFlags() {
+        return this.flags;
+    }
 
-    int getChecksum();
+    public boolean moreFragmentsFollow() {
+        return ((flags & MORE_FRAGMENTS_REMAIN_MASK) == 1);
+    }
 
-    ByteBuf getPayload();
+    public ChecksumType getChecksumType() {
+        return checksumType;
+    }
 
-    int getPayloadSize();
+    public int getChecksum() {
+        return checksum;
+    }
 
+    public final ByteBuf getPayload() {
+        return payload;
+    }
+
+    public final void setPayload(ByteBuf payload) {
+        this.payload = payload;
+    }
+
+    public final int getPayloadSize() {
+        return this.payload.writerIndex() - this.payload.readerIndex();
+    }
+
+    public final boolean isPayloadFull() {
+        return getPayloadSize() + 2 >= TFrame.MAX_FRAME_PAYLOAD_LENGTH;
+    }
+
+    public final ByteBuf encodePayload(ByteBufAllocator allocator) {
+        List<ByteBuf> args = new ArrayList<>();
+        args.add(Unpooled.EMPTY_BUFFER);
+        args.add(Unpooled.EMPTY_BUFFER);
+        args.add(Unpooled.EMPTY_BUFFER);
+        return encodePayload(allocator, args);
+    }
+
+    public final ByteBuf encodePayload(ByteBufAllocator allocator, List<ByteBuf> args) {
+        ByteBuf payload = CodecUtils.writeArgs(allocator, encodeHeader(allocator), args);
+
+        if (args.isEmpty()) {
+            this.flags = 0;
+            payload.setByte(0, 0);
+        } else {
+            this.flags = 1;
+            payload.setByte(0, 1);
+        }
+
+        this.payload = payload;
+//        payload.retain();
+        return payload;
+    }
+
+    @Override
+    public ByteBuf content() {
+        return this.payload;
+    }
+
+    @Override
+    public ByteBufHolder retain() {
+        this.payload.retain();
+        return this;
+    }
+
+    @Override
+    public ByteBufHolder retain(int i) {
+        this.payload.retain(i);
+        return this;
+    }
+
+    @Override
+    public ByteBufHolder touch() {
+        this.payload.touch();
+        return this;
+    }
+
+    @Override
+    public ByteBufHolder touch(Object o) {
+        this.payload.touch(o);
+        return this;
+    }
+
+    @Override
+    public int refCnt() {
+        return this.payload.refCnt();
+    }
+
+    @Override
+    public boolean release() {
+        return this.payload.release();
+    }
+
+    @Override
+    public boolean release(int i) {
+        return this.payload.release(i);
+    }
 }

@@ -568,11 +568,9 @@ public class PeerManagerTest {
         @Override
         public Response handle(Request request) {
             accessed = true;
-            request.getArg2().retain();
-            request.getArg3().retain();
             return new RawResponse.Builder(request)
-                .setArg2(request.getArg2())
-                .setArg3(request.getArg3())
+                .setArg2(request.getArg2().retain())
+                .setArg3(request.getArg3().retain())
                 .build();
         }
     }

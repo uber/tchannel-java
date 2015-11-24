@@ -22,139 +22,106 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.fragmentation.FragmentationState;
-import com.uber.tchannel.codecs.TFrame;
+import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.frames.CallFrame;
+import com.uber.tchannel.frames.CallRequestContinueFrame;
 import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.CallResponseContinueFrame;
 import com.uber.tchannel.frames.CallResponseFrame;
+import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.RawMessage;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.tracing.Trace;
+import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
 
-    private static final int DEFAULT_BUFFER_SIZE = 1024;
-    private static final int MAX_BUFFER_SIZE = TFrame.MAX_FRAME_LENGTH - TFrame.FRAME_HEADER_LENGTH;
-
     @Override
     protected void encode(ChannelHandlerContext ctx, RawMessage msg, List<Object> out) throws Exception {
-
-        FragmentationState state = FragmentationState.ARG1;
-        while (state != FragmentationState.DONE) {
-            state = this.sendOutbound(ctx, msg, state, out);
-        }
-
+        writeFrames(ctx, msg, out);
         if (msg instanceof Response) {
             ((Response)msg).release();
         }
     }
 
-    protected void writeOutbound(ChannelHandlerContext ctx,
-                                 ByteBuf buffer,
-                                 RawMessage msg,
-                                 FragmentationState state,
-                                 List<Object> out) {
-        byte flags = 0x01;
-        if (state == FragmentationState.DONE) {
-            flags = 0x00;
+    protected void writeFrames(ChannelHandlerContext ctx,
+                               RawMessage msg,
+                               List<Object> frames) throws Exception {
+        List<ByteBuf> args = new ArrayList<>();
+        args.add(msg.getArg1());
+        args.add(msg.getArg2());
+        args.add(msg.getArg3());
+
+//        args.add(msg.getArg1().retain());
+//        args.add(msg.getArg2().retain());
+//        args.add(msg.getArg3().retain());
+
+
+        CallFrame frame = null;
+        while (!args.isEmpty()) {
+            if (frame == null || frame.isPayloadFull()) {
+                frame = createFrame(msg, args.size());
+            }
+
+            frame.encodePayload(ctx.alloc(), args);
+            frames.add(MessageCodec.encode(ctx.alloc(), frame));
         }
-
-        if (msg instanceof Request) {
-            Request request = (Request) msg;
-            CallRequestFrame callRequestFrame = new CallRequestFrame(
-                request.getId(),
-                flags,
-                request.getTTL(),
-                new Trace(0, 0, 0, (byte) 0x00),
-                request.getService(),
-                request.getTransportHeaders(),
-                ChecksumType.NoChecksum,
-                0,
-                buffer
-            );
-
-            out.add(callRequestFrame);
-        } else if (msg instanceof Response) {
-            Response response = (Response) msg;
-            CallResponseFrame callResponseFrame = new CallResponseFrame(
-                response.getId(),
-                flags,
-                response.getResponseCode(),
-                new Trace(0, 0, 0, (byte) 0x00),
-                response.getTransportHeaders(),
-                ChecksumType.NoChecksum,
-                0,
-                buffer
-            );
-
-            out.add(callResponseFrame);
-        }
-
     }
 
-    protected FragmentationState sendOutbound(ChannelHandlerContext ctx,
-                                              RawMessage msg,
-                                              FragmentationState state,
-                                              List<Object> out) {
-
-        ByteBuf buffer = ctx.alloc().buffer(DEFAULT_BUFFER_SIZE, MAX_BUFFER_SIZE);
-
-        while (true) {
-            switch (state) {
-                case ARG1:
-                    this.writeArg(msg.getArg1(), buffer);
-                    state = FragmentationState.nextState(state);
-                    break;
-
-                case ARG2:
-                    if (this.writeArg(msg.getArg2(), buffer) > 0) {
-                        this.writeOutbound(ctx, buffer, msg, state, out);
-                        return state;
-                    }
-                    state = FragmentationState.nextState(state);
-                    break;
-
-                case ARG3:
-                    if (this.writeArg(msg.getArg3(), buffer) > 0) {
-                        this.writeOutbound(ctx, buffer, msg, state, out);
-                        return state;
-                    }
-                    state = FragmentationState.nextState(state);
-                    break;
-
-                case DONE:
-                default:
-                    writeOutbound(ctx, buffer, msg, state, out);
-                    return state;
-
+    protected CallFrame createFrame(RawMessage msg, int argCount) {
+        if (msg.getType() == FrameType.CallRequest) {
+            Request request = (Request) msg;
+            if (argCount == 3) {
+                return new CallRequestFrame(
+                    request.getId(),
+                    (byte)0,
+                    request.getTTL(),
+                    new Trace(0, 0, 0, (byte) 0x00),
+                    request.getService(),
+                    request.getTransportHeaders(),
+                    ChecksumType.NoChecksum,
+                    0,
+                    TChannelUtilities.emptyByteBuf
+                );
+            } else {
+                return new CallRequestContinueFrame(
+                    request.getId(),
+                    (byte)0,
+                    ChecksumType.NoChecksum,
+                    0,
+                    TChannelUtilities.emptyByteBuf
+                );
+            }
+        } else {
+            Response response = (Response) msg;
+            if (argCount == 3) {
+                return new CallResponseFrame(
+                    response.getId(),
+                    (byte)0,
+                    response.getResponseCode(),
+                    new Trace(0, 0, 0, (byte) 0x00),
+                    response.getTransportHeaders(),
+                    ChecksumType.NoChecksum,
+                    0,
+                    TChannelUtilities.emptyByteBuf
+                );
+            } else {
+                return new CallResponseContinueFrame(
+                    response.getId(),
+                    (byte)0,
+                    ChecksumType.NoChecksum,
+                    0,
+                    TChannelUtilities.emptyByteBuf
+                );
             }
         }
-
-    }
-
-    protected int writeArg(ByteBuf arg, ByteBuf buffer) {
-
-        int readableBytes = arg.readableBytes();
-        int writableBytes = buffer.maxWritableBytes();
-        int headerSize = 2;
-        int chunkLength = Math.min(readableBytes + headerSize, writableBytes);
-
-        // Write the size of the `arg`
-        buffer.writeShort(chunkLength - headerSize);
-
-        // Actually write the contents of `arg`
-        buffer.writeBytes(arg, chunkLength - headerSize);
-
-        // Release the arg back to the pool
-        int bytesRemaining = (readableBytes - (chunkLength - headerSize));
-
-        return bytesRemaining;
     }
 }

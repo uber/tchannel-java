@@ -23,18 +23,15 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.frames.InitResponseFrame;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.buffer.ByteBufAllocator;
 
-import java.util.List;
 import java.util.Map;
 
-public final class InitResponseCodec extends MessageToMessageCodec<TFrame, InitResponseFrame> {
+public final class InitResponseCodec {
 
-    @Override
-    protected void encode(ChannelHandlerContext ctx, InitResponseFrame msg, List<Object> out) throws Exception {
+    public static TFrame encode(ByteBufAllocator allocator, InitResponseFrame msg) {
         // Allocate new ByteBuf
-        ByteBuf buffer = ctx.alloc().buffer();
+        ByteBuf buffer = allocator.buffer();
 
         // version:2
         buffer.writeShort(msg.getVersion());
@@ -42,12 +39,11 @@ public final class InitResponseCodec extends MessageToMessageCodec<TFrame, InitR
         // headers -> nh:2 (key~2 value~2){nh}
         CodecUtils.encodeHeaders(msg.getHeaders(), buffer);
 
-        TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
-        out.add(frame);
+        TFrame frame = new TFrame(buffer.writerIndex(), msg.getType(), msg.getId(), buffer);
+        return frame;
     }
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
+    public static InitResponseFrame decode(TFrame frame) {
         // version:2
         int version = frame.payload.readUnsignedShort();
 
@@ -55,7 +51,7 @@ public final class InitResponseCodec extends MessageToMessageCodec<TFrame, InitR
         Map<String, String> headers = CodecUtils.decodeHeaders(frame.payload);
 
         InitResponseFrame initResponseFrame = new InitResponseFrame(frame.id, version, headers);
-        out.add(initResponseFrame);
+        return initResponseFrame;
     }
 
 }

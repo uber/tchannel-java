@@ -24,15 +24,11 @@ package com.uber.tchannel.codecs;
 import com.uber.tchannel.frames.ClaimFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.buffer.ByteBufAllocator;
 
-import java.util.List;
-
-public final class ClaimCodec extends MessageToMessageCodec<TFrame, ClaimFrame> {
-    @Override
-    protected void encode(ChannelHandlerContext ctx, ClaimFrame msg, List<Object> out) throws Exception {
-        ByteBuf buffer = ctx.alloc().buffer(4 + Trace.TRACING_HEADER_LENGTH);
+public final class ClaimCodec {
+    public static TFrame encode(ByteBufAllocator allocator, ClaimFrame msg) {
+        ByteBuf buffer = allocator.buffer(4 + Trace.TRACING_HEADER_LENGTH);
 
         // ttl: 4
         buffer.writeInt((int) msg.getTTL());
@@ -40,12 +36,11 @@ public final class ClaimCodec extends MessageToMessageCodec<TFrame, ClaimFrame> 
         // tracing: 25
         CodecUtils.encodeTrace(msg.getTracing(), buffer);
 
-        TFrame frame = new TFrame(buffer.writerIndex(), msg.getMessageType(), msg.getId(), buffer);
-        out.add(frame);
+        TFrame frame = new TFrame(buffer.writerIndex(), msg.getType(), msg.getId(), buffer);
+        return frame;
     }
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
+    public static ClaimFrame decode(TFrame frame) {
         // ttl: 4
         long ttl = frame.payload.readUnsignedInt();
 
@@ -53,6 +48,7 @@ public final class ClaimCodec extends MessageToMessageCodec<TFrame, ClaimFrame> 
         Trace tracing = CodecUtils.decodeTrace(frame.payload);
 
         ClaimFrame claimFrame = new ClaimFrame(frame.id, ttl, tracing);
-        out.add(claimFrame);
+        frame.release();
+        return claimFrame;
     }
 }

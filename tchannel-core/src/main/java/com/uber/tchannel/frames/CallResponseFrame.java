@@ -23,8 +23,11 @@ package com.uber.tchannel.frames;
 
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
+import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
 
 import java.util.Map;
@@ -38,16 +41,11 @@ import java.util.Map;
  * <p>
  * The size of arg1 is at most 16KiB.
  */
-public final class CallResponseFrame implements CallFrame {
+public final class CallResponseFrame extends CallFrame {
 
-    private final long id;
-    private final byte flags;
     private final ResponseCode responseCode;
     private final Trace tracing;
     private final Map<String, String> headers;
-    private final ChecksumType checksumType;
-    private final int checksum;
-    private final ByteBuf payload;
 
     public CallResponseFrame(long id, byte flags, ResponseCode responseCode, Trace tracing, Map<String, String> headers,
                              ChecksumType checksumType, int checksum, ByteBuf payload) {
@@ -61,12 +59,14 @@ public final class CallResponseFrame implements CallFrame {
         this.payload = payload;
     }
 
-    public byte getFlags() {
-        return this.flags;
-    }
-
-    public int getPayloadSize() {
-        return this.payload.writerIndex() - this.payload.readerIndex();
+    public CallResponseFrame(long id, ResponseCode responseCode, Trace tracing, Map<String, String> headers,
+                             ChecksumType checksumType, int checksum) {
+        this.id = id;
+        this.responseCode = responseCode;
+        this.tracing = tracing;
+        this.headers = headers;
+        this.checksumType = checksumType;
+        this.checksum = checksum;
     }
 
     public boolean ok() {
@@ -77,12 +77,8 @@ public final class CallResponseFrame implements CallFrame {
         return ((this.flags & CallFrame.MORE_FRAGMENTS_REMAIN_MASK) == 1);
     }
 
-    public FrameType getMessageType() {
+    public FrameType getType() {
         return FrameType.CallResponse;
-    }
-
-    public long getId() {
-        return this.id;
     }
 
     public Trace getTracing() {
@@ -101,16 +97,8 @@ public final class CallResponseFrame implements CallFrame {
         return this.checksum;
     }
 
-    public ByteBuf getPayload() {
-        return this.payload;
-    }
-
     public ResponseCode getResponseCode() {
         return responseCode;
-    }
-
-    public ByteBuf content() {
-        return this.payload;
     }
 
     public ByteBufHolder copy() {
@@ -139,36 +127,28 @@ public final class CallResponseFrame implements CallFrame {
         );
     }
 
-    public ByteBufHolder retain() {
-        this.payload.retain();
-        return this;
-    }
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        ByteBuf buffer = allocator.buffer(1024);
 
-    public ByteBufHolder retain(int i) {
-        this.payload.retain(i);
-        return this;
-    }
+        // flags:1
+        buffer.writeByte(getFlags());
 
-    public ByteBufHolder touch() {
-        this.payload.touch();
-        return this;
-    }
+        // code:1
+        buffer.writeByte(getResponseCode().byteValue());
 
-    public ByteBufHolder touch(Object o) {
-        this.payload.touch(o);
-        return this;
-    }
+        // tracing:25
+        CodecUtils.encodeTrace(getTracing(), buffer);
 
-    public int refCnt() {
-        return this.payload.refCnt();
-    }
+        // headers -> nh:1 (hk~1 hv~1){nh}
+        CodecUtils.encodeSmallHeaders(getHeaders(), buffer);
 
-    public boolean release() {
-        return this.payload.release();
-    }
+        // csumtype:1
+        buffer.writeByte(getChecksumType().byteValue());
 
-    public boolean release(int i) {
-        return this.payload.release(i);
-    }
+        // (csum:4){0,1}
+        CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
 
+        return buffer;
+    }
 }

@@ -22,17 +22,18 @@
 
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.api.errors.TChannelError;
+import com.uber.tchannel.api.errors.TChannelProtocol;
 import com.uber.tchannel.channels.PeerManager;
-import com.uber.tchannel.errors.FatalProtocolError;
-import com.uber.tchannel.errors.ProtocolError;
+import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
 import com.uber.tchannel.frames.Frame;
-import com.uber.tchannel.tracing.Trace;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class InitRequestInitiator extends SimpleChannelInboundHandler<Frame> {
+public class InitRequestInitiator extends SimpleChannelInboundHandler<TFrame> {
 
     private final PeerManager peerManager;
 
@@ -41,9 +42,11 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Frame> {
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Frame frame) throws ProtocolError {
+    protected void messageReceived(ChannelHandlerContext ctx, TFrame tframe) throws TChannelError {
 
-        switch (frame.getMessageType()) {
+        Frame frame = MessageCodec.decode(tframe);
+
+        switch (frame.getType()) {
 
             case InitResponse:
 
@@ -55,10 +58,9 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Frame> {
                 } else {
 
                     // This will lead to a connection reset
-                    throw new FatalProtocolError(
+                    throw new TChannelProtocol(
                         String.format("Expected Protocol version: %d, got version: %d",
-                            InitFrame.DEFAULT_VERSION, initResponseFrameMessage.getVersion()),
-                        new Trace(0, 0, 0, (byte) 0x00)
+                            InitFrame.DEFAULT_VERSION, initResponseFrameMessage.getVersion())
                     );
                 }
 
@@ -67,9 +69,8 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<Frame> {
             default:
 
                 // This will lead to a connection reset
-                throw new FatalProtocolError(
-                    "Frame recieved before Init Response",
-                    new Trace(0, 0, 0, (byte) 0x00)
+                throw new TChannelProtocol(
+                    "Frame recieved before Init Response"
                 );
         }
     }

@@ -22,40 +22,22 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.frames.ErrorFrame;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Test;
 
-public final class ErrorCodec {
-    public static TFrame encode(ByteBufAllocator allocator, ErrorFrame msg) {
-        ByteBuf buffer = allocator.buffer();
+import static org.junit.Assert.assertEquals;
 
-        // code:1
-        buffer.writeByte(msg.getErrorType().byteValue());
+public class CodecTestUtil {
 
-        // tracing:25
-        CodecUtils.encodeTrace(msg.getTracing(), buffer);
+    @Test
+    public static TFrame encodeDecode(TFrame frame) {
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new TChannelLengthFieldBasedFrameDecoder(),
+                new TFrameCodec()
+        );
 
-        // message~2
-        CodecUtils.encodeString(msg.getMessage(), buffer);
-
-        TFrame frame = new TFrame(buffer.writerIndex(), msg.getType(), msg.getId(), buffer);
-        return frame;
-    }
-
-    public static ErrorFrame decode(TFrame frame) {
-        // code:1
-        ErrorType type = ErrorType.fromByte(frame.payload.readByte());
-
-        // tracing:25
-        Trace tracing = CodecUtils.decodeTrace(frame.payload);
-
-        // message~2
-        String message = CodecUtils.decodeString(frame.payload);
-
-        ErrorFrame errorFrame = new ErrorFrame(frame.id, type, tracing, message);
-        return errorFrame;
+        channel.writeOutbound(frame);
+        channel.writeInbound(channel.readOutbound());
+        return channel.readInbound();
     }
 }

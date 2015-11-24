@@ -24,8 +24,11 @@ package com.uber.tchannel.codecs;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class CodecUtils {
@@ -131,7 +134,6 @@ public final class CodecUtils {
             CodecUtils.encodeSmallString(header.getKey(), buffer);
             CodecUtils.encodeSmallString(header.getValue(), buffer);
         }
-
     }
 
     public static Trace decodeTrace(ByteBuf buffer) {
@@ -150,4 +152,97 @@ public final class CodecUtils {
                 .writeByte(trace.traceFlags);
     }
 
+    public static ByteBuf writeArg(ByteBufAllocator allocator, ByteBuf arg, int writableBytes) {
+        if (writableBytes <= 2) {
+            throw new UnsupportedOperationException("writableBytes must be larger than 2");
+        }
+
+        int readableBytes = arg.readableBytes();
+        int headerSize = 2;
+        int chunkLength = Math.min(readableBytes + headerSize, writableBytes);
+        ByteBuf sizeBuf = allocator.buffer(2);
+
+        // Write the size of the `arg`
+        sizeBuf.writeShort(chunkLength - headerSize);
+        if (readableBytes == 0) {
+            return sizeBuf;
+        } else {
+            return Unpooled.wrappedBuffer(sizeBuf,
+                arg.readSlice(chunkLength - headerSize).retain());
+        }
+    }
+
+    public static ByteBuf writeArgs(ByteBufAllocator allocator,
+                                    ByteBuf header,
+                                    List<ByteBuf> args) {
+        ByteBuf payload = header;
+        int writableBytes = TFrame.MAX_FRAME_PAYLOAD_LENGTH - payload.readableBytes();
+
+        while (!args.isEmpty()) {
+            ByteBuf arg = args.get(0);
+            ByteBuf buffer = writeArg(allocator, arg, writableBytes);
+            payload = Unpooled.wrappedBuffer(payload, buffer);
+            writableBytes -= buffer.readableBytes();
+            if (writableBytes <= 2) {
+                break;
+            }
+
+            if (arg.readableBytes() == 0) {
+                args.remove(0);
+            }
+        }
+
+        return payload;
+    }
+
+    public static ByteBuf compose(ByteBuf first, ByteBuf second) {
+        if (first == Unpooled.EMPTY_BUFFER) {
+            return second;
+        } else if (second == Unpooled.EMPTY_BUFFER) {
+            return first;
+        } else {
+            return Unpooled.wrappedBuffer(first, second);
+        }
+    }
+
+    public static ByteBuf readArg(ByteBuf buffer) {
+        if (buffer.readableBytes() < 2) {
+            return null;
+        }
+
+        int len = buffer.readUnsignedShort();
+        if (len > buffer.readableBytes()) {
+            throw new UnsupportedOperationException("wrong read index for args");
+        } else if (len == 0) {
+            return Unpooled.EMPTY_BUFFER;
+        }
+
+        /* Read a slice, retain a copy */
+        ByteBuf arg = buffer.readSlice(len);
+        arg.retain();
+
+        return arg;
+    }
+
+    public static void readArgs(List<ByteBuf> args, ByteBuf buffer) {
+
+        ByteBuf arg = null;
+        if (args.isEmpty()) {
+            args.add(Unpooled.EMPTY_BUFFER);
+        }
+
+        boolean first = true;
+        while (true) {
+            arg = readArg(buffer);
+            if (arg == null) {
+                return;
+            } else if (first) {
+                first = false;
+                ByteBuf prev = args.get(args.size() - 1);
+                args.set(args.size() - 1, compose(prev, arg));
+            } else {
+                args.add(arg);
+            }
+        }
+    }
 }

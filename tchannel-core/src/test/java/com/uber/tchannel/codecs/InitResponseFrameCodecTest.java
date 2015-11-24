@@ -25,7 +25,7 @@ package com.uber.tchannel.codecs;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -35,13 +35,7 @@ import static org.junit.Assert.assertEquals;
 public class InitResponseFrameCodecTest {
 
     @Test
-    public void shouldEncodeAndDecodeInitResponse() {
-
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new InitResponseCodec()
-        );
+    public void shouldEncodeAndDecodeInitResponse() throws Exception {
 
         InitResponseFrame initResponseFrame = new InitResponseFrame(
                 42,
@@ -52,16 +46,22 @@ public class InitResponseFrameCodecTest {
                 }}
         );
 
-        channel.writeOutbound(initResponseFrame);
-        channel.writeInbound(channel.readOutbound());
+        TFrame tFrame = CodecTestUtil.encodeDecode(
+            MessageCodec.encode(
+                ByteBufAllocator.DEFAULT, initResponseFrame
+            )
+        );
+        InitResponseFrame newInitResponseFrame =
+            (InitResponseFrame) MessageCodec.decode(
+                tFrame
+            );
 
-        InitResponseFrame newInitResponseFrame = channel.readInbound();
-        assertEquals(newInitResponseFrame.getMessageType(), initResponseFrame.getMessageType());
+        tFrame.release();
+        assertEquals(newInitResponseFrame.getType(), initResponseFrame.getType());
         assertEquals(newInitResponseFrame.getId(), initResponseFrame.getId());
         assertEquals(newInitResponseFrame.getVersion(), initResponseFrame.getVersion());
         assertEquals(newInitResponseFrame.getHostPort(), initResponseFrame.getHostPort());
         assertEquals(newInitResponseFrame.getProcessName(), initResponseFrame.getProcessName());
-
     }
 
 }

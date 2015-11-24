@@ -22,12 +22,15 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
+import com.uber.tchannel.codecs.CodecUtils;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -44,17 +47,12 @@ import java.util.Map;
  * <p>
  * The size of arg1 is at most 16KiB.
  */
-public final class CallRequestFrame implements CallFrame {
+public final class CallRequestFrame extends CallFrame {
 
-    private final long id;
-    private final byte flags;
     private final long ttl;
     private final Trace tracing;
     private final String service;
     private final Map<String, String> headers;
-    private final ChecksumType checksumType;
-    private final int checksum;
-    private final ByteBuf payload;
 
     public CallRequestFrame(long id, byte flags, long ttl, Trace tracing, String service, Map<String, String> headers,
                             ChecksumType checksumType, int checksum, ByteBuf payload) {
@@ -69,35 +67,19 @@ public final class CallRequestFrame implements CallFrame {
         this.payload = payload;
     }
 
-    public byte getFlags() {
-        return flags;
+    public CallRequestFrame(long id, long ttl, Trace tracing, String service, Map<String, String> headers,
+                            ChecksumType checksumType, int checksum) {
+        this.id = id;
+        this.ttl = ttl;
+        this.tracing = tracing;
+        this.service = service;
+        this.headers = headers;
+        this.checksumType = checksumType;
+        this.checksum = checksum;
     }
 
-    public boolean moreFragmentsFollow() {
-        return ((this.flags & CallFrame.MORE_FRAGMENTS_REMAIN_MASK) == 1);
-    }
-
-    public ChecksumType getChecksumType() {
-        return this.checksumType;
-    }
-
-    public int getChecksum() {
-        return this.checksum;
-    }
-
-    public ByteBuf getPayload() {
-        return payload;
-    }
-
-    public long getId() {
-        return this.id;
-    }
-
-    public int getPayloadSize() {
-        return this.payload.writerIndex() - this.payload.readerIndex();
-    }
-
-    public FrameType getMessageType() {
+    @Override
+    public FrameType getType() {
         return FrameType.CallRequest;
     }
 
@@ -119,10 +101,6 @@ public final class CallRequestFrame implements CallFrame {
 
     public ArgScheme getArgScheme() {
         return ArgScheme.toScheme(headers.get(TransportHeaders.ARG_SCHEME_KEY));
-    }
-
-    public ByteBuf content() {
-        return this.payload;
     }
 
     public ByteBufHolder copy() {
@@ -153,35 +131,31 @@ public final class CallRequestFrame implements CallFrame {
         );
     }
 
-    public ByteBufHolder retain() {
-        this.payload.retain();
-        return this;
-    }
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        ByteBuf buffer = allocator.buffer(1024);
 
-    public ByteBufHolder retain(int i) {
-        this.payload.retain(i);
-        return this;
-    }
+        // flags:1
+        buffer.writeByte(getFlags());
 
-    public ByteBufHolder touch() {
-        this.payload.touch();
-        return this;
-    }
+        // ttl:4
+        buffer.writeInt((int) getTTL());
 
-    public ByteBufHolder touch(Object o) {
-        this.payload.touch(o);
-        return this;
-    }
+        // tracing:25
+        CodecUtils.encodeTrace(getTracing(), buffer);
 
-    public int refCnt() {
-        return this.payload.refCnt();
-    }
+        // service~1
+        CodecUtils.encodeSmallString(getService(), buffer);
 
-    public boolean release() {
-        return this.payload.release();
-    }
+        // nh:1 (hk~1, hv~1){nh}
+        CodecUtils.encodeSmallHeaders(getHeaders(), buffer);
 
-    public boolean release(int i) {
-        return this.payload.release(i);
+        // csumtype:1
+        buffer.writeByte(getChecksumType().byteValue());
+
+        // (csum:4){0,1}
+        CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
+
+        return buffer;
     }
 }

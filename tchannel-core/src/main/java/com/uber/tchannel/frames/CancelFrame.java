@@ -21,11 +21,13 @@
  */
 package com.uber.tchannel.frames;
 
+import com.uber.tchannel.codecs.CodecUtils;
 import com.uber.tchannel.tracing.Trace;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 
-public final class CancelFrame implements Frame {
+public final class CancelFrame extends Frame {
 
-    private final long id;
     private final long ttl;
     private final Trace tracing;
     private final String why;
@@ -53,12 +55,25 @@ public final class CancelFrame implements Frame {
         return tracing;
     }
 
-    public long getId() {
-        return this.id;
+    @Override
+    public FrameType getType() {
+        return FrameType.Cancel;
     }
 
-    public FrameType getMessageType() {
-        return FrameType.Cancel;
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        ByteBuf buffer = allocator.buffer(31);
+
+        // ttl:4
+        buffer.writeInt((int) getTTL());
+
+        // tracing:25
+        CodecUtils.encodeTrace(getTracing(), buffer);
+
+        // why~2
+        CodecUtils.encodeString(getWhy(), buffer);
+
+        return buffer;
     }
 
     public String getWhy() {

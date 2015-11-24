@@ -23,7 +23,7 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.frames.ClaimFrame;
 import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -33,21 +33,19 @@ public class ClaimFrameCodecTest {
     @Test
     public void testEncodeDecodeClaim() throws Exception {
 
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ClaimCodec()
-        );
-
         ClaimFrame claimFrameMessage = new ClaimFrame(Integer.MAX_VALUE, Integer.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03));
 
-        channel.writeOutbound(claimFrameMessage);
-        channel.writeInbound(channel.readOutbound());
+        ClaimFrame newClaimFrameMessage =
+            (ClaimFrame) MessageCodec.decode(
+                CodecTestUtil.encodeDecode(
+                    MessageCodec.encode(
+                        ByteBufAllocator.DEFAULT, claimFrameMessage
+                    )
+                )
+            );
 
-        ClaimFrame newClaimFrameMessage = channel.readInbound();
         assertEquals(newClaimFrameMessage.getId(), claimFrameMessage.getId());
         assertEquals(newClaimFrameMessage.getTTL(), claimFrameMessage.getTTL());
-
     }
 
 }

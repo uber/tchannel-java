@@ -23,6 +23,8 @@ package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.channels.PeerManager;
+import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.ErrorFrame;
@@ -30,13 +32,13 @@ import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -67,11 +69,13 @@ public class InitDefaultRequestHandlerTest {
                 }}
         );
 
-        channel.writeInbound(initRequestFrame);
+        channel.writeInbound(MessageCodec.encode(PooledByteBufAllocator.DEFAULT, initRequestFrame));
         channel.writeOutbound(channel.readInbound());
 
         // Then
-        InitResponseFrame initResponseFrame = channel.readOutbound();
+        TFrame tFrame = channel.readOutbound();
+        InitResponseFrame initResponseFrame = (InitResponseFrame) MessageCodec.decode(tFrame);
+        tFrame.release();
 
         // Assert
         assertNotNull(initResponseFrame);
@@ -108,11 +112,13 @@ public class InitDefaultRequestHandlerTest {
                 }}
         );
 
-        channel.writeInbound(initRequestFrame);
+        channel.writeInbound(MessageCodec.encode(PooledByteBufAllocator.DEFAULT, initRequestFrame));
         channel.writeOutbound(channel.readInbound());
 
         // Then
-        InitResponseFrame initResponseFrame = channel.readOutbound();
+        TFrame tFrame = channel.readOutbound();
+        InitResponseFrame initResponseFrame = (InitResponseFrame) MessageCodec.decode(tFrame);
+        tFrame.release();
 
         // Assert
         assertNotNull(initResponseFrame);
@@ -130,10 +136,14 @@ public class InitDefaultRequestHandlerTest {
         );
 
         CallRequestFrame callRequestFrame = Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER);
-        channel.writeInbound(callRequestFrame);
-        ErrorFrame errorFrame = channel.readOutbound();
+        channel.writeInbound(MessageCodec.encode(PooledByteBufAllocator.DEFAULT, callRequestFrame));
+
+
+        TFrame tFrame = channel.readOutbound();
+        ErrorFrame errorFrame = (ErrorFrame) MessageCodec.decode(tFrame);
+        tFrame.release();
         assertNotNull(errorFrame);
-        assertThat(errorFrame.getType(), is(ErrorType.FatalProtocolError));
+        assertThat(errorFrame.getErrorType(), is(ErrorType.FatalProtocolError));
         assertThat(errorFrame.getMessage(), containsString("The first frame should be an Init Request"));
 
         channel.writeOutbound();
@@ -154,11 +164,13 @@ public class InitDefaultRequestHandlerTest {
                 }}
         );
 
-        channel.writeInbound(initRequestFrame);
-        ErrorFrame errorFrame = channel.readOutbound();
+        channel.writeInbound(MessageCodec.encode(PooledByteBufAllocator.DEFAULT, initRequestFrame));
+        TFrame tFrame = channel.readOutbound();
+        ErrorFrame errorFrame = (ErrorFrame) MessageCodec.decode(tFrame);
 
+        tFrame.release();
         assertNotNull(errorFrame);
-        assertThat(errorFrame.getType(), is(ErrorType.FatalProtocolError));
+        assertThat(errorFrame.getErrorType(), is(ErrorType.FatalProtocolError));
         assertThat(errorFrame.getMessage(), containsString("Expected Protocol version: 2, got version: 1"));
 
         channel.writeOutbound();

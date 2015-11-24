@@ -22,18 +22,14 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
+import com.uber.tchannel.codecs.CodecUtils;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
 
-public final class CallResponseContinue implements CallFrame {
+public final class CallResponseContinueFrame extends CallFrame {
 
-    private final long id;
-    private final byte flags;
-    private final ChecksumType checksumType;
-    private final int checksum;
-    private final ByteBuf payload;
-
-    public CallResponseContinue(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
+    public CallResponseContinueFrame(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
         this.flags = flags;
         this.checksumType = checksumType;
@@ -41,44 +37,19 @@ public final class CallResponseContinue implements CallFrame {
         this.payload = payload;
     }
 
-    public int getPayloadSize() {
-        return this.payload.writerIndex() - this.payload.readerIndex();
+    public CallResponseContinueFrame(long id, ChecksumType checksumType, int checksum) {
+        this.id = id;
+        this.checksumType = checksumType;
+        this.checksum = checksum;
     }
 
-    public byte getFlags() {
-        return this.flags;
-    }
 
-    public ChecksumType getChecksumType() {
-        return this.checksumType;
-    }
-
-    public int getChecksum() {
-        return this.checksum;
-    }
-
-    public ByteBuf getPayload() {
-        return this.payload;
-    }
-
-    public boolean moreFragmentsFollow() {
-        return ((this.flags & CallFrame.MORE_FRAGMENTS_REMAIN_MASK) == 1);
-    }
-
-    public long getId() {
-        return this.id;
-    }
-
-    public FrameType getMessageType() {
+    public FrameType getType() {
         return FrameType.CallResponseContinue;
     }
 
-    public ByteBuf content() {
-        return this.payload;
-    }
-
     public ByteBufHolder copy() {
-        return new CallResponseContinue(
+        return new CallResponseContinueFrame(
                 this.id,
                 this.flags,
                 this.checksumType,
@@ -88,7 +59,7 @@ public final class CallResponseContinue implements CallFrame {
     }
 
     public ByteBufHolder duplicate() {
-        return new CallResponseContinue(
+        return new CallResponseContinueFrame(
                 this.id,
                 this.flags,
                 this.checksumType,
@@ -97,36 +68,19 @@ public final class CallResponseContinue implements CallFrame {
         );
     }
 
-    public ByteBufHolder retain() {
-        this.payload.retain();
-        return this;
-    }
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        ByteBuf buffer = allocator.buffer(2, 6);
 
-    public ByteBufHolder retain(int i) {
-        this.payload.retain(i);
-        return this;
-    }
+        // flags:1
+        buffer.writeByte(getFlags());
 
-    public ByteBufHolder touch() {
-        this.payload.touch();
-        return this;
-    }
+        // csumtype:1
+        buffer.writeByte(getChecksumType().byteValue());
 
-    public ByteBufHolder touch(Object o) {
-        this.payload.touch(o);
-        return this;
-    }
+        // checksum -> (csum:4){0,1}
+        CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
 
-    public int refCnt() {
-        return this.payload.refCnt();
+        return buffer;
     }
-
-    public boolean release() {
-        return this.payload.release();
-    }
-
-    public boolean release(int i) {
-        return this.payload.release(i);
-    }
-
 }

@@ -20,36 +20,10 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.api.errors;
 
-import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.frames.ErrorFrame;
-import com.uber.tchannel.tracing.Trace;
-import io.netty.buffer.ByteBufAllocator;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-
-public class ErrorCodecTest {
-
-    @Test
-    public void testEncodeDecode() throws Exception {
-
-        ErrorFrame errorFrame = new ErrorFrame(
-                42,
-                ErrorType.FatalProtocolError,
-                new Trace(0, 0, 0, (byte) 0),
-                "I'm sorry Dave, I can't do that."
-        );
-
-        TFrame tFrame = MessageCodec.encode(ByteBufAllocator.DEFAULT, errorFrame);
-        ErrorFrame newErrorFrame =
-            (ErrorFrame) MessageCodec.decode(
-                CodecTestUtil.encodeDecode(tFrame)
-            );
-
-        assertEquals(errorFrame.getId(), newErrorFrame.getId());
-        assertEquals(errorFrame.getMessage(), newErrorFrame.getMessage());
-        tFrame.release();
+public class TChannelProtocol extends TChannelError {
+    public TChannelProtocol(String message) {
+        super(message, TChannelError.ERROR_PROTOCOL);
     }
 }

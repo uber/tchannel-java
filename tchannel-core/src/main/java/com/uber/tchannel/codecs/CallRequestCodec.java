@@ -27,23 +27,22 @@ import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 
 import java.util.List;
 import java.util.Map;
 
-public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRequestFrame> {
+public final class CallRequestCodec {
 
-    @Override
-    protected void encode(ChannelHandlerContext ctx, CallRequestFrame msg, List<Object> out) throws Exception {
+    public static TFrame encode(ByteBufAllocator allocator, CallRequestFrame msg) {
         /**
          * Allocate a buffer for the rest of the pipeline
          *
          * TODO: Figure out sane initial buffer size allocation. We could calculate this dynamically based off of the
          * average payload size of the current connection.
          */
-        ByteBuf buffer = ctx.alloc().buffer(CallFrame.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
+        ByteBuf buffer = allocator.buffer(CallFrame.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
 
         // flags:1
         buffer.writeByte(msg.getFlags());
@@ -77,11 +76,56 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
         buffer.writeBytes(msg.getPayload());
 
         TFrame frame = new TFrame(buffer.writerIndex(), FrameType.CallRequest, msg.getId(), buffer);
-        out.add(frame);
+        msg.release();
+        return frame;
     }
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) {
+    public static TFrame encodeEx(ByteBufAllocator allocator, CallRequestFrame msg) {
+        /**
+         * Allocate a buffer for the rest of the pipeline
+         *
+         * TODO: Figure out sane initial buffer size allocation. We could calculate this dynamically based off of the
+         * average payload size of the current connection.
+         */
+        ByteBuf buffer = allocator.buffer(CallFrame.MAX_ARG1_LENGTH, TFrame.MAX_FRAME_LENGTH);
+
+        // flags:1
+        buffer.writeByte(msg.getFlags());
+
+        // ttl:4
+        buffer.writeInt((int) msg.getTTL());
+
+        // tracing:25
+        CodecUtils.encodeTrace(msg.getTracing(), buffer);
+
+        // service~1
+        CodecUtils.encodeSmallString(msg.getService(), buffer);
+
+        // nh:1 (hk~1, hv~1){nh}
+        CodecUtils.encodeSmallHeaders(msg.getHeaders(), buffer);
+
+        // csumtype:1
+        buffer.writeByte(msg.getChecksumType().byteValue());
+
+        // (csum:4){0,1}
+        CodecUtils.encodeChecksum(msg.getChecksum(), msg.getChecksumType(), buffer);
+
+        /**
+         * Payload
+         *
+         * TODO: hmm we've already written these bytes, why are we writing them again? we should build a composite
+         * buffer via {@link io.netty.buffer.Unpooled.wrappedBuffer}. The only trick there is that we need to
+         * combine the length of both buffers, which is non-trivial other than just recording it and passing it
+         * through the whole pipeline along with the Msg.
+         */
+        buffer.writeBytes(msg.getPayload());
+
+        TFrame frame = new TFrame(buffer.writerIndex(), FrameType.CallRequest, msg.getId(), buffer);
+        msg.release();
+        return frame;
+    }
+
+    public static CallRequestFrame decode(TFrame frame) {
         // flags:1
         byte flags = frame.payload.readByte();
 
@@ -106,12 +150,12 @@ public final class CallRequestCodec extends MessageToMessageCodec<TFrame, CallRe
         // arg1~2 arg2~2 arg3~2
         int payloadSize = frame.size - frame.payload.readerIndex();
         ByteBuf payload = frame.payload.readSlice(payloadSize);
-        payload.retain();
+//        payload.retain();
 
         CallRequestFrame req = new CallRequestFrame(
                 frame.id, flags, ttl, trace, service, headers, checksumType, checksum, payload
         );
-        out.add(req);
+        return req;
     }
 
 }

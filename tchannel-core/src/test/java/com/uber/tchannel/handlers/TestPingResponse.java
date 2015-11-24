@@ -34,16 +34,15 @@ import static org.junit.Assert.assertNotNull;
 public class TestPingResponse {
 
     @Test
-    public void shouldInterceptPing() {
+    public void shouldInterceptPing() throws Exception {
 
         EmbeddedChannel channel = new EmbeddedChannel(
-                new MessageCodec(),
                 new PingHandler()
         );
 
         TFrame frame = new TFrame(0, FrameType.PingRequest.byteValue(), Integer.MAX_VALUE, Unpooled.EMPTY_BUFFER);
 
-        channel.writeInbound(frame);
+        channel.writeInbound(MessageCodec.decode(frame));
         TFrame newFrame = channel.readOutbound();
 
         assertNotNull(newFrame);

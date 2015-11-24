@@ -23,13 +23,13 @@
 package com.uber.tchannel.fragmentation;
 
 public enum FragmentationState {
-    /* Currently decoding Arg2 */
+    /* Currently encoding/decoding Arg1 */
     ARG1,
 
-    /* Currently decoding Arg2 */
+    /* Currently encoding/decoding Arg2 */
     ARG2,
 
-    /* Currently decoding Arg3 */
+    /* Currently encoding/decoding Arg3 */
     ARG3,
 
     /* Done! */
