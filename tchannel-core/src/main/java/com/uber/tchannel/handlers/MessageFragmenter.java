@@ -72,7 +72,14 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
             }
 
             frame.encodePayload(ctx.alloc(), args);
-            frames.add(MessageCodec.encode(ctx.alloc(), frame));
+            frames.add(
+                MessageCodec.encode(ctx.alloc(),
+                    MessageCodec.encode(
+                        ctx.alloc(),
+                        frame
+                    )
+                )
+            );
         }
     }
 

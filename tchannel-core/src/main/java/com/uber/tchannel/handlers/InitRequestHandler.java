@@ -29,12 +29,13 @@ import com.uber.tchannel.frames.Frame;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
-public class InitRequestHandler extends SimpleChannelInboundHandler<TFrame> {
+public class InitRequestHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     private final PeerManager peerManager;
 
@@ -43,9 +44,11 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<TFrame> {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, TFrame tframe) throws Exception {
+    public void messageReceived(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
 
-        Frame frame = MessageCodec.decode(tframe);
+        Frame frame = MessageCodec.decode(
+            MessageCodec.decode(buf)
+        );
 
         switch (frame.getType()) {
 

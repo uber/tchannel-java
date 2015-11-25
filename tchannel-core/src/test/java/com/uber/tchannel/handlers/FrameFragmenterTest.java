@@ -47,7 +47,7 @@ public class FrameFragmenterTest {
     @Test
     public void testEncode() throws Exception {
         EmbeddedChannel channel = new EmbeddedChannel(
-                new MessageFragmenter()
+            new MessageFragmenter()
         );
 
         // arg1
@@ -75,13 +75,17 @@ public class FrameFragmenterTest {
         channel.writeOutbound(rawRequest);
 
         for (int i = 0; i < 4; i++) {
-            CallFrame req = (CallFrame) MessageCodec.decode((TFrame) channel.readOutbound());
+            CallFrame req = (CallFrame) MessageCodec.decode(
+                MessageCodec.decode(
+                    (ByteBuf) channel.readOutbound()
+                )
+            );
             req.release();
             assertNotNull(req);
         }
 
-        CallRequestFrame req = channel.readOutbound();
-        assertNull(req);
+        ByteBuf buf = channel.readOutbound();
+        assertNull(buf);
 
         rawRequest.release();
     }

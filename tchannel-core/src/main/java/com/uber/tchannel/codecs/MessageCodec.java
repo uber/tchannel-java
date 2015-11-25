@@ -21,9 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.api.errors.TChannelCodec;
 import com.uber.tchannel.api.errors.TChannelError;
-import com.uber.tchannel.api.errors.TChannelProtocol;
 import com.uber.tchannel.frames.CallFrame;
 import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.CallResponseFrame;
@@ -50,9 +48,28 @@ public final class MessageCodec {
 
     public static ChannelFuture write(ChannelHandlerContext ctx, Frame frame) {
         // TODO: release frame?
-        ChannelFuture f = ctx.writeAndFlush(encode(ctx.alloc(), frame));
+        ChannelFuture f = ctx.writeAndFlush(
+            encode(
+                ctx.alloc(),
+                encode(
+                    ctx.alloc(), frame
+                )
+            )
+        );
         f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
         return f;
+    }
+
+    public static ByteBuf encode(TFrame tFrame) {
+        return TFrameCodec.encode(PooledByteBufAllocator.DEFAULT, tFrame);
+    }
+
+    public static ByteBuf encode(ByteBufAllocator allocator, TFrame tFrame) {
+        return TFrameCodec.encode(allocator, tFrame);
+    }
+
+    public static TFrame decode(ByteBuf buffer) {
+        return TFrameCodec.decode(buffer);
     }
 
     public static TFrame encode(Frame msg) {

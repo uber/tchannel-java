@@ -34,6 +34,7 @@ import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.messages.TChannelMessage;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
@@ -44,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
-public class MessageDefragmenter extends MessageToMessageDecoder<TFrame> {
+public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
 
     // TODO: reaping the timeouts
     private final Map<Long, List<CallFrame>> callFrames = new ConcurrentHashMap<>();
@@ -54,9 +55,12 @@ public class MessageDefragmenter extends MessageToMessageDecoder<TFrame> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame tframe, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out) throws Exception {
 
-        Frame frame = MessageCodec.decode(tframe);
+        Frame frame = MessageCodec.decode(
+            MessageCodec.decode(buf)
+        );
+
         TChannelMessage msg = null;
         switch (frame.getType()) {
             case CallRequest:

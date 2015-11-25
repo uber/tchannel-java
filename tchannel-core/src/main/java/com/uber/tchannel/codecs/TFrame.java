@@ -38,7 +38,7 @@ import io.netty.buffer.ByteBufHolder;
  */
 public class TFrame implements ByteBufHolder {
 
-    public static final int MAX_FRAME_LENGTH = 65536;
+    public static final int MAX_FRAME_LENGTH = 65535;
     public static final int FRAME_HEADER_LENGTH = 16;
     public static final int MAX_FRAME_PAYLOAD_LENGTH = MAX_FRAME_LENGTH - FRAME_HEADER_LENGTH;
 

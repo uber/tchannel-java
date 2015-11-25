@@ -295,10 +295,10 @@ public final class TChannel {
                     ch.pipeline().addLast("FrameDecoder", new TChannelLengthFieldBasedFrameDecoder());
 
                     // Translates Raw Frames into TFrames
-                    ch.pipeline().addLast("TFrameCodec", new TFrameCodec());
+                    // ch.pipeline().addLast("TFrameCodec", new TFrameCodec());
 
                     // Translates TFrames into Messages
-//                    ch.pipeline().addLast("MessageCodec", new MessageCodec());
+                    // ch.pipeline().addLast("MessageCodec", new MessageCodec());
 
                     if (isServer) {
                         ch.pipeline().addLast("InitRequestHandler",

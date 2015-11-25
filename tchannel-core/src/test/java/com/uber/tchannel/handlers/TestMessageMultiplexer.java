@@ -71,7 +71,12 @@ public class TestMessageMultiplexer {
                 "arg1".getBytes(),
                 new byte[]{0x00, 0x00}
         ));
-        channel.writeInbound(MessageCodec.encode(callRequestFrame));
+
+        channel.writeInbound(
+            MessageCodec.encode(
+                MessageCodec.encode(callRequestFrame)
+            )
+        );
         assertEquals(1, map.size());
         assertNotNull(map.get(id));
         assertEquals(1, callRequestFrame.refCnt());
@@ -81,7 +86,11 @@ public class TestMessageMultiplexer {
             new byte[]{0x00, 0x04},
             "arg2".getBytes()
         ));
-        channel.writeInbound(MessageCodec.encode(firstCallRequestContinueFrame));
+        channel.writeInbound(
+            MessageCodec.encode(
+                MessageCodec.encode(firstCallRequestContinueFrame)
+            )
+        );
         assertEquals(1, map.size());
         assertNotNull(map.get(id));
         assertEquals(2, map.get(id).size());
@@ -94,7 +103,11 @@ public class TestMessageMultiplexer {
             new byte[]{0x00, 0x04},
             "arg3".getBytes()
         ));
-        channel.writeInbound(MessageCodec.encode(secondCallRequestContinueFrame));
+        channel.writeInbound(
+            MessageCodec.encode(
+                MessageCodec.encode(secondCallRequestContinueFrame)
+            )
+        );
         assertEquals(map.size(), 0);
         assertNull(map.get(id));
         assertEquals(1, callRequestFrame.refCnt());
@@ -129,7 +142,6 @@ public class TestMessageMultiplexer {
         assertEquals(0, secondCallRequestContinueFrame.refCnt());
 
         assertNull(channel.readInbound());
-
     }
 
     @Test
@@ -149,8 +161,13 @@ public class TestMessageMultiplexer {
                 // arg1 needs to be empty
                 new byte[]{0x00, 0x00},
                 new byte[]{0x00, 0x00}
-            ));
-        channel.writeInbound(MessageCodec.encode(callResponseFrame));
+            )
+        );
+        channel.writeInbound(
+            MessageCodec.encode(
+                MessageCodec.encode(callResponseFrame)
+            )
+        );
         assertEquals(1, map.size());
         assertNotNull(map.get(id));
         assertEquals(1, callResponseFrame.refCnt());
@@ -160,7 +177,11 @@ public class TestMessageMultiplexer {
             new byte[]{0x00, 0x04},
             "arg2".getBytes()
         ));
-        channel.writeInbound(MessageCodec.encode(firstCallResponseContinueFrame));
+        channel.writeInbound(
+            MessageCodec.encode(
+                MessageCodec.encode(firstCallResponseContinueFrame)
+            )
+        );
         assertEquals(1, map.size());
         assertNotNull(map.get(id));
         assertEquals(2, map.get(id).size());
@@ -173,7 +194,11 @@ public class TestMessageMultiplexer {
             new byte[]{0x00, 0x04},
             "arg3".getBytes()
         ));
-        channel.writeInbound(MessageCodec.encode(secondCallResponseContinueFrame));
+        channel.writeInbound(
+            MessageCodec.encode(
+                MessageCodec.encode(secondCallResponseContinueFrame)
+            )
+        );
         assertEquals(map.size(), 0);
         assertNull(map.get(id));
         assertEquals(0, callResponseFrame.refCnt());

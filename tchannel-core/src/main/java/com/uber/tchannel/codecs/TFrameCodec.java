@@ -22,6 +22,8 @@
 package com.uber.tchannel.codecs;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 
@@ -52,25 +54,51 @@ public final class TFrameCodec extends ByteToMessageCodec<TFrame> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
+        msg.retain();
+        out.add(decode(msg));
+    }
+
+    public static ByteBuf encode(ByteBufAllocator allocator, TFrame frame) {
+        ByteBuf buffer = allocator.buffer(16, 16);
+
         // size:2
-        int size = msg.readUnsignedShort() - TFrame.FRAME_HEADER_LENGTH;
+        buffer.writeShort(frame.size + TFrame.FRAME_HEADER_LENGTH);
 
         // type:1
-        byte type = msg.readByte();
+        buffer.writeByte(frame.type);
 
         // reserved:1
-        msg.skipBytes(1);
+        buffer.writeZero(1);
 
         // id:4
-        long id = msg.readUnsignedInt();
+        buffer.writeInt((int) frame.id);
 
         // reserved:8
-        msg.skipBytes(8);
+        buffer.writeZero(8);
+
+        return Unpooled.wrappedBuffer(buffer, frame.payload);
+    }
+
+    public static TFrame decode(ByteBuf buffer) {
+        // size:2
+        int size = buffer.readUnsignedShort() - TFrame.FRAME_HEADER_LENGTH;
+
+        // type:1
+        byte type = buffer.readByte();
+
+        // reserved:1
+        buffer.skipBytes(1);
+
+        // id:4
+        long id = buffer.readUnsignedInt();
+
+        // reserved:8
+        buffer.skipBytes(8);
 
         // payload:16+
-        ByteBuf payload = msg.readSlice(size);
-        payload.retain();
+        ByteBuf payload = buffer.readSlice(size);
+//        payload.retain();
 
-        out.add(new TFrame(size, type, id, payload));
+        return new TFrame(size, type, id, payload);
     }
 }
