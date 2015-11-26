@@ -22,20 +22,29 @@
 
 package com.uber.tchannel.handlers;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.SubChannel;
+import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.CallFrame;
 import com.uber.tchannel.messages.RawRequest;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class FrameFragmenterTest {
 
@@ -87,18 +96,92 @@ public class FrameFragmenterTest {
         rawRequest.release();
     }
 
-    @Test
-    public void testWriteOutbound() throws Exception {
+    private String payload;
 
+    @Test
+    public void testSendReceive() throws Exception {
+
+        InetAddress host = InetAddress.getByName("127.0.0.1");
+
+        // create server
+        final TChannel server = new TChannel.Builder("server")
+            .setServerHost(host)
+            .build();
+        final SubChannel subServer = server.makeSubChannel("server")
+            .register("echo", new EchoHandler());
+        server.listen();
+
+        int port = server.getListeningPort();
+
+        // create client
+        final TChannel client = new TChannel.Builder("client")
+            .setServerHost(host)
+            .build();
+        final SubChannel subClient = client.makeSubChannel("server");
+        client.listen();
+
+        int size = 100 * 1024;
+        StringBuilder sb = new StringBuilder(size * 2);
+        for (int i = 0; i < size; i++) {
+            sb.append("正");
+        }
+
+        payload = sb.toString();
+
+        RawRequest req = new RawRequest.Builder("server", "echo")
+            .setHeader(payload)
+            .setBody(payload)
+            .setTimeout(20000)
+            .build();
+
+        ListenableFuture<RawResponse> future = subClient.send(
+            req,
+            host,
+            port
+        );
+
+        RawResponse res = future.get();
+
+        assertEquals(payload.length(), res.getHeader().length());
+        assertEquals(payload, res.getHeader());
+        assertEquals(payload.length(), res.getBody().length());
+        assertEquals(payload, res.getBody());
+        res.release();
+
+        // checking the connections
+        Map<String, Integer> stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 1);
+
+        stats = server.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 1);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        client.shutdown();
+        server.shutdown();
+
+        stats = client.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
+
+        stats = server.getPeerManager().getStats();
+        assertEquals((int)stats.get("connections.in"), 0);
+        assertEquals((int)stats.get("connections.out"), 0);
     }
 
-    @Test
-    public void testSendOutbound() throws Exception {
+    protected  class EchoHandler implements RequestHandler {
+        @Override
+        public Response handle(Request request) {
 
-    }
-
-    @Test
-    public void testWriteArg() throws Exception {
-
+            RawRequest rawRequest = (RawRequest) request;
+            assertEquals(payload.length(), rawRequest.getHeader().length());
+            assertEquals(payload, rawRequest.getHeader());
+            assertEquals(payload.length(), rawRequest.getBody().length());
+            assertEquals(payload, rawRequest.getBody());
+            return new RawResponse.Builder(request)
+                .setArg2(request.getArg2().retain())
+                .setArg3(request.getArg3().retain())
+                .build();
+        }
     }
 }

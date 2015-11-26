@@ -55,7 +55,11 @@ public abstract class EncodedRequest<T> extends Request {
 
     public Map<String, String> getHeaders() {
         if (headers == null) {
-            headers = serializer.decodeHeaders(this);
+            if (arg2 != null) {
+                headers = serializer.decodeHeaders(this);
+            } else {
+                return new HashMap<>();
+            }
         }
 
         return headers;
@@ -67,7 +71,11 @@ public abstract class EncodedRequest<T> extends Request {
 
     public T getBody(Class<T> bodyType) {
         if (body == null) {
-            body = serializer.decodeBody(this, bodyType);
+            if (arg3 != null) {
+                body = serializer.decodeBody(this, bodyType);
+            } else {
+                return null;
+            }
         }
 
         return body;

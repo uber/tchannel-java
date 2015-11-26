@@ -99,7 +99,7 @@ public class LargePayloadBenchmark {
         this.subClient = this.client.makeSubChannel("ping-server");
         this.client.listen();
 
-        byte[] buf = new byte[60 * 10 * 1024];
+        byte[] buf = new byte[60 * 1024];
         new Random().nextBytes(buf);
         payload = Unpooled.wrappedBuffer(buf);
     }
