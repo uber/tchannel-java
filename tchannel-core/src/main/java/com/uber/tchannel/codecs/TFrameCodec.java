@@ -23,6 +23,7 @@ package com.uber.tchannel.codecs;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -59,7 +60,7 @@ public final class TFrameCodec extends ByteToMessageCodec<TFrame> {
     }
 
     public static ByteBuf encode(ByteBufAllocator allocator, TFrame frame) {
-        ByteBuf buffer = allocator.buffer(16, 16);
+        ByteBuf buffer = allocator.buffer(TFrame.FRAME_HEADER_LENGTH, TFrame.FRAME_HEADER_LENGTH);
 
         // size:2
         buffer.writeShort(frame.size + TFrame.FRAME_HEADER_LENGTH);
@@ -75,6 +76,14 @@ public final class TFrameCodec extends ByteToMessageCodec<TFrame> {
 
         // reserved:8
         buffer.writeZero(8);
+
+        // TODO: refactor
+        if (frame.payload instanceof CompositeByteBuf) {
+            CompositeByteBuf cbf = (CompositeByteBuf) frame.payload;
+            cbf.addComponent(0, buffer);
+            cbf.writerIndex(cbf.writerIndex() + TFrame.FRAME_HEADER_LENGTH);
+            return cbf;
+        }
 
         return Unpooled.wrappedBuffer(buffer, frame.payload);
     }

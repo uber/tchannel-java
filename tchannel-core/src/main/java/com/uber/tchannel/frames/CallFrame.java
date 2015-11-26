@@ -96,7 +96,6 @@ public abstract class CallFrame extends Frame implements ByteBufHolder {
         }
 
         this.payload = payload;
-//        payload.retain();
         return payload;
     }
 

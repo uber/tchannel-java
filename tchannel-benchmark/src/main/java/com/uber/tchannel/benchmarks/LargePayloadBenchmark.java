@@ -28,9 +28,15 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
-import com.uber.tchannel.channels.Connection;
+import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.RawRequest;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -47,22 +53,20 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Thread.sleep;
 
 @State(Scope.Thread)
-public class PingPongMultiServerBenchmark {
+public class LargePayloadBenchmark {
 
-    private List<TChannel> servers = new ArrayList<>();
-    TChannel client;
-    SubChannel subClient;
-    int port;
-
-    int connections = 2;
+    private TChannel channel;
+    private TChannel client;
+    private SubChannel subClient;
+    private int port;
+    private InetAddress host;
+    private ByteBuf payload;
 
 //    @Param({ "0", "1", "10" })
     @Param({ "0"})
@@ -70,7 +74,7 @@ public class PingPongMultiServerBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
-            .include(".*" + PingPongMultiServerBenchmark.class.getSimpleName() + ".*")
+            .include(".*" + LargePayloadBenchmark.class.getSimpleName() + ".*")
             .warmupIterations(5)
             .measurementIterations(10)
             .forks(1)
@@ -80,54 +84,62 @@ public class PingPongMultiServerBenchmark {
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
-        createServers();
-        this.client = new TChannel.Builder("ping-client").build();
+        this.host = InetAddress.getByName("127.0.0.1");
+        this.channel = new TChannel.Builder("ping-server")
+            .setServerHost(host)
+            .build();
+        channel.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
+        channel.listen();
+        this.port = this.channel.getListeningPort();
+
+        this.client = new TChannel.Builder("ping-client")
+            // .setResetOnTimeoutLimit(100)
+            .setClientMaxPendingRequests(200000)
+            .build();
         this.subClient = this.client.makeSubChannel("ping-server");
-        List<InetSocketAddress> peers = new ArrayList<>();
-        List<Connection> conns = new ArrayList<>();
-        for (int i = 0; i < connections; i++) {
-            TChannel server = servers.get(i);
-            InetSocketAddress address = new InetSocketAddress(server.getHost(), server.getListeningPort());
-            peers.add(address);
-            conns.add(subClient.getPeerManager().connectTo(address));
-        }
+        this.client.listen();
 
-        this.subClient.setPeers(peers);
-        for (Connection conn : conns) {
-            conn.waitForIdentified(120000);
-        }
-    }
-
-    protected void createServers() throws Exception {
-        for (int i = 0; i < connections; i++) {
-            TChannel server = new TChannel.Builder("ping-server")
-                .setServerHost(InetAddress.getByName("127.0.0.1"))
-                .build();
-            server.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
-            server.listen();
-            servers.add(server);
-        }
+        byte[] buf = new byte[60 * 10 * 1024];
+        new Random().nextBytes(buf);
+        payload = Unpooled.wrappedBuffer(buf);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void benchmark(final AdditionalCounters counters) throws Exception {
-        JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("ping-server", "ping")
-            .setBody(new Ping("ping?"))
+        RawRequest request = new RawRequest.Builder("ping-server", "ping")
+            .setArg3(payload.retain())
             .setTimeout(20000)
-            .setRetryLimit(0)
             .build();
 
-        ListenableFuture<JsonResponse<Pong>> future = this.subClient.send(request);
-        Futures.addCallback(future, new FutureCallback<JsonResponse<Pong>>() {
+        ListenableFuture<RawResponse> future = this.subClient
+            .send(
+                request,
+                this.host,
+                this.port
+            );
+        Futures.addCallback(future, new FutureCallback<RawResponse>() {
             @Override
-            public void onSuccess(JsonResponse<Pong> pongResponse) {
+            public void onSuccess(RawResponse pongResponse) {
 
                 if (!pongResponse.isError()) {
                     counters.actualQPS.incrementAndGet();
                     pongResponse.release();
                 } else {
-                    counters.errorQPS.incrementAndGet();
+//                     System.out.println(pongResponse.getError().getMessage());
+                    switch (pongResponse.getError().getErrorType()) {
+                        case Busy:
+                            counters.busyQPS.incrementAndGet();
+                            break;
+                        case Timeout:
+                            counters.timeoutQPS.incrementAndGet();
+                            break;
+                        case NetworkError:
+                            counters.networkQPS.incrementAndGet();
+                            break;
+                        default:
+                            counters.errorQPS.incrementAndGet();
+                    }
                 }
             }
 
@@ -141,39 +153,15 @@ public class PingPongMultiServerBenchmark {
     @TearDown(Level.Trial)
     public void teardown() throws Exception {
         this.client.shutdown(false);
-
-        for (TChannel server : servers) {
-            server.shutdown(false);
-        }
+        this.channel.shutdown(false);
     }
 
-    public class Ping {
-        private final String request;
-
-        public Ping(String request) {
-            this.request = request;
-        }
-    }
-
-    public class Pong {
-        private final String response;
-
-        public Pong(String response) {
-            this.response = response;
-        }
-    }
-
-    public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
-
-        public JsonResponse<Pong> handleImpl(JsonRequest<Ping> request) {
-            try {
-                sleep(sleepTime);
-            } catch (InterruptedException ex) {
-                // TODO: do something ...
-            }
-
-            return new JsonResponse.Builder<Pong>(request)
-                .setBody(new Pong("pong!"))
+    public class PingDefaultRequestHandler implements RequestHandler {
+        @Override
+        public Response handle(Request request) {
+            return new RawResponse.Builder(request)
+//                .setArg2(request.getArg2().retain())
+//                .setArg3(request.getArg3().retain())
                 .build();
         }
     }
@@ -183,11 +171,17 @@ public class PingPongMultiServerBenchmark {
     public static class AdditionalCounters {
         public AtomicInteger actualQPS = new AtomicInteger(0);
         public AtomicInteger errorQPS = new AtomicInteger(0);
+        public AtomicInteger timeoutQPS = new AtomicInteger(0);
+        public AtomicInteger busyQPS = new AtomicInteger(0);
+        public AtomicInteger networkQPS = new AtomicInteger(0);
 
         @Setup(Level.Iteration)
         public void clean() {
             errorQPS.set(0);
             actualQPS.set(0);
+            timeoutQPS.set(0);
+            busyQPS.set(0);
+            networkQPS.set(0);
         }
 
         public int actualQPS() {
@@ -196,6 +190,15 @@ public class PingPongMultiServerBenchmark {
 
         public int errorQPS() {
             return errorQPS.get();
+        }
+        public int timeoutQPS() {
+            return timeoutQPS.get();
+        }
+        public int busyQPS() {
+            return busyQPS.get();
+        }
+        public int networkQPS() {
+            return networkQPS.get();
         }
     }
 }

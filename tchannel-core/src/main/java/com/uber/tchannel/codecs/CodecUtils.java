@@ -25,8 +25,10 @@ import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,7 +154,7 @@ public final class CodecUtils {
                 .writeByte(trace.traceFlags);
     }
 
-    public static ByteBuf writeArg(ByteBufAllocator allocator, ByteBuf arg, int writableBytes) {
+    public static int writeArg(ByteBufAllocator allocator, ByteBuf arg, int writableBytes, List<ByteBuf> bufs) {
         if (writableBytes <= 2) {
             throw new UnsupportedOperationException("writableBytes must be larger than 2");
         }
@@ -161,28 +163,75 @@ public final class CodecUtils {
         int headerSize = 2;
         int chunkLength = Math.min(readableBytes + headerSize, writableBytes);
         ByteBuf sizeBuf = allocator.buffer(2);
+        bufs.add(sizeBuf);
 
         // Write the size of the `arg`
         sizeBuf.writeShort(chunkLength - headerSize);
         if (readableBytes == 0) {
-            return sizeBuf;
+            return 2;
         } else {
-            return Unpooled.wrappedBuffer(sizeBuf,
-                arg.readSlice(chunkLength - headerSize).retain());
+            bufs.add(arg.readSlice(chunkLength - headerSize).retain());
+            return chunkLength;
         }
     }
 
     public static ByteBuf writeArgs(ByteBufAllocator allocator,
                                     ByteBuf header,
                                     List<ByteBuf> args) {
-        ByteBuf payload = header;
+        int writableBytes = TFrame.MAX_FRAME_PAYLOAD_LENGTH - header.readableBytes();
+        List<ByteBuf> bufs = new ArrayList<>(7);
+        bufs.add(header);
+
+        while (!args.isEmpty()) {
+            ByteBuf arg = args.get(0);
+            int len = writeArg(allocator, arg, writableBytes, bufs);
+            writableBytes -= len;
+            if (writableBytes <= 2) {
+                break;
+            }
+
+            if (arg.readableBytes() == 0) {
+                args.remove(0);
+            }
+        }
+
+        CompositeByteBuf comp = allocator.compositeBuffer();
+        comp.addComponents(bufs);
+        comp.writerIndex(TFrame.MAX_FRAME_PAYLOAD_LENGTH - writableBytes);
+
+        return comp;
+    }
+
+    public static ByteBuf writeArgCopy(ByteBufAllocator allocator, ByteBuf payload, ByteBuf arg, int writableBytes) {
+        if (writableBytes <= 2) {
+            throw new UnsupportedOperationException("writableBytes must be larger than 2");
+        }
+
+        int readableBytes = arg.readableBytes();
+        int headerSize = 2;
+        int chunkLength = Math.min(readableBytes + headerSize, writableBytes);
+
+        // Write the size of the `arg`
+        payload.writeShort(chunkLength - headerSize);
+        if (readableBytes == 0) {
+            return payload;
+        } else {
+            return payload.writeBytes(arg, chunkLength - headerSize);
+        }
+    }
+
+    public static ByteBuf writeArgsCopy(ByteBufAllocator allocator,
+                                    ByteBuf header,
+                                    List<ByteBuf> args) {
+        ByteBuf payload = allocator.buffer(header.readableBytes(), TFrame.MAX_FRAME_PAYLOAD_LENGTH);
+        payload.writeBytes(header);
+        header.release();
         int writableBytes = TFrame.MAX_FRAME_PAYLOAD_LENGTH - payload.readableBytes();
 
         while (!args.isEmpty()) {
             ByteBuf arg = args.get(0);
-            ByteBuf buffer = writeArg(allocator, arg, writableBytes);
-            payload = Unpooled.wrappedBuffer(payload, buffer);
-            writableBytes -= buffer.readableBytes();
+            writeArgCopy(allocator, payload, arg, writableBytes);
+            writableBytes = TFrame.MAX_FRAME_PAYLOAD_LENGTH - payload.readableBytes();
             if (writableBytes <= 2) {
                 break;
             }

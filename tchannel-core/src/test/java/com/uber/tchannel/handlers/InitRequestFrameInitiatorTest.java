@@ -51,10 +51,13 @@ public class InitRequestFrameInitiatorTest {
         channel.pipeline().addFirst("InitRequestInitiator", new InitRequestInitiator(manager));
         assertEquals(4, channel.pipeline().names().size());
 
+        TFrame frame = MessageCodec.decode((ByteBuf) channel.readOutbound());
         // Then
         InitRequestFrame initRequestFrame = (InitRequestFrame) MessageCodec.decode(
-            MessageCodec.decode((ByteBuf) channel.readOutbound())
+            frame
         );
+
+        frame.release();
 
         // Assert
         assertNotNull(initRequestFrame);
