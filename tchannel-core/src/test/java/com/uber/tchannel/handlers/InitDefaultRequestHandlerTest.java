@@ -184,7 +184,6 @@ public class InitDefaultRequestHandlerTest {
             )
         );
 
-        channel.writeInbound(MessageCodec.encode(PooledByteBufAllocator.DEFAULT, initRequestFrame));
         TFrame tFrame = MessageCodec.decode((ByteBuf) channel.readOutbound());
         ErrorFrame errorFrame = (ErrorFrame) MessageCodec.decode(tFrame);
 
