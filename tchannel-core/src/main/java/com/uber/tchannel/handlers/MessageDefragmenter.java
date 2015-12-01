@@ -101,8 +101,14 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
         }
 
         if (!ArgScheme.isSupported(scheme)) {
-            sendError(ErrorType.BadRequest,
-                "Expect call request to have Arg Scheme specified", frame.getId(), ctx);
+
+            if (frame.getType() == FrameType.CallRequest) {
+                sendError(ErrorType.BadRequest,
+                    "Arg Scheme not specified or unsupported", frame.getId(), ctx);
+            } else {
+                // TODO: log the failure
+            }
+
             return null;
         }
 

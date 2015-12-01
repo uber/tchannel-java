@@ -60,11 +60,6 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
         args.add(msg.getArg2());
         args.add(msg.getArg3());
 
-//        args.add(msg.getArg1().retain());
-//        args.add(msg.getArg2().retain());
-//        args.add(msg.getArg3().retain());
-
-
         CallFrame frame = null;
         while (!args.isEmpty()) {
             if (frame == null || frame.isPayloadFull()) {

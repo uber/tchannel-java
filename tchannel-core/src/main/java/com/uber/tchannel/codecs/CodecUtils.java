@@ -155,20 +155,20 @@ public final class CodecUtils {
     }
 
     public static int writeArg(ByteBufAllocator allocator, ByteBuf arg, int writableBytes, List<ByteBuf> bufs) {
-        if (writableBytes <= 2) {
-            throw new UnsupportedOperationException("writableBytes must be larger than 2");
+        if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
+            throw new UnsupportedOperationException("writableBytes must be larger than " + TFrame.FRAME_SIZE_LENGTH);
         }
 
         int readableBytes = arg.readableBytes();
-        int headerSize = 2;
+        int headerSize = TFrame.FRAME_SIZE_LENGTH;
         int chunkLength = Math.min(readableBytes + headerSize, writableBytes);
-        ByteBuf sizeBuf = allocator.buffer(2);
+        ByteBuf sizeBuf = allocator.buffer(TFrame.FRAME_SIZE_LENGTH);
         bufs.add(sizeBuf);
 
         // Write the size of the `arg`
         sizeBuf.writeShort(chunkLength - headerSize);
         if (readableBytes == 0) {
-            return 2;
+            return TFrame.FRAME_SIZE_LENGTH;
         } else {
             bufs.add(arg.readSlice(chunkLength - headerSize).retain());
             return chunkLength;
@@ -186,7 +186,7 @@ public final class CodecUtils {
             ByteBuf arg = args.get(0);
             int len = writeArg(allocator, arg, writableBytes, bufs);
             writableBytes -= len;
-            if (writableBytes <= 2) {
+            if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
                 break;
             }
 
@@ -203,12 +203,12 @@ public final class CodecUtils {
     }
 
     public static ByteBuf writeArgCopy(ByteBufAllocator allocator, ByteBuf payload, ByteBuf arg, int writableBytes) {
-        if (writableBytes <= 2) {
-            throw new UnsupportedOperationException("writableBytes must be larger than 2");
+        if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
+            throw new UnsupportedOperationException("writableBytes must be larger than " + TFrame.FRAME_SIZE_LENGTH);
         }
 
         int readableBytes = arg.readableBytes();
-        int headerSize = 2;
+        int headerSize = TFrame.FRAME_SIZE_LENGTH;
         int chunkLength = Math.min(readableBytes + headerSize, writableBytes);
 
         // Write the size of the `arg`
@@ -232,7 +232,7 @@ public final class CodecUtils {
             ByteBuf arg = args.get(0);
             writeArgCopy(allocator, payload, arg, writableBytes);
             writableBytes = TFrame.MAX_FRAME_PAYLOAD_LENGTH - payload.readableBytes();
-            if (writableBytes <= 2) {
+            if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
                 break;
             }
 
@@ -255,7 +255,7 @@ public final class CodecUtils {
     }
 
     public static ByteBuf readArg(ByteBuf buffer) {
-        if (buffer.readableBytes() < 2) {
+        if (buffer.readableBytes() < TFrame.FRAME_SIZE_LENGTH) {
             return null;
         }
 

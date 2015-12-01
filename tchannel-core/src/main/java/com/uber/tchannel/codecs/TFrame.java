@@ -40,6 +40,7 @@ public class TFrame implements ByteBufHolder {
 
     public static final int MAX_FRAME_LENGTH = 65535;
     public static final int FRAME_HEADER_LENGTH = 16;
+    public static final int FRAME_SIZE_LENGTH = 2;
     public static final int MAX_FRAME_PAYLOAD_LENGTH = MAX_FRAME_LENGTH - FRAME_HEADER_LENGTH;
 
     public static final int LENGTH_FIELD_OFFSET = 0;

@@ -73,7 +73,7 @@ public abstract class CallFrame extends Frame implements ByteBufHolder {
     }
 
     public final boolean isPayloadFull() {
-        return getPayloadSize() + 2 >= TFrame.MAX_FRAME_PAYLOAD_LENGTH;
+        return getPayloadSize() + TFrame.FRAME_SIZE_LENGTH >= TFrame.MAX_FRAME_PAYLOAD_LENGTH;
     }
 
     public final ByteBuf encodePayload(ByteBufAllocator allocator) {
