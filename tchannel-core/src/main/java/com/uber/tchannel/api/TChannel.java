@@ -36,6 +36,7 @@ import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftSerializer;
+import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -204,12 +205,16 @@ public final class TChannel {
         private int resetOnTimeoutLimit = Integer.MAX_VALUE;
         private int clientMaxPendingRequests = 100000;
 
-        public Builder(String service) throws UnknownHostException {
+        public Builder(String service) {
             if (service == null) {
                 throw new NullPointerException("`service` cannot be null");
             }
+
             this.service = service;
-            this.host = InetAddress.getLocalHost();
+            this.host = TChannelUtilities.getCurrentIp();
+            if (this.host == null) {
+                // TODO: logging
+            }
         }
 
         public Builder setExecutorService(ExecutorService executorService) {
