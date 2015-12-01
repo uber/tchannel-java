@@ -86,6 +86,22 @@ public class RawResponse extends Response implements RawMessage {
         return this.body;
     }
 
+    @Override
+    public String toString() {
+        if (isError()) {
+            return getError().toString();
+        }
+
+        return String.format(
+            "<%s responseCode=%s transportHeaders=%s header=%s body=%s>",
+            this.getClass().getSimpleName(),
+            this.responseCode,
+            this.transportHeaders,
+            this.getHeader(),
+            this.getBody()
+        );
+    }
+
     public static class Builder extends Response.Builder {
 
         protected String header = null;

@@ -88,6 +88,10 @@ public abstract class EncodedResponse<T> extends Response {
 
     @Override
     public String toString() {
+        if (isError()) {
+            return getError().toString();
+        }
+
         return String.format(
                 "<%s responseCode=%s transportHeaders=%s headers=%s body=%s>",
                 this.getClass().getSimpleName(),

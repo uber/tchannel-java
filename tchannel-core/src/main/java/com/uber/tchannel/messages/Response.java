@@ -225,7 +225,7 @@ public abstract class Response extends ResponseMessage implements RawMessage {
                 res = new ThriftResponse(errorResponse);
                 break;
             default:
-                res = null;
+                res = new RawResponse(errorResponse);
                 break;
         }
 
