@@ -47,6 +47,12 @@
             <organization>Uber Technologies, Inc.</organization>
             <organizationUrl>https://uber.github.io</organizationUrl>
         </developer>
+        <developer>
+            <name>Juncao Li</name>
+            <email>juncaoli@uber.com</email>
+            <organization>Uber Technologies, Inc.</organization>
+            <organizationUrl>https://uber.github.io</organizationUrl>
+        </developer>
     </developers>
 
     <scm>
