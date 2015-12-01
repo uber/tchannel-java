@@ -22,6 +22,7 @@
 package com.uber.tchannel.checksum;
 
 import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.frames.CallRequestFrame;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
@@ -31,7 +32,9 @@ public class ChecksumsTest {
 
     @Test
     public void testVerifyAcceptNoChecksum() throws Exception {
-        assertTrue(Checksums.verifyChecksum(Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER)));
+        CallRequestFrame callRequestFrame = Fixtures.callRequest(0, false, Unpooled.EMPTY_BUFFER);
+        assertTrue(Checksums.verifyChecksum(callRequestFrame));
+        callRequestFrame.release();
     }
 
 }

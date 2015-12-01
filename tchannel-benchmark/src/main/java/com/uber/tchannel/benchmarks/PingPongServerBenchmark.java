@@ -67,7 +67,7 @@ public class PingPongServerBenchmark {
         Options options = new OptionsBuilder()
             .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
             .warmupIterations(5)
-            .measurementIterations(10)
+            .measurementIterations(150)
             .forks(1)
             .build();
         new Runner(options).run();
@@ -190,6 +190,9 @@ public class PingPongServerBenchmark {
         public void clean() {
             errorQPS.set(0);
             actualQPS.set(0);
+            timeoutQPS.set(0);
+            busyQPS.set(0);
+            networkQPS.set(0);
         }
 
         public int actualQPS() {

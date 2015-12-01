@@ -20,26 +20,10 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.codecs;
+package com.uber.tchannel.api.errors;
 
-import com.uber.tchannel.frames.FrameType;
-import com.uber.tchannel.frames.PingResponseFrame;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
-
-import java.util.List;
-
-public final class PingResponseCodec extends MessageToMessageCodec<TFrame, PingResponseFrame> {
-    @Override
-    protected void encode(ChannelHandlerContext ctx, PingResponseFrame msg, List<Object> out) throws Exception {
-        TFrame frame = new TFrame(0, FrameType.PingResponse, msg.getId(), Unpooled.EMPTY_BUFFER);
-        out.add(frame);
-    }
-
-    @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        PingResponseFrame pingResponseFrame = new PingResponseFrame(frame.id);
-        out.add(pingResponseFrame);
+public class TChannelCodec extends TChannelError {
+    public TChannelCodec(String message) {
+        super(message, TChannelError.ERROR_CODEC);
     }
 }

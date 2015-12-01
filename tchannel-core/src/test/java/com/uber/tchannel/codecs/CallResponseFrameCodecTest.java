@@ -24,10 +24,14 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.frames.CallResponseFrame;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,22 +39,21 @@ public class CallResponseFrameCodecTest {
 
     @Test
     public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new CallResponseCodec()
+        CallResponseFrame callResponseFrame = Fixtures.callResponse(
+            42,
+            false,
+            Unpooled.wrappedBuffer("Hello, World!".getBytes())
         );
 
-        CallResponseFrame callRequestContinue = Fixtures.callResponse(
-                42,
-                false,
-                Unpooled.wrappedBuffer("Hello, World!".getBytes())
-        );
+        CallResponseFrame inboundCallResponseFrame =
+            (CallResponseFrame) MessageCodec.decode(
+                CodecTestUtil.encodeDecode(
+                    MessageCodec.encode(
+                        ByteBufAllocator.DEFAULT, callResponseFrame
+                    )
+                )
+            );
 
-        channel.writeOutbound(callRequestContinue);
-        channel.writeInbound(channel.readOutbound());
-
-        CallResponseFrame inboundCallResponseFrame = channel.readInbound();
         assertEquals("Hello, World!", inboundCallResponseFrame.getPayload().toString(CharsetUtil.UTF_8));
         inboundCallResponseFrame.release();
     }

@@ -49,7 +49,11 @@ public final class RawRequest extends Request {
 
     public String getHeader() {
         if (this.header == null) {
-            this.header = this.arg2.toString(CharsetUtil.UTF_8);
+            if (arg2 == null) {
+                this.header = "";
+            } else {
+                this.header = this.arg2.toString(CharsetUtil.UTF_8);
+            }
         }
 
         return this.header;
@@ -57,7 +61,11 @@ public final class RawRequest extends Request {
 
     public String getBody() {
         if (this.body == null) {
-            this.body = this.arg3.toString(CharsetUtil.UTF_8);
+            if (arg3 == null) {
+                this.body = "";
+            } else {
+                this.body = this.arg3.toString(CharsetUtil.UTF_8);
+            }
         }
 
         return this.body;

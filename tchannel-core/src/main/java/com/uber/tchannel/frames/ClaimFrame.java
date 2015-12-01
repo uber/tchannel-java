@@ -21,13 +21,16 @@
  */
 package com.uber.tchannel.frames;
 
+import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.tracing.Trace;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 
-public final class ClaimFrame implements Frame {
+public final class ClaimFrame extends Frame {
 
-    private final long id;
-    private final long ttl;
-    private final Trace tracing;
+    private long ttl;
+    private Trace tracing;
 
     /**
      * Designated Constructor
@@ -43,11 +46,11 @@ public final class ClaimFrame implements Frame {
 
     }
 
-    public long getId() {
-        return this.id;
+    public ClaimFrame(long id) {
+        this.id = id;
     }
 
-    public FrameType getMessageType() {
+    public FrameType getType() {
         return FrameType.Claim;
     }
 
@@ -59,4 +62,26 @@ public final class ClaimFrame implements Frame {
         return tracing;
     }
 
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        ByteBuf buffer = allocator.buffer(4 + Trace.TRACING_HEADER_LENGTH);
+
+        // ttl: 4
+        buffer.writeInt((int) getTTL());
+
+        // tracing: 25
+        CodecUtils.encodeTrace(getTracing(), buffer);
+
+        return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        // ttl: 4
+        ttl = tFrame.payload.readUnsignedInt();
+
+        // tracing: 25
+        tracing = CodecUtils.decodeTrace(tFrame.payload);
+        tFrame.release();
+    }
 }

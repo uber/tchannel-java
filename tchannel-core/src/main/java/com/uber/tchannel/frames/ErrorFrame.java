@@ -21,19 +21,21 @@
  */
 package com.uber.tchannel.frames;
 
+import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 
-public final class ErrorFrame implements Frame {
+public final class ErrorFrame extends Frame {
 
-    private final long id;
-    private final ErrorType errorType;
-    private final Trace tracing;
-    private final String message;
+    private ErrorType errorType;
+    private Trace tracing;
+    private String message;
 
     /**
      * Designated Constructor
@@ -50,15 +52,29 @@ public final class ErrorFrame implements Frame {
         this.message = message;
     }
 
-    public long getId() {
-        return this.id;
+    protected ErrorFrame(long id) {
+        this.id = id;
     }
 
-    public FrameType getMessageType() {
+    /**
+     * Designated Constructor
+     *
+     * @param id        unique of the message
+     * @param errorType the type of error this represents
+     * @param message   human readable string meant for logs
+     */
+    public ErrorFrame(long id, ErrorType errorType, String message) {
+        this.id = id;
+        this.errorType = errorType;
+        this.tracing = new Trace(0, 0, 0, (byte) 0x00);
+        this.message = message;
+    }
+
+    public FrameType getType() {
         return FrameType.Error;
     }
 
-    public ErrorType getType() {
+    public ErrorType getErrorType() {
         return errorType;
     }
 
@@ -80,7 +96,38 @@ public final class ErrorFrame implements Frame {
         );
     }
 
-    public static ErrorFrame sendError(ErrorType type, String message, Request request, ChannelHandlerContext ctx) {
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        ByteBuf buffer = allocator.buffer(28);
+
+        // code:1
+        buffer.writeByte(getErrorType().byteValue());
+
+        // tracing:25
+        CodecUtils.encodeTrace(getTracing(), buffer);
+
+        // message~2
+        CodecUtils.encodeString(getMessage(), buffer);
+
+        return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        // code:1
+        errorType = ErrorType.fromByte(tFrame.payload.readByte());
+
+        // tracing:25
+        tracing = CodecUtils.decodeTrace(tFrame.payload);
+
+        // message~2
+        message = CodecUtils.decodeString(tFrame.payload);
+    }
+
+    public static ErrorFrame sendError(ErrorType type,
+                                       String message,
+                                       Request request,
+                                       ChannelHandlerContext ctx) {
         ErrorFrame errorFrame = new ErrorFrame(
             request.getId(),
             type,
@@ -88,16 +135,14 @@ public final class ErrorFrame implements Frame {
             new Trace(0, 0, 0, (byte) 0x00),
             message);
 
-        ChannelFuture f = ctx.writeAndFlush(errorFrame);
-
-        // TODO: log the errorFrame instead of firing an exception ...
-        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-
+        MessageCodec.write(ctx, errorFrame);
         request.release();
         return errorFrame;
     }
 
-    public static ErrorFrame sendError(ErrorType type, String message, long id, ChannelHandlerContext ctx) {
+    public static ErrorFrame sendError(ErrorType type, String message,
+                                       long id,
+                                       ChannelHandlerContext ctx) {
         ErrorFrame errorFrame = new ErrorFrame(
             id,
             type,
@@ -105,10 +150,7 @@ public final class ErrorFrame implements Frame {
             new Trace(0, 0, 0, (byte) 0x00),
             message);
 
-        ChannelFuture f = ctx.writeAndFlush(errorFrame);
-
-        // TODO: log the errorFrame instead of firing an exception ...
-        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        MessageCodec.write(ctx, errorFrame);
         return errorFrame;
     }
 }

@@ -21,5 +21,5 @@
  */
 package com.uber.tchannel.frames;
 
-public interface PingFrame extends Frame {
+public abstract class PingFrame extends Frame {
 }

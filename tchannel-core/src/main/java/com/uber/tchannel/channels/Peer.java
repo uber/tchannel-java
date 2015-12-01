@@ -29,6 +29,7 @@ import java.util.HashMap;
 
 import com.uber.tchannel.api.errors.TChannelConnectionFailure;
 import com.uber.tchannel.api.errors.TChannelError;
+import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import io.netty.bootstrap.Bootstrap;
@@ -83,10 +84,7 @@ public class Peer {
         initRequestFrame.setHostPort(this.manager.getHostPort());
         // TODO: figure out what to put here
         initRequestFrame.setProcessName("java-process");
-
-        ChannelFuture f = ctx.writeAndFlush(initRequestFrame);
-        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-
+        MessageCodec.write(ctx, initRequestFrame);
         return conn;
     }
 

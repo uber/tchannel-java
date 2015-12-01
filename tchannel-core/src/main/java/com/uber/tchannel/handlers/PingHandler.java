@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.PingRequestFrame;
 import com.uber.tchannel.frames.PingResponseFrame;
 import io.netty.channel.ChannelHandlerContext;
@@ -30,7 +31,7 @@ public class PingHandler extends SimpleChannelInboundHandler<PingRequestFrame> {
 
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, PingRequestFrame msg) throws Exception {
-        ctx.writeAndFlush(new PingResponseFrame(msg.getId()));
+        ctx.writeAndFlush(MessageCodec.encode(ctx.alloc(), new PingResponseFrame(msg.getId())));
     }
 
 }

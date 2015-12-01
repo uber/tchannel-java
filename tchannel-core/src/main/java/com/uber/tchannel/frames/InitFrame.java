@@ -23,11 +23,11 @@ package com.uber.tchannel.frames;
 
 import java.util.Map;
 
-public interface InitFrame extends Frame {
+public abstract class InitFrame extends Frame {
 
-    int DEFAULT_VERSION = 2;
-    String HOST_PORT_KEY = "host_port";
-    String PROCESS_NAME_KEY = "process_name";
+    public final static int DEFAULT_VERSION = 2;
+    public final static String HOST_PORT_KEY = "host_port";
+    public final static String PROCESS_NAME_KEY = "process_name";
 
     /**
      * version is a 16 bit number. The currently specified protocol version is 2.
@@ -35,7 +35,7 @@ public interface InitFrame extends Frame {
      *
      * @return 16-bit unsigned integer representing the specified protocol version.
      */
-    int getVersion();
+    public abstract int getVersion();
 
     /**
      * There are a variable number of key/value pairs. For version 2, the following are required:
@@ -45,7 +45,7 @@ public interface InitFrame extends Frame {
      *
      * @return Map of headers
      */
-    Map<String, String> getHeaders();
+    public abstract Map<String, String> getHeaders();
 
     /**
      * Where the sending process can be reached.
@@ -56,7 +56,7 @@ public interface InitFrame extends Frame {
      *
      * @return the `host_port` key for the `headers` member.
      */
-    String getHostPort();
+    public abstract String getHostPort();
 
     /**
      * An additional process identifier for the sending process, used for logging.
@@ -67,6 +67,6 @@ public interface InitFrame extends Frame {
      *
      * @return the `process_name` key for the `headers` member.
      */
-    String getProcessName();
+    public abstract String getProcessName();
 
 }

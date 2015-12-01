@@ -24,7 +24,7 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -34,13 +34,7 @@ import static org.junit.Assert.assertEquals;
 public class InitRequestFrameCodecTest {
 
     @Test
-    public void shouldEncodeAndDecodeInitRequest() {
-
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new InitRequestCodec()
-        );
+    public void shouldEncodeAndDecodeInitRequest() throws Exception {
 
         InitRequestFrame initReq = new InitRequestFrame(
                 42,
@@ -51,16 +45,23 @@ public class InitRequestFrameCodecTest {
                 }}
         );
 
-        channel.writeOutbound(initReq);
-        channel.writeInbound(channel.readOutbound());
+        TFrame tFrame = CodecTestUtil.encodeDecode(
+            MessageCodec.encode(
+                ByteBufAllocator.DEFAULT, initReq
+            )
+        );
 
-        InitRequestFrame newInitReq = channel.readInbound();
-        assertEquals(initReq.getMessageType(), newInitReq.getMessageType());
+        InitRequestFrame newInitReq =
+            (InitRequestFrame) MessageCodec.decode(
+                tFrame
+            );
+
+        tFrame.release();
+        assertEquals(initReq.getType(), newInitReq.getType());
         assertEquals(newInitReq.getId(), newInitReq.getId());
         assertEquals(newInitReq.getVersion(), newInitReq.getVersion());
         assertEquals(newInitReq.getHostPort(), newInitReq.getHostPort());
         assertEquals(newInitReq.getProcessName(), initReq.getProcessName());
-
     }
 
 }

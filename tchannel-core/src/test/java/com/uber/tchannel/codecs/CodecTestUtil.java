@@ -20,32 +20,24 @@
  * THE SOFTWARE.
  */
 
-package com.uber.tchannel.fragmentation;
+package com.uber.tchannel.codecs;
 
-public enum FragmentationState {
-    /* Currently decoding Arg2 */
-    ARG1,
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Test;
 
-    /* Currently decoding Arg2 */
-    ARG2,
+import static org.junit.Assert.assertEquals;
 
-    /* Currently decoding Arg3 */
-    ARG3,
+public class CodecTestUtil {
 
-    /* Done! */
-    DONE;
+    @Test
+    public static TFrame encodeDecode(TFrame frame) {
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new TChannelLengthFieldBasedFrameDecoder(),
+                new TFrameCodec()
+        );
 
-    public static FragmentationState nextState(FragmentationState current) {
-        switch (current) {
-            case ARG1:
-                return ARG2;
-            case ARG2:
-                return ARG3;
-            case ARG3:
-                return DONE;
-            case DONE:
-            default:
-                return DONE;
-        }
+        channel.writeOutbound(frame);
+        channel.writeInbound(channel.readOutbound());
+        return channel.readInbound();
     }
 }

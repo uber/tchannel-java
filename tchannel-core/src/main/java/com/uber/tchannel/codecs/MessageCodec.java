@@ -21,125 +21,172 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.api.errors.TChannelError;
+import com.uber.tchannel.frames.CallFrame;
 import com.uber.tchannel.frames.CallRequestFrame;
-import com.uber.tchannel.frames.CallRequestContinueFrame;
 import com.uber.tchannel.frames.CallResponseFrame;
-import com.uber.tchannel.frames.CallResponseContinue;
-import com.uber.tchannel.frames.CancelFrame;
-import com.uber.tchannel.frames.ClaimFrame;
 import com.uber.tchannel.frames.ErrorFrame;
 import com.uber.tchannel.frames.Frame;
 import com.uber.tchannel.frames.FrameType;
-import com.uber.tchannel.frames.InitRequestFrame;
-import com.uber.tchannel.frames.InitResponseFrame;
-import com.uber.tchannel.frames.PingRequestFrame;
-import com.uber.tchannel.frames.PingResponseFrame;
+import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.messages.ErrorResponse;
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
+import com.uber.tchannel.messages.TChannelMessage;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public final class MessageCodec extends MessageToMessageCodec<TFrame, Frame> {
+public final class MessageCodec {
 
-    // TODO: There has to be a better way to do this...
-    private final CallRequestCodec callRequestCodec = new CallRequestCodec();
-    private final CallRequestContinueCodec callRequestContinue = new CallRequestContinueCodec();
-    private final CallResponseCodec callResponseCodec = new CallResponseCodec();
-    private final CallResponseContinueCodec callResponseContinueCodec = new CallResponseContinueCodec();
-    private final CancelCodec cancelCodec = new CancelCodec();
-    private final ClaimCodec claimCodec = new ClaimCodec();
-    private final ErrorCodec errorCodec = new ErrorCodec();
-    private final InitRequestCodec initRequestCodec = new InitRequestCodec();
-    private final InitResponseCodec initResponseCodec = new InitResponseCodec();
-    private final PingRequestCodec pingRequestCodec = new PingRequestCodec();
-    private final PingResponseCodec pingResponseCodec = new PingResponseCodec();
+    public static ChannelFuture write(ChannelHandlerContext ctx, Frame frame) {
+        // TODO: release frame?
+        ChannelFuture f = ctx.writeAndFlush(
+            encode(
+                ctx.alloc(),
+                encode(
+                    ctx.alloc(), frame
+                )
+            )
+        );
+        f.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        return f;
+    }
 
-    @Override
-    protected void encode(ChannelHandlerContext ctx, Frame msg, List<Object> out) throws Exception {
-        switch (msg.getMessageType()) {
-            case CallRequest:
-                this.callRequestCodec.encode(ctx, (CallRequestFrame) msg, out);
-                break;
-            case CallRequestContinue:
-                this.callRequestContinue.encode(ctx, (CallRequestContinueFrame) msg, out);
-                break;
-            case CallResponse:
-                this.callResponseCodec.encode(ctx, (CallResponseFrame) msg, out);
-                break;
-            case CallResponseContinue:
-                this.callResponseContinueCodec.encode(ctx, (CallResponseContinue) msg, out);
-                break;
-            case Cancel:
-                this.cancelCodec.encode(ctx, (CancelFrame) msg, out);
-                break;
-            case Claim:
-                this.claimCodec.encode(ctx, (ClaimFrame) msg, out);
-                break;
-            case Error:
-                this.errorCodec.encode(ctx, (ErrorFrame) msg, out);
-                break;
-            case InitRequest:
-                this.initRequestCodec.encode(ctx, (InitRequestFrame) msg, out);
-                break;
-            case InitResponse:
-                this.initResponseCodec.encode(ctx, (InitResponseFrame) msg, out);
-                break;
-            case PingRequest:
-                this.pingRequestCodec.encode(ctx, (PingRequestFrame) msg, out);
-                break;
-            case PingResponse:
-                this.pingResponseCodec.encode(ctx, (PingResponseFrame) msg, out);
-                break;
-            default:
-                throw new Exception(String.format("Unknown FrameType: %s", msg.getMessageType()));
+    public static ByteBuf encode(TFrame tFrame) {
+        return TFrameCodec.encode(PooledByteBufAllocator.DEFAULT, tFrame);
+    }
 
+    public static ByteBuf encode(ByteBufAllocator allocator, TFrame tFrame) {
+        return TFrameCodec.encode(allocator, tFrame);
+    }
+
+    public static TFrame decode(ByteBuf buffer) {
+        return TFrameCodec.decode(buffer);
+    }
+
+    public static TFrame encode(Frame msg) {
+        return encode(PooledByteBufAllocator.DEFAULT, msg);
+    }
+
+    public static TFrame encode(ByteBufAllocator allocator, Frame msg) {
+        ByteBuf buffer = null;
+        if (msg instanceof CallFrame) {
+            buffer = ((CallFrame)msg).getPayload();
+        } else {
+            buffer = msg.encodeHeader(allocator);
+        }
+
+        TFrame frame = new TFrame(buffer.writerIndex(), msg.getType(), msg.getId(), buffer);
+        return frame;
+    }
+
+    public static Frame decode(TFrame tFrame) throws TChannelError {
+        Frame frame = Frame.create(tFrame);
+        frame.decode(tFrame);
+        return frame;
+    }
+
+    public static TChannelMessage decodeCallFrames(List<CallFrame> frames) {
+        if (frames.isEmpty()) {
+            return null;
+        }
+
+        CallFrame first = frames.get(0);
+        if (first.getType() == FrameType.CallRequest) {
+            return decodeCallRequest(frames);
+        } else {
+            return decodeCallResponse(frames);
         }
     }
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, TFrame frame, List<Object> out) throws Exception {
-        FrameType type = FrameType.fromByte(frame.type);
+    public static ErrorResponse decodeErrorResponse(ErrorFrame frame) {
+        return new ErrorResponse(
+            frame.getId(),
+            frame.getErrorType(),
+            frame.getMessage()
+        );
+    }
 
-        if (type == null) {
-            throw new Exception("protocol exception");
+    public static Request decodeCallRequest(List<CallFrame> frames) {
+
+        if (frames.isEmpty()) {
+            return null;
         }
 
-        switch (type) {
-            case CallRequest:
-                this.callRequestCodec.decode(ctx, frame, out);
-                break;
-            case CallRequestContinue:
-                this.callRequestContinue.decode(ctx, frame, out);
-                break;
-            case CallResponse:
-                this.callResponseCodec.decode(ctx, frame, out);
-                break;
-            case CallResponseContinue:
-                this.callResponseContinueCodec.decode(ctx, frame, out);
-                break;
-            case Cancel:
-                this.cancelCodec.decode(ctx, frame, out);
-                break;
-            case Claim:
-                this.claimCodec.decode(ctx, frame, out);
-                break;
-            case Error:
-                this.errorCodec.decode(ctx, frame, out);
-                break;
-            case InitRequest:
-                this.initRequestCodec.decode(ctx, frame, out);
-                break;
-            case InitResponse:
-                this.initResponseCodec.decode(ctx, frame, out);
-                break;
-            case PingRequest:
-                this.pingRequestCodec.decode(ctx, frame, out);
-                break;
-            case PingResponse:
-                this.pingResponseCodec.decode(ctx, frame, out);
-                break;
-            default:
-                throw new Exception(String.format("Unknown FrameType: %s", type));
+        CallRequestFrame first = (CallRequestFrame) frames.get(0);
+        ArgScheme scheme = ArgScheme.toScheme(
+            first.getHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
+        if (!ArgScheme.isSupported(scheme)) {
+            return null;
         }
+
+        List<ByteBuf> args = new ArrayList<>();
+        for (CallFrame frame : frames) {
+            CodecUtils.readArgs(args, frame.getPayload());
+            frame.release();
+        }
+
+        if (args.size() != 3) {
+            for (ByteBuf arg : args) {
+                arg.release();
+            }
+
+            throw new UnsupportedOperationException("The arg count is not should be 3 instead of " + args.size());
+        }
+
+        return Request.build(
+            scheme,
+            first.getId(),
+            first.getTTL(),
+            first.getService(),
+            first.getHeaders(),
+            args.get(0),
+            args.get(1),
+            args.get(2));
+    }
+
+    public static Response decodeCallResponse(List<CallFrame> frames) {
+
+        if (frames.isEmpty()) {
+            return null;
+        }
+
+        CallResponseFrame first = (CallResponseFrame) frames.get(0);
+        ArgScheme scheme = ArgScheme.toScheme(
+            first.getHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
+        if (!ArgScheme.isSupported(scheme)) {
+            return null;
+        }
+
+        List<ByteBuf> args = new ArrayList<>();
+        for (CallFrame frame : frames) {
+            CodecUtils.readArgs(args, frame.getPayload());
+            frame.release();
+        }
+
+        if (args.size() != 3) {
+            for (ByteBuf arg : args) {
+                arg.release();
+            }
+
+            throw new UnsupportedOperationException("The arg count is not should be 3 instead of " + args.size());
+        }
+
+        args.get(0).release();
+        return Response.build(
+            scheme,
+            first.getId(),
+            first.getResponseCode(),
+            first.getHeaders(),
+            args.get(1),
+            args.get(2));
     }
 }

@@ -64,7 +64,11 @@ public class RawResponse extends Response implements RawMessage {
 
     public String getHeader() {
         if (this.header == null) {
-            this.header = this.arg2.toString(CharsetUtil.UTF_8);
+            if (arg2 == null) {
+                this.header = "";
+            } else {
+                this.header = this.arg2.toString(CharsetUtil.UTF_8);
+            }
         }
 
         return this.header;
@@ -72,10 +76,30 @@ public class RawResponse extends Response implements RawMessage {
 
     public String getBody() {
         if (this.body == null) {
-            this.body = this.arg3.toString(CharsetUtil.UTF_8);
+            if (arg3 == null) {
+                this.body = "";
+            } else {
+                this.body = this.arg3.toString(CharsetUtil.UTF_8);
+            }
         }
 
         return this.body;
+    }
+
+    @Override
+    public String toString() {
+        if (isError()) {
+            return getError().toString();
+        }
+
+        return String.format(
+            "<%s responseCode=%s transportHeaders=%s header=%s body=%s>",
+            this.getClass().getSimpleName(),
+            this.responseCode,
+            this.transportHeaders,
+            this.getHeader(),
+            this.getBody()
+        );
     }
 
     public static class Builder extends Response.Builder {

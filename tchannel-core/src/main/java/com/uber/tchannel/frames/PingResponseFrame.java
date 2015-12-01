@@ -21,19 +21,18 @@
  */
 package com.uber.tchannel.frames;
 
-public final class PingResponseFrame implements PingFrame {
+import com.uber.tchannel.codecs.TFrame;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 
-    private final long id;
+public final class PingResponseFrame extends PingFrame {
 
     public PingResponseFrame(long id) {
         this.id = id;
     }
 
-    public long getId() {
-        return this.id;
-    }
-
-    public FrameType getMessageType() {
+    public FrameType getType() {
         return FrameType.PingResponse;
     }
 
@@ -45,4 +44,13 @@ public final class PingResponseFrame implements PingFrame {
         );
     }
 
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        return Unpooled.EMPTY_BUFFER;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        tFrame.release();
+    }
 }

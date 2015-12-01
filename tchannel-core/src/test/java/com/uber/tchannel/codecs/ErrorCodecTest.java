@@ -25,7 +25,7 @@ package com.uber.tchannel.codecs;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.frames.ErrorFrame;
 import com.uber.tchannel.tracing.Trace;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -34,11 +34,6 @@ public class ErrorCodecTest {
 
     @Test
     public void testEncodeDecode() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TChannelLengthFieldBasedFrameDecoder(),
-                new TFrameCodec(),
-                new ErrorCodec()
-        );
 
         ErrorFrame errorFrame = new ErrorFrame(
                 42,
@@ -47,13 +42,14 @@ public class ErrorCodecTest {
                 "I'm sorry Dave, I can't do that."
         );
 
-        channel.writeOutbound(errorFrame);
-        channel.writeInbound(channel.readOutbound());
-
-        ErrorFrame newErrorFrame = channel.readInbound();
+        TFrame tFrame = MessageCodec.encode(ByteBufAllocator.DEFAULT, errorFrame);
+        ErrorFrame newErrorFrame =
+            (ErrorFrame) MessageCodec.decode(
+                CodecTestUtil.encodeDecode(tFrame)
+            );
 
         assertEquals(errorFrame.getId(), newErrorFrame.getId());
         assertEquals(errorFrame.getMessage(), newErrorFrame.getMessage());
-
+        tFrame.release();
     }
 }

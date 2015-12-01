@@ -23,7 +23,7 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.frames.PingRequestFrame;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -32,18 +32,17 @@ public class PingRequestFrameCodecTest {
 
     @Test
     public void testEncodeDecodePingRequest() throws Exception {
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new PingRequestCodec()
-        );
 
         PingRequestFrame pingRequestFrame = new PingRequestFrame(42);
 
-        channel.writeOutbound(pingRequestFrame);
-        channel.writeInbound(channel.readOutbound());
+        TFrame tFrame = MessageCodec.encode(ByteBufAllocator.DEFAULT, pingRequestFrame);
+        PingRequestFrame newPingRequestFrame =
+            (PingRequestFrame) MessageCodec.decode(
+                CodecTestUtil.encodeDecode(tFrame)
+            );
 
-        PingRequestFrame newPingRequestFrame = channel.readInbound();
         assertEquals(newPingRequestFrame.getId(), pingRequestFrame.getId());
-
+        tFrame.release();
     }
 
 }

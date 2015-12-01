@@ -24,7 +24,6 @@ package com.uber.tchannel.api;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
-import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
 import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.handlers.InitRequestHandler;
@@ -39,6 +38,7 @@ import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftSerializer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -266,6 +266,7 @@ public final class TChannel {
                 .group(this.childGroup)
                 .channel(NioSocketChannel.class)
                 .handler(this.channelInitializer(false, topChannel))
+                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
                 .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
                 .validate();
@@ -279,6 +280,7 @@ public final class TChannel {
                 .option(ChannelOption.SO_BACKLOG, 128)
                 .childHandler(this.channelInitializer(true, topChannel))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
+                .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
                 .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
                 .validate();
@@ -293,10 +295,10 @@ public final class TChannel {
                     ch.pipeline().addLast("FrameDecoder", new TChannelLengthFieldBasedFrameDecoder());
 
                     // Translates Raw Frames into TFrames
-                    ch.pipeline().addLast("TFrameCodec", new TFrameCodec());
+                    // ch.pipeline().addLast("TFrameCodec", new TFrameCodec());
 
                     // Translates TFrames into Messages
-                    ch.pipeline().addLast("MessageCodec", new MessageCodec());
+                    // ch.pipeline().addLast("MessageCodec", new MessageCodec());
 
                     if (isServer) {
                         ch.pipeline().addLast("InitRequestHandler",

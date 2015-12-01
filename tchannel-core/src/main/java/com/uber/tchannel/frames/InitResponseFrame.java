@@ -21,6 +21,11 @@
  */
 package com.uber.tchannel.frames;
 
+import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,11 +34,10 @@ import java.util.Map;
  * actual version that will be used for the rest of this connection. The header name/values are the same,
  * but identify the server.
  */
-public final class InitResponseFrame implements InitFrame {
+public final class InitResponseFrame extends InitFrame {
 
-    private final long id;
-    private final int version;
-    private final Map<String, String> headers;
+    private int version;
+    private Map<String, String> headers;
 
     public InitResponseFrame(long id, int version) {
         this.id = id;
@@ -47,6 +51,10 @@ public final class InitResponseFrame implements InitFrame {
         this.headers = headers;
     }
 
+    protected InitResponseFrame(long id) {
+        this.id = id;
+    }
+
     public int getVersion() {
         return version;
     }
@@ -55,11 +63,7 @@ public final class InitResponseFrame implements InitFrame {
         return headers;
     }
 
-    public long getId() {
-        return this.id;
-    }
-
-    public FrameType getMessageType() {
+    public FrameType getType() {
         return FrameType.InitResponse;
     }
 
@@ -85,5 +89,28 @@ public final class InitResponseFrame implements InitFrame {
                 this.version,
                 this.headers
         );
+    }
+
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        // Allocate new ByteBuf
+        ByteBuf buffer = allocator.buffer(256);
+
+        // version:2
+        buffer.writeShort(getVersion());
+
+        // headers -> nh:2 (key~2 value~2){nh}
+        CodecUtils.encodeHeaders(getHeaders(), buffer);
+
+        return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        // version:2
+        version = tFrame.payload.readUnsignedShort();
+
+        // headers -> nh:2 (key~2 value~2){nh}
+        headers = CodecUtils.decodeHeaders(tFrame.payload);
     }
 }

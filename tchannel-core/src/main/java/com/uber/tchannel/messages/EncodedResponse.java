@@ -60,7 +60,11 @@ public abstract class EncodedResponse<T> extends Response {
 
     public Map<String, String> getHeaders() {
         if (headers == null) {
-            headers = serializer.decodeHeaders(this);
+            if (arg2 == null) {
+                return new HashMap<>();
+            } else {
+                headers = serializer.decodeHeaders(this);
+            }
         }
 
         return headers;
@@ -72,7 +76,11 @@ public abstract class EncodedResponse<T> extends Response {
 
     public T getBody(Class<T> bodyType) {
         if (body == null) {
-            body = serializer.decodeBody(this, bodyType);
+            if (arg3 == null) {
+                return null;
+            } else {
+                body = serializer.decodeBody(this, bodyType);
+            }
         }
 
         return body;
@@ -80,6 +88,10 @@ public abstract class EncodedResponse<T> extends Response {
 
     @Override
     public String toString() {
+        if (isError()) {
+            return getError().toString();
+        }
+
         return String.format(
                 "<%s responseCode=%s transportHeaders=%s headers=%s body=%s>",
                 this.getClass().getSimpleName(),

@@ -31,6 +31,9 @@ public class TChannelError extends Exception {
     public static final String ERROR_CONNECTION_FAILURE = "tchannel.socket";
     public static final String ERROR_NO_PEER_AVAILABLE = "tchannel.no-peer-available";
 
+    public static final String ERROR_CODEC = "tchannel.codec";
+    public static final String ERROR_PROTOCOL = "tchannel.protocol.error";
+
     public final String type;
     public final Throwable subError;
 

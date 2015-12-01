@@ -24,9 +24,12 @@ package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
+import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
@@ -48,8 +51,13 @@ public class InitRequestFrameInitiatorTest {
         channel.pipeline().addFirst("InitRequestInitiator", new InitRequestInitiator(manager));
         assertEquals(4, channel.pipeline().names().size());
 
+        TFrame frame = MessageCodec.decode((ByteBuf) channel.readOutbound());
         // Then
-        InitRequestFrame initRequestFrame = channel.readOutbound();
+        InitRequestFrame initRequestFrame = (InitRequestFrame) MessageCodec.decode(
+            frame
+        );
+
+        frame.release();
 
         // Assert
         assertNotNull(initRequestFrame);
@@ -57,11 +65,16 @@ public class InitRequestFrameInitiatorTest {
         assertEquals(initRequestFrame.getHeaders().get("host_port"), "127.0.0.1:8888");
         assertEquals(initRequestFrame.getHeaders().get("process_name"), "java-process");
 
-        channel.writeInbound(new InitResponseFrame(
-                initRequestFrame.getId(),
-                initRequestFrame.getVersion(),
-                initRequestFrame.getHeaders()
-        ));
+        channel.writeInbound(
+            MessageCodec.encode(
+                MessageCodec.encode(new InitResponseFrame(
+                        initRequestFrame.getId(),
+                        initRequestFrame.getVersion(),
+                        initRequestFrame.getHeaders()
+                    )
+                )
+            )
+        );
 
         Object obj = channel.readOutbound();
         assertNull(obj);

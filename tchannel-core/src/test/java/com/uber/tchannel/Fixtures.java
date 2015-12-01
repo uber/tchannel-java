@@ -26,59 +26,104 @@ import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.CallRequestContinueFrame;
 import com.uber.tchannel.frames.CallResponseFrame;
-import com.uber.tchannel.frames.CallResponseContinue;
+import com.uber.tchannel.frames.CallResponseContinueFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class Fixtures {
 
     public static CallRequestFrame callRequest(long id, boolean moreFragments, ByteBuf payload) {
-        return new CallRequestFrame(
-                id,
-                moreFragments ? (byte) 1 : (byte) 0,
-                0L,
-                new Trace(0, 0, 0, (byte) 0x00),
-                "service",
-                new HashMap<String, String>(),
-                ChecksumType.NoChecksum,
-                0,
-                payload
+        return callRequest(id, moreFragments, new HashMap<String, String>(), payload);
+    }
+
+    public static CallRequestFrame callRequest(long id,
+                                               boolean moreFragments,
+                                               Map<String, String> headers,
+                                               ByteBuf payload) {
+        CallRequestFrame callRequestFrame = new CallRequestFrame(
+            id,
+            moreFragments ? (byte) 1 : (byte) 0,
+            0L,
+            new Trace(0, 0, 0, (byte) 0x00),
+            "service",
+            headers,
+            ChecksumType.NoChecksum,
+            0,
+            null
         );
+
+        callRequestFrame.setPayload(Unpooled.wrappedBuffer(
+            callRequestFrame.encodeHeader(PooledByteBufAllocator.DEFAULT),
+            payload
+        ));
+
+        return callRequestFrame;
     }
 
     public static CallRequestContinueFrame callRequestContinue(long id, boolean moreFragments, ByteBuf payload) {
-        return new CallRequestContinueFrame(
+        CallRequestContinueFrame callRequestContinueFrame = new CallRequestContinueFrame(
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
                 ChecksumType.NoChecksum,
                 0,
-                payload
+                null
         );
+
+        callRequestContinueFrame.setPayload(Unpooled.wrappedBuffer(
+            callRequestContinueFrame.encodeHeader(PooledByteBufAllocator.DEFAULT),
+            payload
+        ));
+
+        return callRequestContinueFrame;
     }
 
     public static CallResponseFrame callResponse(long id, boolean moreFragments, ByteBuf payload) {
-        return new CallResponseFrame(
+        return callResponse(id, moreFragments, new HashMap<String, String>(), payload);
+    }
+
+    public static CallResponseFrame callResponse(long id,
+                                                 boolean moreFragments,
+                                                 Map<String, String> headers,
+                                                 ByteBuf payload) {
+        CallResponseFrame callResponseFrame = new CallResponseFrame(
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
                 ResponseCode.OK,
                 new Trace(0, 0, 0, (byte) 0x00),
-                new HashMap<String, String>(),
+                headers,
                 ChecksumType.NoChecksum,
                 0,
-                payload
+                null
         );
+
+        callResponseFrame.setPayload(Unpooled.wrappedBuffer(
+            callResponseFrame.encodeHeader(PooledByteBufAllocator.DEFAULT),
+            payload
+        ));
+
+        return callResponseFrame;
     }
 
-    public static CallResponseContinue callResponseContinue(long id, boolean moreFragments, ByteBuf payload) {
-        return new CallResponseContinue(
+    public static CallResponseContinueFrame callResponseContinue(long id, boolean moreFragments, ByteBuf payload) {
+        CallResponseContinueFrame callResponseContinueFrame = new CallResponseContinueFrame(
                 id,
                 moreFragments ? (byte) 1 : (byte) 0,
                 ChecksumType.NoChecksum,
                 0,
                 payload
         );
+
+        callResponseContinueFrame.setPayload(Unpooled.wrappedBuffer(
+            callResponseContinueFrame.encodeHeader(PooledByteBufAllocator.DEFAULT),
+            payload
+        ));
+
+        return callResponseContinueFrame;
     }
 
 }

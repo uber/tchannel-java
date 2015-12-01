@@ -21,14 +21,17 @@
  */
 package com.uber.tchannel.frames;
 
+import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.tracing.Trace;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 
-public final class CancelFrame implements Frame {
+public final class CancelFrame extends Frame {
 
-    private final long id;
-    private final long ttl;
-    private final Trace tracing;
-    private final String why;
+    private long ttl;
+    private Trace tracing;
+    private String why;
 
     /**
      * Designated Constructor
@@ -45,6 +48,10 @@ public final class CancelFrame implements Frame {
         this.why = why;
     }
 
+    protected CancelFrame(long id) {
+        this.id = id;
+    }
+
     public long getTTL() {
         return ttl;
     }
@@ -53,12 +60,39 @@ public final class CancelFrame implements Frame {
         return tracing;
     }
 
-    public long getId() {
-        return this.id;
+    @Override
+    public FrameType getType() {
+        return FrameType.Cancel;
     }
 
-    public FrameType getMessageType() {
-        return FrameType.Cancel;
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
+        ByteBuf buffer = allocator.buffer(31);
+
+        // ttl:4
+        buffer.writeInt((int) getTTL());
+
+        // tracing:25
+        CodecUtils.encodeTrace(getTracing(), buffer);
+
+        // why~2
+        CodecUtils.encodeString(getWhy(), buffer);
+
+        return buffer;
+    }
+
+    @Override
+    public void decode(TFrame tFrame) {
+        // ttl:4
+        ttl = tFrame.payload.readUnsignedInt();
+
+        // tracing:25
+        tracing = CodecUtils.decodeTrace(tFrame.payload);
+
+        // why~2
+        why = CodecUtils.decodeString(tFrame.payload);
+
+        tFrame.release();
     }
 
     public String getWhy() {
