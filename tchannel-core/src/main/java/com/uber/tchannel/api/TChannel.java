@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.api;
 
+import com.uber.tchannel.api.handlers.HealthCheckRequestHandler;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;

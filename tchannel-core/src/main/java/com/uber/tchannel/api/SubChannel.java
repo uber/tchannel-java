@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
+import com.uber.tchannel.api.handlers.HealthCheckRequestHandler;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
@@ -98,6 +99,14 @@ public final class SubChannel {
     public SubChannel register(String endpoint, RequestHandler requestHandler) {
         requestHandlers.put(endpoint, requestHandler);
         return this;
+    }
+
+    public SubChannel registerHealthHanlder() {
+        return registerHealthHandler(new HealthCheckRequestHandler());
+    }
+
+    public SubChannel registerHealthHandler(HealthCheckRequestHandler healthHandler) {
+        return register("Meta::health", healthHandler);
     }
 
     public RequestHandler getRequestHandler(String endpoint) {

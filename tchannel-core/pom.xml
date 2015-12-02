@@ -59,10 +59,21 @@
                                     <arg value="java:private-members" />
                                     <arg value="--out" />
                                     <arg value="${project.build.directory}/generated-sources/thrift/gen-java" />
+                                    <arg value="src/main/thrift/meta.thrift" />
+                                </exec>
+                                <copy todir="src/main/gen-java" overwrite="true">
+                                    <fileset dir="target/generated-sources/thrift/gen-java" />
+                                </copy>
+                                <mkdir dir="${project.build.directory}/generated-test-sources/thrift/gen-java" />
+                                <exec executable="${thrift.executable}" failonerror="true">
+                                    <arg value="--gen" />
+                                    <arg value="java:private-members" />
+                                    <arg value="--out" />
+                                    <arg value="${project.build.directory}/generated-test-sources/thrift/gen-java" />
                                     <arg value="src/test/thrift/example.thrift" />
                                 </exec>
                                 <copy todir="src/test/gen-java" overwrite="true">
-                                    <fileset dir="target/generated-sources/thrift/gen-java" />
+                                    <fileset dir="target/generated-test-sources/thrift/gen-java" />
                                 </copy>
                             </tasks>
                         </configuration>
@@ -84,6 +95,7 @@
                         </goals>
                         <configuration>
                             <sources>
+                                <source>src/main/gen-java</source>
                                 <source>src/test/gen-java</source>
                             </sources>
                         </configuration>
