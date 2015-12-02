@@ -107,7 +107,7 @@ public final class HyperbahnClient {
                     response.getBody(AdvertiseResponse.class);
                     response.release();
                 } else {
-                    logger.error("Failed to advertise to Hyperbahn: %s - %s",
+                    logger.error("Failed to advertise to Hyperbahn: {} - {}",
                         response.getError().getErrorType(),
                         response.getError().getMessage());
                 }
@@ -121,7 +121,7 @@ public final class HyperbahnClient {
 
             @Override
             public void onFailure(Throwable throwable) {
-                logger.error("Failed to advertise to Hyperbahn: %s", throwable.getMessage());
+                logger.error("Failed to advertise to Hyperbahn: {}", throwable.getMessage());
             }
         });
 
