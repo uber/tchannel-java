@@ -37,7 +37,6 @@ public class KeyValueServer {
 
         TChannel tchannel = new TChannel.Builder("keyvalue-service")
                 .setServerPort(8888)
-                .setLogLevel(Level.INFO)
                 .build();
 
         tchannel.makeSubChannel("keyvalue-service")

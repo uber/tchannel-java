@@ -34,7 +34,10 @@ import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
+import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.util.CharsetUtil;
+import org.apache.log4j.Level;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -50,6 +53,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ConnectionTest extends BaseTest {
+
+    @BeforeClass
+    public static void setup() {
+        TChannelUtilities.setLogLevel(Level.FATAL);
+    }
 
     @Test
     public void testConnectionClientReset() throws Exception {

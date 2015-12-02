@@ -4,6 +4,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,13 +22,17 @@ public class TChannelUtilities {
 
     public static final ByteBuf emptyByteBuf = Unpooled.EMPTY_BUFFER;
 
-    public static final void PrintException(Throwable throwable) {
+    public static void setLogLevel(Level level) {
+        LogManager.getRootLogger().setLevel(level);
+    }
+
+    public static void PrintException(Throwable throwable) {
         StringWriter writer = new StringWriter();
         PrintWriter printWriter = new PrintWriter( writer );
         throwable.printStackTrace( printWriter );
         printWriter.flush();
         System.out.println(throwable.getMessage());
-        System.out.println(writer.toString());
+        System.out.println(writer);
     }
 
     public static InetAddress getCurrentIp() {

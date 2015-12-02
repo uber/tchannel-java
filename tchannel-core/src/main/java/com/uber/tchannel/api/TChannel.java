@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.api;
 
-import com.uber.tchannel.api.handlers.HealthCheckRequestHandler;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
@@ -228,7 +227,7 @@ public final class TChannel {
                     PropertyConfigurator.configure(log4jProperties);
                 } else {
                     BasicConfigurator.configure();
-                    setLogLevel(Level.INFO);
+                    TChannelUtilities.setLogLevel(Level.INFO);
                 }
             }
 
@@ -277,11 +276,6 @@ public final class TChannel {
 
         public Builder setChildGroup(EventLoopGroup childGroup) {
             this.childGroup = childGroup;
-            return this;
-        }
-
-        public Builder setLogLevel(Level level) {
-            LogManager.getRootLogger().setLevel(level);
             return this;
         }
 
