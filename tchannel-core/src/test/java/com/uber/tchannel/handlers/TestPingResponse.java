@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.FrameType;
@@ -31,7 +32,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class TestPingResponse {
+public class TestPingResponse extends BaseTest {
 
     @Test
     public void shouldInterceptPing() throws Exception {

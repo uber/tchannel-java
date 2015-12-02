@@ -27,6 +27,7 @@ import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import io.netty.channel.ChannelFuture;
+
 import org.junit.Test;
 
 import com.uber.tchannel.api.TChannel;
@@ -44,7 +45,7 @@ import static org.junit.Assert.assertNotNull;
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertTrue;
 
-public class HyperbahnClientTest {
+public class HyperbahnClientTest extends BaseTest {
 
     @Test
     public void testAdvertise() throws Exception {
@@ -90,6 +91,7 @@ public class HyperbahnClientTest {
 
         sleep(500);
         assertTrue(responseHandler.requestsReceived >= 3);
+        hyperbahnClient.stopAdvertising();
 
         tchannel.shutdown();
         server.shutdown();

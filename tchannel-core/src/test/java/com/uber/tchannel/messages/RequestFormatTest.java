@@ -22,12 +22,13 @@
 
 package com.uber.tchannel.messages;
 
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.messages.generated.Example;
 import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
-public class RequestFormatTest {
+public class RequestFormatTest extends BaseTest {
 
     @Test
     public void testThriftHeader() throws Exception {

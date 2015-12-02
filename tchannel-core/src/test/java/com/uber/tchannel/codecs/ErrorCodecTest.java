@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.frames.ErrorFrame;
 import com.uber.tchannel.tracing.Trace;
@@ -30,7 +31,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class ErrorCodecTest {
+public class ErrorCodecTest extends BaseTest {
 
     @Test
     public void testEncodeDecode() throws Exception {

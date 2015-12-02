@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.headers;
 
+import com.uber.tchannel.BaseTest;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class RetryFlagTest {
+public class RetryFlagTest extends BaseTest {
 
     @Test
     public void testToRetryFlag() throws Exception {

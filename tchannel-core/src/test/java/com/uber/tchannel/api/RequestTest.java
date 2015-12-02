@@ -23,13 +23,12 @@
 package com.uber.tchannel.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.messages.RawRequest;
-import com.uber.tchannel.messages.Response;
-import io.netty.handler.logging.LogLevel;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -41,7 +40,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class RequestTest {
+public class RequestTest extends BaseTest {
+
 
     @Test
     public void testGetBody() throws Exception {
@@ -62,7 +62,6 @@ public class RequestTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
-            .setLogLevel(LogLevel.INFO)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {
@@ -104,7 +103,6 @@ public class RequestTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
-            .setLogLevel(LogLevel.INFO)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {
@@ -146,7 +144,6 @@ public class RequestTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
-            .setLogLevel(LogLevel.INFO)
             .setInitTimeout(2000)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")

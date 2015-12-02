@@ -22,13 +22,14 @@
 
 package com.uber.tchannel.api;
 
+import com.uber.tchannel.BaseTest;
 import org.junit.Test;
 
 import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
 
-public class TChannelBuilderTest {
+public class TChannelBuilderTest extends BaseTest {
 
     @Test
     public void testSetServerHost() throws Exception {

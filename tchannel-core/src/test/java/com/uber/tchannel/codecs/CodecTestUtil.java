@@ -22,12 +22,13 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.BaseTest;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class CodecTestUtil {
+public class CodecTestUtil extends BaseTest {
 
     @Test
     public static TFrame encodeDecode(TFrame frame) {

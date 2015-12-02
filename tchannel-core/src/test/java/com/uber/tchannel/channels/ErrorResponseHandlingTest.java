@@ -22,6 +22,7 @@
 package com.uber.tchannel.channels;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
@@ -34,11 +35,10 @@ import com.uber.tchannel.messages.Response;
 import org.junit.Test;
 
 import java.net.InetAddress;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class ErrorResponseHandlingTest {
+public class ErrorResponseHandlingTest extends BaseTest {
 
     @Test
     public void testBadRequestErrorOnInvalidArgScheme() throws Exception {

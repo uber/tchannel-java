@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.frames.ClaimFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBufAllocator;
@@ -28,7 +29,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class ClaimFrameCodecTest {
+public class ClaimFrameCodecTest extends BaseTest {
 
     @Test
     public void testEncodeDecodeClaim() throws Exception {

@@ -23,7 +23,7 @@
 package com.uber.tchannel.thrift;
 
 import com.uber.tchannel.api.TChannel;
-import io.netty.handler.logging.LogLevel;
+import org.apache.log4j.Level;
 
 import java.net.UnknownHostException;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class KeyValueServer {
 
         TChannel tchannel = new TChannel.Builder("keyvalue-service")
                 .setServerPort(8888)
-                .setLogLevel(LogLevel.INFO)
+                .setLogLevel(Level.INFO)
                 .build();
 
         tchannel.makeSubChannel("keyvalue-service")

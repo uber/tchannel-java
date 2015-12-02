@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -30,7 +31,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class TFrameCodecTest {
+public class TFrameCodecTest extends BaseTest {
 
     @Test
     public void shouldEncodeAndDecodeFrame() {

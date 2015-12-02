@@ -23,6 +23,7 @@
 package com.uber.tchannel.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
@@ -50,7 +51,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class RetryTest {
+public class RetryTest extends BaseTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
