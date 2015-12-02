@@ -46,7 +46,8 @@ public class HealthCheckTest {
         final TChannel server = new TChannel.Builder("server")
                 .setServerHost(host)
                 .build();
-        server.makeSubChannel("server");
+        final SubChannel subServer = server.makeSubChannel("server");
+        subServer.registerHealthHanlder();
         server.listen();
 
         int port = server.getListeningPort();

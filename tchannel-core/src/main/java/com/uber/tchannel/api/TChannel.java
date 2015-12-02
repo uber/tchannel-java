@@ -152,7 +152,6 @@ public final class TChannel {
         SubChannel subChannel = getSubChannel(service);
         if (subChannel == null) {
             subChannel = new SubChannel(service, this, preferredDirection);
-            subChannel.register("Meta::health", new HealthCheckRequestHandler());
             subChannels.put(service, subChannel);
         }
 
