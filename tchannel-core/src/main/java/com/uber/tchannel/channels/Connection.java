@@ -25,6 +25,8 @@ import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.handlers.ResponseRouter;
 import io.netty.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -34,6 +36,9 @@ import java.util.Map;
  * Connection represents a connection to a remote address
  */
 public class Connection {
+
+    private static final Logger logger = LoggerFactory.getLogger(Connection.class);
+
     public Direction direction = Direction.NONE;
     public ConnectionState state = ConnectionState.UNCONNECTED;
 
@@ -147,8 +152,9 @@ public class Connection {
             }
         } catch (InterruptedException ex) {
             // doesn't matter if we got interrupted here ...
-            Thread.currentThread().interrupt();  // set interrupt flag
-            // TODO: log here
+            // set interrupt flag
+            Thread.currentThread().interrupt();
+            logger.warn("wait for identified is interrupted.", ex);
         }
 
         boolean result = this.state == ConnectionState.IDENTIFIED;

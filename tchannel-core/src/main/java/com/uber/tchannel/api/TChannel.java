@@ -54,6 +54,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -67,6 +68,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public final class TChannel {
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(TChannel.class);
 
     private final HashedWheelTimer timer;
 
@@ -129,6 +132,10 @@ public final class TChannel {
         return this.initTimeout;
     }
 
+    public boolean hasListened() {
+        return !listeningHost.equals("0.0.0.0");
+    }
+
     public ChannelFuture listen() throws InterruptedException {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
@@ -142,8 +149,13 @@ public final class TChannel {
         return subChannels.get(service);
     }
 
-    // TODO: make sure makeSubChannel is called before listening ...
     public SubChannel makeSubChannel(String service, Connection.Direction preferredDirection) {
+        if (hasListened()) {
+            logger.warn("makeSubChannel should be called before listen - service: {}",
+                service
+            );
+        }
+
         SubChannel subChannel = getSubChannel(service);
         if (subChannel == null) {
             subChannel = new SubChannel(service, this, preferredDirection);
@@ -169,12 +181,11 @@ public final class TChannel {
                 cg.get();
             }
         } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();  // set interrupt flag
-            // TODO: log instead
-            System.out.println("shutdown interrupted");
+            // set interrupt flag
+            Thread.currentThread().interrupt();
+            logger.warn("shutdown interrupted.", ie);
         } catch (ExecutionException ee) {
-            // TODO: log instead
-            System.out.println("shutdown runs into an ExecutionException");
+            logger.warn("shutdown runs into an ExecutionException.", ee);
         }
     }
 
@@ -230,7 +241,7 @@ public final class TChannel {
             this.service = service;
             this.host = TChannelUtilities.getCurrentIp();
             if (this.host == null) {
-                // TODO: logging
+                logger.error("failed to get current IP");
             }
 
             timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);

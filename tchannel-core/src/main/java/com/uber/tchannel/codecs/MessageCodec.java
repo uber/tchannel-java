@@ -47,7 +47,6 @@ import java.util.List;
 public final class MessageCodec {
 
     public static ChannelFuture write(ChannelHandlerContext ctx, Frame frame) {
-        // TODO: release frame?
         ChannelFuture f = ctx.writeAndFlush(
             encode(
                 ctx.alloc(),

@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
 
 import com.uber.tchannel.api.errors.TChannelConnectionFailure;
-import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;

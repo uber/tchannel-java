@@ -4,6 +4,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -14,6 +16,8 @@ import java.net.SocketException;
 import java.util.Enumeration;
 
 public class TChannelUtilities {
+    private static final Logger logger = LoggerFactory.getLogger(TChannelUtilities.class);
+
     public static final ByteBuf emptyByteBuf = Unpooled.EMPTY_BUFFER;
 
     public static final void PrintException(Throwable throwable) {
@@ -43,8 +47,7 @@ public class TChannelUtilities {
                 }
             }
         } catch (SocketException e) {
-            // TODO: logger
-            // LOG.error("unable to get current IP " + e.getMessage(), e);
+            logger.error("unable to get current IP.", e);
         }
         return null;
     }

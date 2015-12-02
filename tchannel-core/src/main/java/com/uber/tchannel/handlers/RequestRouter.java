@@ -38,6 +38,8 @@ import com.uber.tchannel.messages.ResponseMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -47,6 +49,8 @@ import java.util.concurrent.ExecutorService;
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
 public class RequestRouter extends SimpleChannelInboundHandler<Request> {
+
+    private static final Logger logger = LoggerFactory.getLogger(RequestRouter.class);
 
     private final TChannel topChannel;
 
@@ -75,8 +79,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
         // There is nothing to do if the connection is already distroyed.
         if (!ctx.channel().isActive()) {
-            // TODO: log
-            System.out.println("Drop request when channel is inActive");
+            logger.warn("drop request when channel is inActive");
             request.release();
             return;
         }
@@ -131,7 +134,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                     return;
                 }
 
-                // TODO: aggregate the flush
                 if (!ctx.channel().isWritable()) {
                     synchronized (responseQueue) {
                         responseQueue.add(response);
@@ -143,7 +145,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
             @Override
             public void onFailure(Throwable throwable) {
-                // TODO: log the exception
+                logger.error("Failed to handle the request due to exception.", throwable);
                 sendError(ErrorType.BadRequest,
                     "Failed to handle the request: " + throwable.getMessage(),
                     request, ctx);
