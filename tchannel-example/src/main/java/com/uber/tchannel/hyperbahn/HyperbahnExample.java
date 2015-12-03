@@ -40,6 +40,7 @@ import com.uber.tchannel.ping.PingRequestHandler;
 //      1. run Hyperbahn: node server.js --port 21300 2>&1 | jq .
 //      2. run HyperbahnExample.java
 //      3. tcurl -p 127.0.0.1:21300 javaServer ping -j -2 "{}" -3 '{"request":"hello"}' | jq .
+//      4. run health check: tcurl -p 127.0.0.1:8888 javaServer --health
 
 public class HyperbahnExample {
     public static void main(String[] args) throws Exception {
@@ -61,7 +62,9 @@ public class HyperbahnExample {
                 .build();
 
         // register the service handler
-        hyperbahn.makeClientChannel("javaServer").register("ping", new PingRequestHandler());
+        hyperbahn.makeClientChannel("javaServer")
+            .registerHealthHanlder()
+            .register("ping", new PingRequestHandler());
 
         final ListenableFuture<JsonResponse<AdvertiseResponse>> future = hyperbahn.advertise();
 

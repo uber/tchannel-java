@@ -154,11 +154,7 @@ public abstract class EncodedResponse<T> extends Response {
                 return this;
             }
 
-            if (headers.isEmpty()) {
-                arg2 = TChannelUtilities.emptyByteBuf;
-            } else {
-                arg2 = serializer.encodeHeaders(this.headers, argScheme);
-            }
+            arg2 = serializer.encodeHeaders(this.headers, argScheme);
 
             return this;
         }
