@@ -23,6 +23,7 @@
 package com.uber.tchannel.handlers;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
@@ -38,15 +39,13 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.*;
 
-public class FrameFragmenterTest {
+public class FrameFragmenterTest extends BaseTest {
 
     private static final int BUFFER_SIZE = 100000;
 

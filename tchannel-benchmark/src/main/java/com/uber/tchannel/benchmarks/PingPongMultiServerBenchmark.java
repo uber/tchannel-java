@@ -60,13 +60,8 @@ public class PingPongMultiServerBenchmark {
     private List<TChannel> servers = new ArrayList<>();
     TChannel client;
     SubChannel subClient;
-    int port;
 
     int connections = 2;
-
-//    @Param({ "0", "1", "10" })
-    @Param({ "0"})
-    private int sleepTime;
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
@@ -166,12 +161,6 @@ public class PingPongMultiServerBenchmark {
     public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
         public JsonResponse<Pong> handleImpl(JsonRequest<Ping> request) {
-            try {
-                sleep(sleepTime);
-            } catch (InterruptedException ex) {
-                // TODO: do something ...
-            }
-
             return new JsonResponse.Builder<Pong>(request)
                 .setBody(new Pong("pong!"))
                 .build();

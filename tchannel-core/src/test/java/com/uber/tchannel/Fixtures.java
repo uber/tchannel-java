@@ -125,5 +125,4 @@ public class Fixtures {
 
         return callResponseContinueFrame;
     }
-
 }

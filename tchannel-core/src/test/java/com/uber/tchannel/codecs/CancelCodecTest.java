@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.frames.CancelFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -29,7 +30,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CancelCodecTest {
+public class CancelCodecTest extends BaseTest {
 
     @Test
     public void testEncodeDecode() throws Exception {

@@ -13,6 +13,8 @@ import com.uber.tchannel.messages.ResponseMessage;
 import com.uber.tchannel.messages.ThriftResponse;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.HashSet;
@@ -23,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The logic unit for managing out requests
  */
 public final class OutRequest<V> {
+    private static final Logger logger = LoggerFactory.getLogger(OutRequest.class);
+
     private final SubChannel subChannel;
     private final Request request;
     private final TFuture<V> future;
@@ -97,8 +101,9 @@ public final class OutRequest<V> {
         try {
             this.channelFuture.sync();
         } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();  // set interrupt flag
-            // TODO: log here?
+            // set interrupt flag
+            Thread.currentThread().interrupt();
+            logger.warn("flushWrite got interrupted.", ie);
         }
     }
 
@@ -176,7 +181,7 @@ public final class OutRequest<V> {
                 ((TFuture<ThriftResponse>)future).set((ThriftResponse) response);
                 break;
             default:
-                // TODO: logging
+                logger.error("unsupported arg scheme: {}", argScheme);
                 ((TFuture<RawResponse>)future).set((RawResponse) response);
                 break;
         }

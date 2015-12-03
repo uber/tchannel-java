@@ -49,10 +49,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class HyperbahnClient {
+    private static final Logger logger = LoggerFactory.getLogger(HyperbahnClient.class);
+
     private static final String HYPERBAHN_SERVICE_NAME = "hyperbahn";
     private static final String HYPERBAHN_ADVERTISE_ENDPOINT = "ad";
     public AtomicBoolean destroyed = new AtomicBoolean(false);
-    private final Logger logger = LoggerFactory.getLogger(HyperbahnClient.class);
 
     private final String service;
     private final TChannel tchannel;
@@ -107,7 +108,7 @@ public final class HyperbahnClient {
                     response.getBody(AdvertiseResponse.class);
                     response.release();
                 } else {
-                    logger.error("Failed to advertise to Hyperbahn: %s - %s",
+                    logger.error("Failed to advertise to Hyperbahn: {} - {}",
                         response.getError().getErrorType(),
                         response.getError().getMessage());
                 }
@@ -121,7 +122,7 @@ public final class HyperbahnClient {
 
             @Override
             public void onFailure(Throwable throwable) {
-                logger.error("Failed to advertise to Hyperbahn: %s", throwable.getMessage());
+                logger.error("Failed to advertise to Hyperbahn.", throwable);
             }
         });
 
@@ -150,11 +151,11 @@ public final class HyperbahnClient {
             return;
         }
 
-        this.logger.info("Shutting down HyperbahnClient and TChannel.");
+        logger.info("Shutting down HyperbahnClient and TChannel.");
         this.stopAdvertising();
         this.tchannel.shutdown();
         this.routers.clear();
-        this.logger.info("HyperbahnClient shutdown complete.");
+        logger.info("HyperbahnClient shutdown complete.");
     }
 
     public static class Builder {

@@ -23,6 +23,7 @@
 package com.uber.tchannel.channels;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.messages.ThriftRequest;
@@ -33,10 +34,10 @@ import org.junit.Test;
 
 import java.net.InetAddress;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public class HealthCheckTest {
+public class HealthCheckTest extends BaseTest {
     @Test
     public void testHealthCheck() throws Exception {
 
@@ -59,7 +60,7 @@ public class HealthCheckTest {
         final SubChannel subClient = client.makeSubChannel("server");
         client.listen();
 
-        ThriftRequest req = new ThriftRequest.Builder<Meta.health_args>("server", "Meta::health")
+        ThriftRequest<Meta.health_args> req = new ThriftRequest.Builder<Meta.health_args>("server", "Meta::health")
                 .setBody(new Meta.health_args())
                 .build();
 
@@ -71,7 +72,7 @@ public class HealthCheckTest {
         ThriftResponse<Meta.health_result> res = future.get();
         assertFalse(res.isError());
         HealthStatus status = res.getBody(Meta.health_result.class).getSuccess();
-        assertEquals(true, status.isOk());
+        assertTrue(status.isOk());
         res.release();
 
         server.shutdown();

@@ -34,6 +34,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage> {
+    private static final Logger logger = LoggerFactory.getLogger(ResponseRouter.class);
 
     private final PeerManager peerManager;
     private final HashedWheelTimer timer;
@@ -136,9 +139,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
     protected void handleResponse(ResponseMessage response) {
         OutRequest outRequest = this.requestMap.remove(response.getId());
+
+        // this may happen when the request times out already
         if (outRequest == null) {
             response.release();
-            // TODO logging
             return;
         }
 

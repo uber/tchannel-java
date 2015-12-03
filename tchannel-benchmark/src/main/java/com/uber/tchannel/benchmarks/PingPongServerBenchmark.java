@@ -59,10 +59,6 @@ public class PingPongServerBenchmark {
     private int port;
     private InetAddress host;
 
-//    @Param({ "0", "1", "10" })
-    @Param({ "0"})
-    private int sleepTime;
-
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
             .include(".*" + PingPongServerBenchmark.class.getSimpleName() + ".*")
@@ -165,12 +161,6 @@ public class PingPongServerBenchmark {
     public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
         public JsonResponse<Pong> handleImpl(JsonRequest<Ping> request) {
-            try {
-                sleep(sleepTime);
-            } catch (InterruptedException ex) {
-                // TODO: do something ...
-            }
-
             return new JsonResponse.Builder<Pong>(request)
                 .setBody(new Pong("pong!"))
                 .build();

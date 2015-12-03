@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -31,7 +32,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class CodecUtilsTest {
+public class CodecUtilsTest extends BaseTest {
 
     @Test
     public void testEncodeDecodeString() throws Exception {

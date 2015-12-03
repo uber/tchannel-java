@@ -25,6 +25,7 @@ package com.uber.tchannel.channels;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.RequestHandler;
@@ -33,15 +34,17 @@ import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
+import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.util.CharsetUtil;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -50,7 +53,12 @@ import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ConnectionTest {
+public class ConnectionTest extends BaseTest {
+
+    @BeforeClass
+    public static void setup() {
+        LogManager.getRootLogger().setLevel(Level.FATAL);
+    }
 
     @Test
     public void testConnectionClientReset() throws Exception {

@@ -24,7 +24,6 @@ package com.uber.tchannel.handlers;
 import com.uber.tchannel.api.errors.TChannelProtocol;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.CallFrame;
 import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.CallResponseFrame;
@@ -37,6 +36,8 @@ import com.uber.tchannel.messages.TChannelMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
 public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
+
+    private static final Logger logger = LoggerFactory.getLogger(MessageDefragmenter.class);
 
     // TODO: reaping the timeouts
     private final Map<Long, List<CallFrame>> callFrames = new ConcurrentHashMap<>();
@@ -106,7 +109,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
                 sendError(ErrorType.BadRequest,
                     "Arg Scheme not specified or unsupported", frame.getId(), ctx);
             } else {
-                // TODO: log the failure
+                logger.error("Arg Scheme not specified or unsupported: {}", scheme);
             }
 
             return null;

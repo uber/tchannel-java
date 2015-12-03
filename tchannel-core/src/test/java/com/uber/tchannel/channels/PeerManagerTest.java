@@ -23,6 +23,7 @@
 package com.uber.tchannel.channels;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.messages.RawResponse;
@@ -44,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class PeerManagerTest {
+public class PeerManagerTest extends BaseTest {
 
     @Test
     public void testPeerAndConnections() throws Exception {

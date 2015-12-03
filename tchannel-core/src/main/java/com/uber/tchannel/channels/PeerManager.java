@@ -22,11 +22,12 @@
 
 package com.uber.tchannel.channels;
 
-import com.uber.tchannel.api.errors.TChannelError;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.HashMap;
@@ -37,6 +38,8 @@ import java.util.Map;
  * PeerManager manages peers, a abstract presentation of a channel to a host_port.
  */
 public class PeerManager {
+    private static final Logger logger = LoggerFactory.getLogger(PeerManager.class);
+
     private final Bootstrap clientBootstrap;
     private final ConcurrentHashMap<SocketAddress, Peer> peers = new ConcurrentHashMap<>();
 
@@ -152,8 +155,7 @@ public class PeerManager {
     }
 
     public void handleConnectionErrors(Channel channel, Throwable cause) {
-        // TODO: log the errror ...
-        System.out.println("Resetting connection due to the error of: " + cause.getMessage());
+        logger.error("Resetting connection due to the error.", cause);
         Connection conn = remove(channel);
         if (conn != null) {
             conn.clean();

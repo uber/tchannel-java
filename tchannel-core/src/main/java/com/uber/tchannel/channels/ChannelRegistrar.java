@@ -24,12 +24,16 @@ package com.uber.tchannel.channels;
 
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple ChannelHandlerAdapter that is responsible solely for registering new Channels with the PeerManager
  * and de-registering Channels when the go inactive.
  */
 public class ChannelRegistrar extends ChannelHandlerAdapter {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChannelRegistrar.class);
 
     private final PeerManager peerManager;
 
@@ -51,9 +55,7 @@ public class ChannelRegistrar extends ChannelHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        // TODO: log the exception
-        System.out.println("Exception detected, reseting connection: " + cause.getMessage());
-        cause.printStackTrace();
+        logger.error("Exception detected, reseting connection.", cause);
         this.peerManager.handleConnectionErrors(ctx.channel(), cause);
     }
 }

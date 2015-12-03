@@ -21,22 +21,16 @@
  */
 package com.uber.tchannel.api;
 
-import com.uber.tchannel.api.handlers.HealthCheckRequestHandler;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
-import com.uber.tchannel.codecs.TFrameCodec;
 import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
 import com.uber.tchannel.handlers.MessageDefragmenter;
 import com.uber.tchannel.handlers.MessageFragmenter;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
-import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.messages.JSONSerializer;
-import com.uber.tchannel.messages.Serializer;
-import com.uber.tchannel.messages.ThriftSerializer;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -52,10 +46,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.HashedWheelTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -65,6 +60,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public final class TChannel {
+
+    private static final Logger logger = LoggerFactory.getLogger(TChannel.class);
 
     private final HashedWheelTimer timer;
 
@@ -83,13 +80,6 @@ public final class TChannel {
     private final int clientMaxPendingRequests;
 
     private Map<String, SubChannel> subChannels = new HashMap<>();
-
-    private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
-        {
-            put(ArgScheme.JSON, new JSONSerializer());
-            put(ArgScheme.THRIFT, new ThriftSerializer());
-        }
-    });
 
     private TChannel(Builder builder) {
         this.service = builder.service;
@@ -134,6 +124,10 @@ public final class TChannel {
         return this.initTimeout;
     }
 
+    public boolean isListening() {
+        return !listeningHost.equals("0.0.0.0");
+    }
+
     public ChannelFuture listen() throws InterruptedException {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
@@ -147,8 +141,13 @@ public final class TChannel {
         return subChannels.get(service);
     }
 
-    // TODO: make sure makeSubChannel is called before listening ...
     public SubChannel makeSubChannel(String service, Connection.Direction preferredDirection) {
+        if (isListening()) {
+            logger.warn("makeSubChannel should be called before listen - service: {}",
+                service
+            );
+        }
+
         SubChannel subChannel = getSubChannel(service);
         if (subChannel == null) {
             subChannel = new SubChannel(service, this, preferredDirection);
@@ -174,16 +173,15 @@ public final class TChannel {
                 cg.get();
             }
         } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();  // set interrupt flag
-            // TODO: log instead
-            System.out.println("shutdown interrupted");
+            // set interrupt flag
+            Thread.currentThread().interrupt();
+            logger.warn("shutdown interrupted.", ie);
         } catch (ExecutionException ee) {
-            // TODO: log instead
-            System.out.println("shutdown runs into an ExecutionException");
+            logger.warn("shutdown runs into an ExecutionException.", ee);
         }
     }
 
-    public void shutdown() throws InterruptedException, ExecutionException {
+    public void shutdown() {
         this.shutdown(true);
     }
 
@@ -193,15 +191,15 @@ public final class TChannel {
 
     public static class Builder {
 
-        private final String service;
-        private final HashedWheelTimer timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
+        private final HashedWheelTimer timer;
+        private ExecutorService executorService;
+        private EventLoopGroup bossGroup;
+        private EventLoopGroup childGroup;
 
-        private ExecutorService executorService = new ForkJoinPool();
+        private final String service;
         private InetAddress host;
         private int port = 0;
-        private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        private EventLoopGroup childGroup = new NioEventLoopGroup();
-        private LogLevel logLevel = LogLevel.INFO;
+
         private long initTimeout = -1;
         private int resetOnTimeoutLimit = Integer.MAX_VALUE;
         private int clientMaxPendingRequests = 100000;
@@ -214,8 +212,13 @@ public final class TChannel {
             this.service = service;
             this.host = TChannelUtilities.getCurrentIp();
             if (this.host == null) {
-                // TODO: logging
+                logger.error("failed to get current IP");
             }
+
+            timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
+            executorService = new ForkJoinPool();
+            bossGroup = new NioEventLoopGroup(1);
+            childGroup = new NioEventLoopGroup();
         }
 
         public Builder setExecutorService(ExecutorService executorService) {
@@ -233,7 +236,7 @@ public final class TChannel {
             return this;
         }
 
-        public Builder setServerPort(int port) throws UnknownHostException {
+        public Builder setServerPort(int port) {
             this.port = port;
             return this;
         }
@@ -245,11 +248,6 @@ public final class TChannel {
 
         public Builder setChildGroup(EventLoopGroup childGroup) {
             this.childGroup = childGroup;
-            return this;
-        }
-
-        public Builder setLogLevel(LogLevel logLevel) {
-            this.logLevel = logLevel;
             return this;
         }
 
@@ -282,7 +280,7 @@ public final class TChannel {
             return new ServerBootstrap()
                 .group(this.bossGroup, this.childGroup)
                 .channel(NioServerSocketChannel.class)
-                .handler(new LoggingHandler(logLevel))
+                .handler(new LoggingHandler(LogLevel.INFO))
                 .option(ChannelOption.SO_BACKLOG, 128)
                 .childHandler(this.channelInitializer(true, topChannel))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
