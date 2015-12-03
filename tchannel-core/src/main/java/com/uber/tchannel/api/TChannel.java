@@ -46,18 +46,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.HashedWheelTimer;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.Slf4JLoggerFactory;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -68,7 +61,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class TChannel {
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(TChannel.class);
+    private static final Logger logger = LoggerFactory.getLogger(TChannel.class);
 
     private final HashedWheelTimer timer;
 
@@ -131,7 +124,7 @@ public final class TChannel {
         return this.initTimeout;
     }
 
-    public boolean hasListened() {
+    public boolean isListening() {
         return !listeningHost.equals("0.0.0.0");
     }
 
@@ -149,7 +142,7 @@ public final class TChannel {
     }
 
     public SubChannel makeSubChannel(String service, Connection.Direction preferredDirection) {
-        if (hasListened()) {
+        if (isListening()) {
             logger.warn("makeSubChannel should be called before listen - service: {}",
                 service
             );
@@ -212,27 +205,6 @@ public final class TChannel {
         private int clientMaxPendingRequests = 100000;
 
         public Builder(String service) {
-            this(service, null);
-        }
-
-        public Builder(String service, String log4jProperties) {
-
-            // the logger needs to be initialized first
-            Logger rootLogger = Logger.getRootLogger();
-            Enumeration appenders = rootLogger.getAllAppenders();
-
-            // use basic config only if the config file is missing
-            if (!appenders.hasMoreElements()) {
-                if (log4jProperties != null) {
-                    PropertyConfigurator.configure(log4jProperties);
-                } else {
-                    BasicConfigurator.configure();
-                    TChannelUtilities.setLogLevel(Level.INFO);
-                }
-            }
-
-            InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
-
             if (service == null) {
                 throw new NullPointerException("`service` cannot be null");
             }

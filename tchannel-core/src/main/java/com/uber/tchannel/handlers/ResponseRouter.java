@@ -139,9 +139,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
     protected void handleResponse(ResponseMessage response) {
         OutRequest outRequest = this.requestMap.remove(response.getId());
+
+        // this may happen when the request times out already
         if (outRequest == null) {
             response.release();
-            // logger.warn("response without corresponding request");
             return;
         }
 

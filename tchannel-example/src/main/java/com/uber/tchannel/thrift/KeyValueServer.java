@@ -23,7 +23,6 @@
 package com.uber.tchannel.thrift;
 
 import com.uber.tchannel.api.TChannel;
-import org.apache.log4j.Level;
 
 import java.net.UnknownHostException;
 import java.util.Map;

@@ -37,6 +37,7 @@ import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.util.CharsetUtil;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -56,7 +57,7 @@ public class ConnectionTest extends BaseTest {
 
     @BeforeClass
     public static void setup() {
-        TChannelUtilities.setLogLevel(Level.FATAL);
+        LogManager.getRootLogger().setLevel(Level.FATAL);
     }
 
     @Test

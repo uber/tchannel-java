@@ -1,5 +1,7 @@
 package com.uber.tchannel;
 
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -25,6 +27,9 @@ public class BaseTest {
     //    log4j.appender.A1.layout.ConversionPattern=%-4r [%t] %-5p %c %x - %m%n
 
     public static void setupLogger() {
+
+        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
+
         Properties properties = new Properties();
         properties.setProperty("log4j.rootLogger", "WARN, A1");
         properties.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
