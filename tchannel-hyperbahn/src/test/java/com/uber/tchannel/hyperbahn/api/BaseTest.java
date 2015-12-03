@@ -27,13 +27,13 @@ public class BaseTest {
     //    log4j.appender.A1.layout.ConversionPattern=%-4r [%t] %-5p %c %x - %m%n
 
     public static void setupLogger() {
-        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
-
         Properties properties = new Properties();
         properties.setProperty("log4j.rootLogger", "WARN, A1");
         properties.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
         properties.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
         properties.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
         PropertyConfigurator.configure(properties);
+
+        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
     }
 }
