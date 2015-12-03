@@ -158,6 +158,11 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         }
     }
 
+    @Override
+    public final boolean isError() {
+        return type == FrameType.Error || getError() != null;
+    }
+
     public final ErrorResponse getError() {
         return this.error;
     }
