@@ -34,17 +34,19 @@ import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.ResponseMessage;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.uber.tchannel.frames.ErrorFrame.sendError;
 
@@ -56,7 +58,8 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private final ListeningExecutorService listeningExecutorService;
 
-    private final List<ResponseMessage> responseQueue = new LinkedList<ResponseMessage>();
+    private final AtomicBoolean busy = new AtomicBoolean(false);
+    private final ConcurrentLinkedQueue<Response> responseQueue = new ConcurrentLinkedQueue<>();
 
     public RequestRouter(TChannel topChannel, ExecutorService executorService) {
         this.topChannel = topChannel;
@@ -123,24 +126,19 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         }
 
         // Handle the request in a separate thread and get a future to it
-        ListenableFuture<ResponseMessage> responseFuture = listeningExecutorService.submit(
+        ListenableFuture<Response> responseFuture = listeningExecutorService.submit(
                 new CallableHandler(handler, request));
 
-        Futures.addCallback(responseFuture, new FutureCallback<ResponseMessage>() {
+        Futures.addCallback(responseFuture, new FutureCallback<Response>() {
             @Override
-            public void onSuccess(ResponseMessage response) {
+            public void onSuccess(Response response) {
                 if (!ctx.channel().isActive()) {
                     response.release();
                     return;
                 }
 
-                if (!ctx.channel().isWritable()) {
-                    synchronized (responseQueue) {
-                        responseQueue.add(response);
-                    }
-                } else {
-                    ctx.writeAndFlush(response);
-                }
+                responseQueue.offer(response);
+                sendResponse(ctx);
             }
 
             @Override
@@ -156,15 +154,38 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) {
-        if (!ctx.channel().isWritable()) {
+        sendResponse(ctx);
+    }
+
+    protected void sendResponse(ChannelHandlerContext ctx) {
+
+        if (!busy.compareAndSet(false, true)) {
             return;
         }
 
-        synchronized (responseQueue) {
-            while (!responseQueue.isEmpty() && ctx.channel().isWritable()) {
-                ResponseMessage res = responseQueue.remove(0);
-                ctx.writeAndFlush(res);
+        Channel channel = ctx.channel();
+        try {
+            boolean flush = false;
+            while (channel.isWritable()) {
+                Response res = responseQueue.poll();
+                if (res == null) {
+                    break;
+                }
+
+                channel.write(res);
+                flush = true;
             }
+
+            if (flush) {
+                channel.flush();
+            }
+        } finally {
+            busy.set(false);
+        }
+
+        // in case there are new response added
+        if (channel.isWritable() && !responseQueue.isEmpty()) {
+            sendResponse(ctx);
         }
     }
 
@@ -173,16 +194,14 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         super.channelInactive(ctx);
 
         // clean up the queue
-        synchronized (responseQueue) {
-            while (!responseQueue.isEmpty()) {
-                ResponseMessage res = responseQueue.remove(0);
-                res.release();
-            }
+        while (!responseQueue.isEmpty()) {
+            ResponseMessage res = responseQueue.poll();
+            res.release();
         }
     }
 
 
-    private class CallableHandler implements Callable<ResponseMessage> {
+    private class CallableHandler implements Callable<Response> {
         private final Request request;
         private final RequestHandler handler;
 
@@ -192,9 +211,10 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         }
 
         @Override
-        public ResponseMessage call() throws Exception {
-            ResponseMessage response = handler.handle(request);
+        public Response call() throws Exception {
+            Response response = handler.handle(request);
             request.release();
+            // Thread.yield();
             return response;
         }
     }

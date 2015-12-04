@@ -79,8 +79,8 @@ public class LargePayloadBenchmark {
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
             .include(".*" + LargePayloadBenchmark.class.getSimpleName() + ".*")
-            .warmupIterations(5)
-            .measurementIterations(10)
+            .warmupIterations(30)
+            .measurementIterations(50)
             .forks(1)
             .build();
         new Runner(options).run();

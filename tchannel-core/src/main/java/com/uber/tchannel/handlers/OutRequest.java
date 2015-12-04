@@ -98,6 +98,10 @@ public final class OutRequest<V> {
     }
 
     public void flushWrite() {
+        if (channelFuture == null) {
+            return;
+        }
+
         try {
             this.channelFuture.sync();
         } catch (InterruptedException ie) {
