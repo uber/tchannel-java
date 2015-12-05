@@ -179,8 +179,8 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         return ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
     }
 
-    public final long argSize() {
-        long size = 0;
+    public final int argSize() {
+        int size = 0;
 
         if (arg2 != null) {
             size += arg2.readableBytes();

@@ -119,8 +119,8 @@ public abstract class Request implements RawMessage {
         );
     }
 
-    public final long argSize() {
-        long size = 0;
+    public final int argSize() {
+        int size = 0;
 
         if (arg1 != null) {
             size += arg1.readableBytes();
