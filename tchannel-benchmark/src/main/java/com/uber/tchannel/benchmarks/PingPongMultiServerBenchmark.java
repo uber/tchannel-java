@@ -31,6 +31,11 @@ import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Slf4JLoggerFactory;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.LogManager;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -50,6 +55,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Thread.sleep;
@@ -58,16 +64,19 @@ import static java.lang.Thread.sleep;
 public class PingPongMultiServerBenchmark {
 
     private List<TChannel> servers = new ArrayList<>();
-    TChannel client;
-    SubChannel subClient;
+    private TChannel client;
+    private SubChannel subClient;
 
-    int connections = 2;
+    private int connections = 3;
+
+    private NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    private NioEventLoopGroup childGroup = new NioEventLoopGroup();
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
             .include(".*" + PingPongMultiServerBenchmark.class.getSimpleName() + ".*")
-            .warmupIterations(5)
-            .measurementIterations(10)
+            .warmupIterations(30)
+            .measurementIterations(50)
             .forks(1)
             .build();
         new Runner(options).run();
@@ -75,8 +84,16 @@ public class PingPongMultiServerBenchmark {
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
+        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
+        BasicConfigurator.configure();
+        LogManager.getRootLogger().setLevel(org.apache.log4j.Level.INFO);
+
         createServers();
-        this.client = new TChannel.Builder("ping-client").build();
+        this.client = new TChannel.Builder("ping-client")
+            .setClientMaxPendingRequests(150000)
+            .setBossGroup(bossGroup)
+            .setChildGroup(childGroup)
+            .build();
         this.subClient = this.client.makeSubChannel("ping-server");
         List<InetSocketAddress> peers = new ArrayList<>();
         List<Connection> conns = new ArrayList<>();
@@ -97,6 +114,8 @@ public class PingPongMultiServerBenchmark {
         for (int i = 0; i < connections; i++) {
             TChannel server = new TChannel.Builder("ping-server")
                 .setServerHost(InetAddress.getByName("127.0.0.1"))
+                .setBossGroup(bossGroup)
+                .setChildGroup(childGroup)
                 .build();
             server.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
             server.listen();

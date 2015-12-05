@@ -179,6 +179,20 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         return ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
     }
 
+    public final int argSize() {
+        int size = 0;
+
+        if (arg2 != null) {
+            size += arg2.readableBytes();
+        }
+
+        if (arg3 != null) {
+            size += arg3.readableBytes();
+        }
+
+        return size;
+    }
+
     public static Response build(long id, ResponseCode responseCode,
                                  Map<String, String> transportHeaders,
                                  ByteBuf arg2, ByteBuf arg3) {

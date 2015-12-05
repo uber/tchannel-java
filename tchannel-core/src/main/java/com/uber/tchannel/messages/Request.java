@@ -119,6 +119,24 @@ public abstract class Request implements RawMessage {
         );
     }
 
+    public final int argSize() {
+        int size = 0;
+
+        if (arg1 != null) {
+            size += arg1.readableBytes();
+        }
+
+        if (arg2 != null) {
+            size += arg2.readableBytes();
+        }
+
+        if (arg3 != null) {
+            size += arg3.readableBytes();
+        }
+
+        return size;
+    }
+
     public final void setId(int id) {
         this.id = id;
     }

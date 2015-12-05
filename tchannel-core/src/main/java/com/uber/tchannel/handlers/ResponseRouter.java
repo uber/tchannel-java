@@ -29,6 +29,7 @@ import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.ErrorResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.ResponseMessage;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.HashedWheelTimer;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,6 +56,8 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     private final int resetOnTimeoutLimit;
     private AtomicInteger timeouts = new AtomicInteger(0);
 
+    private final AtomicBoolean busy = new AtomicBoolean(false);
+    private final ConcurrentLinkedQueue<Long> requestQueue = new ConcurrentLinkedQueue<Long>();
     private final Map<Long, OutRequest> requestMap = new ConcurrentHashMap<>();
     private final int maxPendingRequests;
 
@@ -73,6 +77,42 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         this.ctx = ctx;
     }
 
+    @Override
+    public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+        sendRequest();
+    }
+
+    protected void sendRequest() {
+
+        if (!busy.compareAndSet(false, true)) {
+            return;
+        }
+
+        Channel channel = ctx.channel();
+        try {
+            boolean flush = false;
+            while (!requestQueue.isEmpty() && channel.isWritable()) {
+                long id = requestQueue.poll();
+                OutRequest outRequest = requestMap.get(id);
+                if (outRequest != null) {
+                    outRequest.setChannelFuture(channel.write(outRequest.getRequest()));
+                    flush = true;
+                }
+            }
+
+            if (flush) {
+                channel.flush();
+            }
+        } finally {
+            busy.set(false);
+        }
+
+        // in case there are new request added
+        if (channel.isWritable() && !requestQueue.isEmpty()) {
+            sendRequest();
+        }
+    }
+
     public boolean expectResponse(OutRequest outRequest) {
         int messageId = idGenerator.incrementAndGet();
         Request request = outRequest.getRequest();
@@ -80,7 +120,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         if (this.destroyed.get()) {
             outRequest.setLastError(ErrorType.NetworkError, "Connection already closed");
             return false;
-        } else if (this.requestMap.size() > maxPendingRequests) {
+        } else if (this.requestMap.size() + requestQueue.size() > maxPendingRequests) {
             outRequest.setLastError(ErrorType.Busy,
                 String.format("Client max pending request limit of %d is reached", maxPendingRequests));
             return false;
@@ -94,20 +134,16 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         this.requestMap.put(request.getId(), outRequest);
         setTimer(outRequest);
 
-        // TODO: aggregate the flush
-        while(!ctx.channel().isWritable()) {
-            if (!ctx.channel().isActive()) {
-                handleResponse(new ErrorResponse(
-                    outRequest.getRequest().getId(),
-                    ErrorType.NetworkError,
-                    "Channel is closed"));
-                return false;
-            }
-
-            Thread.yield();
+        if (!ctx.channel().isActive()) {
+            handleResponse(new ErrorResponse(
+                outRequest.getRequest().getId(),
+                ErrorType.NetworkError,
+                "Channel is closed"));
+            return false;
         }
 
-        outRequest.setChannelFuture(ctx.writeAndFlush(request));
+        requestQueue.offer(outRequest.getRequest().getId());
+        sendRequest();
 
         return true;
     }
@@ -174,5 +210,21 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
                 "Connection was reset due to network error");
             outRequest.setFuture();
         }
+
+        for (long key : requestQueue) {
+            OutRequest outRequest = requestMap.remove(key);
+            if (outRequest == null) {
+                continue;
+            }
+
+            // wait until the send is completed
+            outRequest.flushWrite();
+
+            // Complete the request
+            outRequest.setLastError(ErrorType.NetworkError,
+                "Connection was reset due to network error");
+            outRequest.setFuture();
+        }
+
     }
 }

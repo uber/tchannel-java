@@ -192,7 +192,7 @@ public final class TChannel {
     public static class Builder {
 
         private final HashedWheelTimer timer;
-        private ExecutorService executorService;
+        private static ExecutorService executorService = new ForkJoinPool();
         private EventLoopGroup bossGroup;
         private EventLoopGroup childGroup;
 
@@ -216,13 +216,12 @@ public final class TChannel {
             }
 
             timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
-            executorService = new ForkJoinPool();
             bossGroup = new NioEventLoopGroup(1);
             childGroup = new NioEventLoopGroup();
         }
 
         public Builder setExecutorService(ExecutorService executorService) {
-            this.executorService = executorService;
+            Builder.executorService = executorService;
             return this;
         }
 
