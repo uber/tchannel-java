@@ -37,6 +37,7 @@ import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import org.apache.log4j.BasicConfigurator;
@@ -72,9 +73,8 @@ public class LargePayloadBenchmark {
     private InetAddress host;
     private ByteBuf payload;
 
-//    @Param({ "0", "1", "10" })
-    @Param({ "0"})
-    private int sleepTime;
+    private NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    private NioEventLoopGroup childGroup = new NioEventLoopGroup();
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
@@ -95,6 +95,8 @@ public class LargePayloadBenchmark {
         this.host = InetAddress.getByName("127.0.0.1");
         this.channel = new TChannel.Builder("ping-server")
             .setServerHost(host)
+            .setBossGroup(bossGroup)
+            .setChildGroup(childGroup)
             .build();
         channel.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
         channel.listen();
@@ -103,6 +105,8 @@ public class LargePayloadBenchmark {
         this.client = new TChannel.Builder("ping-client")
             // .setResetOnTimeoutLimit(100)
             .setClientMaxPendingRequests(200000)
+            .setBossGroup(bossGroup)
+            .setChildGroup(childGroup)
             .build();
         this.subClient = this.client.makeSubChannel("ping-server");
         this.client.listen();

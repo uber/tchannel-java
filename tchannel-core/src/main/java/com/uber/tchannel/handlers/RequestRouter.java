@@ -214,7 +214,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         public Response call() throws Exception {
             Response response = handler.handle(request);
             request.release();
-            // Thread.yield();
             return response;
         }
     }

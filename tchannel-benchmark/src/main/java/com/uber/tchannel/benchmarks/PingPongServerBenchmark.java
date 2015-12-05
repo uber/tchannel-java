@@ -30,6 +30,7 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import org.apache.log4j.BasicConfigurator;
@@ -50,6 +51,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.net.InetAddress;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Thread.sleep;
@@ -62,6 +64,9 @@ public class PingPongServerBenchmark {
     private SubChannel subClient;
     private int port;
     private InetAddress host;
+
+    private NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    private NioEventLoopGroup childGroup = new NioEventLoopGroup();
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
@@ -82,6 +87,8 @@ public class PingPongServerBenchmark {
         this.host = InetAddress.getByName("127.0.0.1");
         this.channel = new TChannel.Builder("ping-server")
             .setServerHost(host)
+            .setBossGroup(bossGroup)
+            .setChildGroup(childGroup)
             .build();
         channel.makeSubChannel("ping-server").register("ping", new PingDefaultRequestHandler());
         channel.listen();
@@ -89,7 +96,9 @@ public class PingPongServerBenchmark {
 
         this.client = new TChannel.Builder("ping-client")
             // .setResetOnTimeoutLimit(100)
-            .setClientMaxPendingRequests(200000)
+            .setClientMaxPendingRequests(100000)
+            .setBossGroup(bossGroup)
+            .setChildGroup(childGroup)
             .build();
         this.subClient = this.client.makeSubChannel("ping-server");
         this.client.listen();
