@@ -41,6 +41,7 @@ import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
@@ -61,9 +62,8 @@ public final class SubChannel {
     private final PeerManager peerManager;
     private final long initTimeout;
     private final Connection.Direction preferredDirection;
-
-    private Map<String, RequestHandler> requestHandlers = new HashMap<>();
-    private List<SubPeer> peers = new ArrayList<>();
+    private final List<SubPeer> peers = new ArrayList<>();
+    private final Map<String, RequestHandler> requestHandlers = new HashMap<>();
 
     private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
@@ -232,7 +232,7 @@ public final class SubChannel {
         return send(request, null, 0);
     }
 
-    protected <V> ListenableFuture<V> sendRequest(
+    protected <V extends Response> ListenableFuture<V> sendRequest(
         Request request,
         InetAddress host,
         int port
