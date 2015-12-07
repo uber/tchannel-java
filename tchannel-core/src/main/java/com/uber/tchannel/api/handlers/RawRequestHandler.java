@@ -22,8 +22,17 @@
 
 package com.uber.tchannel.api.handlers;
 
+import com.uber.tchannel.messages.RawRequest;
+import com.uber.tchannel.messages.RawResponse;
+import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 
-public interface TFutureCallback<V extends Response> {
-    void onResponse(V response);
+public abstract class RawRequestHandler implements RequestHandler {
+    @Override
+    public Response handle(Request request) {
+        return handleImpl((RawRequest)request);
+    }
+
+    public abstract RawResponse handleImpl(RawRequest request);
 }
+

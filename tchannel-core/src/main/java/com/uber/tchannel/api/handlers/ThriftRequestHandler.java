@@ -28,6 +28,7 @@ import com.uber.tchannel.messages.ThriftResponse;
 
 public abstract class ThriftRequestHandler<T, U> implements RequestHandler {
     @Override
+    @SuppressWarnings({"unchecked"})
     public ThriftResponse<U> handle(Request request) {
         return handleImpl((ThriftRequest<T>)request);
     }

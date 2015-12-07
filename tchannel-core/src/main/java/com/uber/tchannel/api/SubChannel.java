@@ -215,7 +215,7 @@ public final class SubChannel {
         return send(request, null, 0);
     }
 
-    public ListenableFuture<RawResponse> send(
+    public TFuture<RawResponse> send(
         RawRequest request,
         InetAddress host,
         int port
@@ -226,13 +226,13 @@ public final class SubChannel {
         return sendRequest(request, host, port);
     }
 
-    public ListenableFuture<RawResponse> send(
+    public TFuture<RawResponse> send(
         RawRequest request
     ) {
         return send(request, null, 0);
     }
 
-    protected <V extends Response> ListenableFuture<V> sendRequest(
+    protected <V extends Response> TFuture<V> sendRequest(
         Request request,
         InetAddress host,
         int port
