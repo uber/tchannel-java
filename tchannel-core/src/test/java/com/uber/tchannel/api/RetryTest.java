@@ -22,18 +22,12 @@
 
 package com.uber.tchannel.api;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
-import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
-import com.uber.tchannel.messages.JsonRequest;
-import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
-import com.uber.tchannel.messages.Response;
-import io.netty.handler.logging.LogLevel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -41,14 +35,10 @@ import org.junit.rules.ExpectedException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.logging.Handler;
 
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class RetryTest extends BaseTest {
@@ -105,12 +95,11 @@ public class RetryTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(req);
-
-        RawResponse res = future.get();
-        assertFalse(res.isError());
-        assertEquals("hello", res.getBody());
-        res.release();
+        TFuture<RawResponse> future = subClient.send(req);
+        try (RawResponse res = future.get()) {
+            assertFalse(res.isError());
+            assertEquals("hello", res.getBody());
+        }
 
         client.shutdown();
         server.shutdown();
@@ -155,12 +144,11 @@ public class RetryTest extends BaseTest {
             .build();
         req.setRetryFlags("ct");
 
-        ListenableFuture<RawResponse> future = subClient.send(req);
-
-        RawResponse res = future.get();
-        assertFalse(res.isError());
-        assertEquals("hello", res.getBody());
-        res.release();
+        TFuture<RawResponse> future = subClient.send(req);
+        try (RawResponse res = future.get()) {
+            assertFalse(res.isError());
+            assertEquals("hello", res.getBody());
+        }
 
         client.shutdown();
         server.shutdown();
@@ -203,13 +191,12 @@ public class RetryTest extends BaseTest {
             .build();
         req.setRetryFlags("t");
 
-        ListenableFuture<RawResponse> future = subClient.send(req);
-
-        RawResponse res = future.get();
-        assertFalse(res.isError());
-        assertEquals("hello", res.getBody());
-        assertEquals(-1, handler.getDelayedCount());
-        res.release();
+        TFuture<RawResponse> future = subClient.send(req);
+        try (RawResponse res = future.get()) {
+            assertFalse(res.isError());
+            assertEquals("hello", res.getBody());
+            assertEquals(-1, handler.getDelayedCount());
+        }
 
         client.shutdown();
         server.shutdown();
@@ -252,13 +239,13 @@ public class RetryTest extends BaseTest {
             .build();
         req.setRetryFlags("tc");
 
-        ListenableFuture<RawResponse> future = subClient.send(req);
+        TFuture<RawResponse> future = subClient.send(req);
 
-        RawResponse res = future.get();
-        assertFalse(res.isError());
-        assertEquals("hello", res.getBody());
-        assertEquals(-1, handler.getDelayedCount());
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertFalse(res.isError());
+            assertEquals("hello", res.getBody());
+            assertEquals(-1, handler.getDelayedCount());
+        }
 
         client.shutdown();
         server.shutdown();
@@ -302,13 +289,13 @@ public class RetryTest extends BaseTest {
             .build();
         req.setRetryFlags("t");
 
-        ListenableFuture<RawResponse> future = subClient.send(req);
+        TFuture<RawResponse> future = subClient.send(req);
 
-        RawResponse res = future.get();
-        assertTrue(res.isError());
-        assertEquals(ErrorType.Timeout, res.getError().getErrorType());
-        assertEquals(1, handler.getDelayedCount());
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertTrue(res.isError());
+            assertEquals(ErrorType.Timeout, res.getError().getErrorType());
+            assertEquals(1, handler.getDelayedCount());
+        }
 
         client.shutdown();
         server.shutdown();
@@ -340,12 +327,12 @@ public class RetryTest extends BaseTest {
             .build();
         req.setRetryFlags("n");
 
-        ListenableFuture<RawResponse> future = subClient.send(req);
+        TFuture<RawResponse> future = subClient.send(req);
 
-        RawResponse res = future.get();
-        assertTrue(res.isError());
-        assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertTrue(res.isError());
+            assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
+        }
 
         client.shutdown();
     }
@@ -386,19 +373,19 @@ public class RetryTest extends BaseTest {
             .setTimeout(100)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(req);
+        TFuture<RawResponse> future = subClient.send(req);
 
-        RawResponse res = future.get();
-        assertTrue(res.isError());
-        assertEquals(ErrorType.Timeout, res.getError().getErrorType());
-        assertEquals(4, handler.getDelayedCount());
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertTrue(res.isError());
+            assertEquals(ErrorType.Timeout, res.getError().getErrorType());
+            assertEquals(4, handler.getDelayedCount());
+        }
 
         client.shutdown();
         server.shutdown();
     }
 
-    protected  class EchoHandler implements RequestHandler {
+    protected static class EchoHandler implements RequestHandler {
         public boolean accessed = false;
         private int delayedCount = 0;
 
@@ -418,15 +405,13 @@ public class RetryTest extends BaseTest {
             if (--delayedCount >= 0) {
                 try {
                     sleep(150);
-                } catch (Exception ex) {
+                } catch (Exception ignored) {
                 }
             }
 
-            request.getArg2().retain();
-            request.getArg3().retain();
             RawResponse response = new RawResponse.Builder(request)
-                .setArg2(request.getArg2())
-                .setArg3(request.getArg3())
+                .setArg2(request.getArg2().retain())
+                .setArg3(request.getArg3().retain())
                 .build();
 
             accessed = true;

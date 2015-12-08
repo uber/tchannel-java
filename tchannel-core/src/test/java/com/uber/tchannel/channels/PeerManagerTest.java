@@ -22,10 +22,10 @@
 
 package com.uber.tchannel.channels;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
@@ -75,37 +75,36 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             port
         );
 
-        RawResponse res = future.get();
-        assertEquals(res.getHeader(), "title");
-        assertEquals(res.getBody(), "hello");
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals("title", res.getHeader());
+            assertEquals("hello", res.getBody());
+        }
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 1);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 1);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         client.shutdown();
         server.shutdown();
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
-
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -137,16 +136,16 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             port
         );
 
-        RawResponse res = future.get();
-        assertEquals(res.getHeader(), "title");
-        assertEquals(res.getBody(), "hello");
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals("title", res.getHeader());
+            assertEquals("hello", res.getBody());
+        }
 
         req = new RawRequest.Builder("server2", "echo")
             .setHeader("title")
@@ -160,31 +159,30 @@ public class PeerManagerTest extends BaseTest {
             port
         );
 
-        res = future.get();
-        assertEquals(res.getHeader(), "title");
-        assertEquals(res.getBody(), "hello");
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals("title", res.getHeader());
+            assertEquals("hello", res.getBody());
+        }
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 1);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 1);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         client.shutdown();
         server.shutdown();
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
-
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -221,34 +219,34 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get();
-        assertEquals(res.getHeader(), "title");
-        assertEquals(res.getBody(), "hello");
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals("title", res.getHeader());
+            assertEquals("hello", res.getBody());
+        }
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 1);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 1);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         client.shutdown();
         server.shutdown();
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -285,34 +283,34 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get();
-        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
-        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
+            assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        }
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 1);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 1);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         client.shutdown();
         server.shutdown();
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -349,34 +347,34 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get();
-        assertEquals(res.getHeader(), "title");
-        assertEquals(res.getBody(), "hello");
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals("title", res.getHeader());
+            assertEquals("hello", res.getBody());
+        }
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 1);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 1);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         client.shutdown();
         server.shutdown();
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -442,14 +440,14 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get();
-        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
-        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
+            assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        }
 
         assertTrue(echo1.accessed);
         assertFalse(echo2.accessed);
@@ -459,16 +457,16 @@ public class PeerManagerTest extends BaseTest {
         server2.shutdown();
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server1.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server2.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -534,14 +532,14 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req
         );
 
-        RawResponse res = future.get();
-        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
-        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
+            assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        }
 
         assertFalse(echo1.accessed);
         assertTrue(echo2.accessed);
@@ -551,19 +549,19 @@ public class PeerManagerTest extends BaseTest {
         server2.shutdown();
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server1.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server2.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
-    protected  class EchoHandler implements RequestHandler {
+    protected static class EchoHandler implements RequestHandler {
         public boolean accessed = false;
 
         @Override

@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.api;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
@@ -181,7 +180,7 @@ public final class SubChannel {
         return res;
     }
 
-    public <T, U> ListenableFuture<ThriftResponse<U>> send(
+    public <T, U> TFuture<ThriftResponse<U>> send(
             ThriftRequest<T> request,
             InetAddress host,
             int port
@@ -192,13 +191,13 @@ public final class SubChannel {
         return sendRequest(request, host, port);
     }
 
-    public <T, U> ListenableFuture<ThriftResponse<U>> send(
+    public <T, U> TFuture<ThriftResponse<U>> send(
         ThriftRequest<T> request
     ) throws TChannelError {
         return send(request, null, 0);
     }
 
-    public <T, U> ListenableFuture<JsonResponse<U>> send(
+    public <T, U> TFuture<JsonResponse<U>> send(
         JsonRequest<T> request,
         InetAddress host,
         int port
@@ -209,7 +208,7 @@ public final class SubChannel {
         return sendRequest(request, host, port);
     }
 
-    public <T, U> ListenableFuture<JsonResponse<U>> send(
+    public <T, U> TFuture<JsonResponse<U>> send(
         JsonRequest<T> request
     ) {
         return send(request, null, 0);
