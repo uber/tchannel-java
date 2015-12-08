@@ -22,7 +22,7 @@
 
 package com.uber.tchannel.hyperbahn.api;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
@@ -61,12 +61,12 @@ public class HyperbahnClientTest extends BaseTest {
         HyperbahnClient hyperbahnClient = new HyperbahnClient.Builder("service", tchannel)
                 .setRouters(routers)
                 .build();
-        ListenableFuture<JsonResponse<AdvertiseResponse>> responseFuture = hyperbahnClient.advertise();
+        TFuture<JsonResponse<AdvertiseResponse>> responseFuture = hyperbahnClient.advertise();
 
-        JsonResponse<AdvertiseResponse> response = responseFuture.get();
-
-        assertNotNull(response);
-        assertEquals(1, responseHandler.requestsReceived);
+        try (JsonResponse<AdvertiseResponse> response = responseFuture.get()) {
+            assertNotNull(response);
+            assertEquals(1, responseHandler.requestsReceived);
+        }
 
         tchannel.shutdown();
         server.shutdown();
