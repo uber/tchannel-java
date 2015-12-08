@@ -29,7 +29,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.TFuture;
+import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
@@ -66,21 +67,15 @@ public class HyperbahnExample {
             .registerHealthHanlder()
             .register("ping", new PingRequestHandler());
 
-        final ListenableFuture<JsonResponse<AdvertiseResponse>> future = hyperbahn.advertise();
-
-        Futures.addCallback(future, new FutureCallback<JsonResponse<AdvertiseResponse>>() {
+        final TFuture<JsonResponse<AdvertiseResponse>> future = hyperbahn.advertise();
+        future.addCallback(new TFutureCallback<JsonResponse<AdvertiseResponse>>() {
             @Override
-            public void onSuccess(JsonResponse<AdvertiseResponse> response) {
+            public void onResponse(JsonResponse<AdvertiseResponse> response) {
                 if (!response.isError()) {
-                    System.out.println("Got response. All set: " + response.getBody(AdvertiseResponse.class).toString());
+                    System.out.println("Got response. All set: " + response.getBody(AdvertiseResponse.class));
                 } else {
                     System.out.println("Error happened: " + response.getError().getMessage());
                 }
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                System.out.println("Error happened: " + throwable.getMessage());
             }
         });
 

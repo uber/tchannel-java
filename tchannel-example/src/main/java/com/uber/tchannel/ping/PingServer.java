@@ -63,12 +63,11 @@ public class PingServer {
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-server")
                 .setServerHost(InetAddress.getLoopbackAddress())
-                .setServerPort(this.port)
+                .setServerPort(port)
                 .build();
         tchannel.makeSubChannel("ping-server")
             .register("ping", new PingRequestHandler());
 
         tchannel.listen().channel().closeFuture().sync();
     }
-
 }

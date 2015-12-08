@@ -53,7 +53,7 @@ public abstract class Response extends ResponseMessage implements RawMessage {
     protected ByteBuf arg2;
     protected ByteBuf arg3;
 
-    private final static ByteBuf arg1 = TChannelUtilities.emptyByteBuf;
+    private static final ByteBuf arg1 = TChannelUtilities.emptyByteBuf;
 
     protected long id;
     protected final ResponseCode responseCode;
@@ -165,14 +165,6 @@ public abstract class Response extends ResponseMessage implements RawMessage {
 
     public final ErrorResponse getError() {
         return this.error;
-    }
-
-    public final void appendArg2(ByteBuf arg) {
-        arg2 = Unpooled.wrappedBuffer(arg2, arg);
-    }
-
-    public final void appendArg3(ByteBuf arg) {
-        arg3 = Unpooled.wrappedBuffer(arg3, arg);
     }
 
     public final ArgScheme getArgScheme() {

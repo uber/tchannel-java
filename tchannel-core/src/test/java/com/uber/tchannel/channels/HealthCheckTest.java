@@ -22,10 +22,10 @@
 
 package com.uber.tchannel.channels;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.messages.generated.HealthStatus;
@@ -64,16 +64,16 @@ public class HealthCheckTest extends BaseTest {
                 .setBody(new Meta.health_args())
                 .build();
 
-        ListenableFuture<ThriftResponse<Meta.health_result>> future = subClient.send(
+        TFuture<ThriftResponse<Meta.health_result>> future = subClient.send(
                 req,
                 host,
                 port);
 
-        ThriftResponse<Meta.health_result> res = future.get();
-        assertFalse(res.isError());
-        HealthStatus status = res.getBody(Meta.health_result.class).getSuccess();
-        assertTrue(status.isOk());
-        res.release();
+        try (ThriftResponse<Meta.health_result> res = future.get()) {
+            assertFalse(res.isError());
+            HealthStatus status = res.getBody(Meta.health_result.class).getSuccess();
+            assertTrue(status.isOk());
+        }
 
         server.shutdown();
     }

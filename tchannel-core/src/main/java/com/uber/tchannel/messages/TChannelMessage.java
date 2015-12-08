@@ -24,10 +24,12 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.frames.FrameType;
 
-public interface TChannelMessage {
+public interface TChannelMessage extends AutoCloseable {
 
     long getId();
 
     FrameType getType();
+
+    void release();
 
 }

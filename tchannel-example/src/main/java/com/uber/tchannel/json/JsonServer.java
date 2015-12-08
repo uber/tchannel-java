@@ -23,21 +23,17 @@
 package com.uber.tchannel.json;
 
 import com.uber.tchannel.api.TChannel;
-import io.netty.channel.ChannelFuture;
 
 public class JsonServer {
     public static void main(String[] args) throws Exception {
         final TChannel tchannel = new TChannel.Builder("json-server")
-                .setServerPort(8888)
-                .build();
+            .setServerPort(8888)
+            .build();
 
         tchannel.makeSubChannel("json-server")
             .register("json-endpoint", new JsonRequestHandler<RequestPojo, ResponsePojo>());
 
-        ChannelFuture f = tchannel.listen();
-
-        f.channel().closeFuture().sync();
-
+        tchannel.listen().channel().closeFuture().sync();
         tchannel.shutdown();
     }
 }

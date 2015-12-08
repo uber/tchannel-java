@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.api;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.errors.ErrorType;
@@ -36,8 +35,8 @@ import java.net.InetAddress;
 import static java.lang.Thread.sleep;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RequestTest extends BaseTest {
@@ -81,15 +80,14 @@ public class RequestTest extends BaseTest {
             .setBody(requestBody)
             .build();
 
-        ListenableFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
+        TFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
             request,
             tchannel.getHost(),
             tchannel.getListeningPort()
         );
 
         JsonResponse<Integer> response = responsePromise.get();
-
-        assertEquals(null, response.getError());
+        assertNull(response.getError());
         assertEquals(responseBody, (int) response.getBody(Integer.class));
         response.release();
 
@@ -121,7 +119,7 @@ public class RequestTest extends BaseTest {
             .setBody(requestBody)
             .build();
 
-        ListenableFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
+        TFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
             request,
             tchannel.getHost(),
             tchannel.getListeningPort()
@@ -129,7 +127,7 @@ public class RequestTest extends BaseTest {
 
         JsonResponse<Integer> response = responsePromise.get();
 
-        assertEquals(null, response.getError());
+        assertNull(response.getError());
         assertEquals(ResponseCode.Error, response.getResponseCode());
         response.release();
 
@@ -169,7 +167,7 @@ public class RequestTest extends BaseTest {
             .setBody(requestBody)
             .build();
 
-        ListenableFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
+        TFuture<JsonResponse<Integer>> responsePromise = subChannel.send(
             request,
             tchannel.getHost(),
             tchannel.getListeningPort()
@@ -177,7 +175,7 @@ public class RequestTest extends BaseTest {
 
         JsonResponse<Integer> response = responsePromise.get();
 
-        assertNotEquals(null, response.getError());
+        assertNotNull(response.getError());
         assertEquals(1, response.getError().getId());
         assertEquals(ErrorType.Timeout, response.getError().getErrorType());
         assertTrue(response.getError().getMessage().startsWith("Request timeout after"));

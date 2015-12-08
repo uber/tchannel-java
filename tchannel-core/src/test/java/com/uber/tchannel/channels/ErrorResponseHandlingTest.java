@@ -21,10 +21,10 @@
  */
 package com.uber.tchannel.channels;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.TransportHeaders;
@@ -72,16 +72,16 @@ public class ErrorResponseHandlingTest extends BaseTest {
         req.getTransportHeaders().clear();
         req.getTransportHeaders().put(TransportHeaders.ARG_SCHEME_KEY, "hello");
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             port
         );
 
-        RawResponse res = future.get();
-        assertEquals(ErrorType.BadRequest, res.getError().getErrorType());
-        assertEquals("Expect call request to have Arg Scheme specified", res.getError().getMessage());
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertEquals(ErrorType.BadRequest, res.getError().getErrorType());
+            assertEquals("Expect call request to have Arg Scheme specified", res.getError().getMessage());
+        }
 
         server.shutdown();
         client.shutdown();
@@ -93,12 +93,9 @@ public class ErrorResponseHandlingTest extends BaseTest {
         @Override
         public Response handle(Request request) {
             accessed = true;
-
-            request.getArg2().retain();
-            request.getArg3().retain();
             return new RawResponse.Builder(request)
-                .setArg2(request.getArg2())
-                .setArg3(request.getArg3())
+                .setArg2(request.getArg2().retain())
+                .setArg3(request.getArg3().retain())
                 .build();
         }
     }

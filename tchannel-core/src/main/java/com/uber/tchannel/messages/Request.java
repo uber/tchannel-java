@@ -119,6 +119,29 @@ public abstract class Request implements RawMessage {
         );
     }
 
+    @Override
+    public final void release() {
+        if (arg1 != null) {
+            arg1.release();
+            arg1 = null;
+        }
+
+        if (arg2 != null) {
+            arg2.release();
+            arg2 = null;
+        }
+
+        if (arg3 != null) {
+            arg3.release();
+            arg3 = null;
+        }
+    }
+
+    @Override
+    public void close() {
+        release();
+    }
+
     public final int argSize() {
         int size = 0;
 
@@ -149,14 +172,6 @@ public abstract class Request implements RawMessage {
         return this.service;
     }
 
-    public final void appendArg2(ByteBuf arg) {
-        arg2 = Unpooled.wrappedBuffer(arg2, arg);
-    }
-
-    public final void appendArg3(ByteBuf arg) {
-        arg3 = Unpooled.wrappedBuffer(arg3, arg);
-    }
-
     public final void setTransportHeader(String key, String value) {
         this.transportHeaders.put(key, value);
     }
@@ -174,23 +189,6 @@ public abstract class Request implements RawMessage {
         arg1.resetReaderIndex();
         arg2.resetReaderIndex();
         arg3.resetReaderIndex();
-    }
-
-    public final void release() {
-        if (arg1 != null) {
-            arg1.release();
-            arg1 = null;
-        }
-
-        if (arg2 != null) {
-            arg2.release();
-            arg2 = null;
-        }
-
-        if (arg3 != null) {
-            arg3.release();
-            arg3 = null;
-        }
     }
 
     public final String getEndpoint() {

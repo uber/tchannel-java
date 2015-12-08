@@ -22,10 +22,10 @@
 
 package com.uber.tchannel.ping;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
+import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import org.apache.commons.cli.CommandLine;
@@ -35,8 +35,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
 import java.net.InetAddress;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 public class PingClient {
 
@@ -73,49 +73,45 @@ public class PingClient {
         System.out.println(String.format("Connecting from client to server on port: %d", port));
         new PingClient(host, port, requests).run();
         System.out.println("Stopping Client...");
-
     }
 
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-client").build();
+        SubChannel subChannel = tchannel.makeSubChannel("ping-server");
+        final ConcurrentHashMap<String, Integer> msgs = new ConcurrentHashMap<String, Integer>();
+        final CountDownLatch done = new CountDownLatch(requests);
 
-        Map<String, String> headers = new HashMap<String, String>() {
-            {
-                put("some", "header");
-            }
-        };
-
-        JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("some-service", "ping")
-            .setBody(new Ping("{'key': 'ping?'}"))
-            .setHeaders(headers)
-            .build();
-
-        for (int i = 0; i < this.requests; i++) {
-            ListenableFuture<JsonResponse<Pong>> f = tchannel
-            .makeSubChannel("ping-server").send(
+        for (int i = 0; i < requests; i++) {
+            JsonRequest<Ping> request = new JsonRequest.Builder<Ping>("ping-server", "ping")
+                .setBody(new Ping("{'key': 'ping?'}"))
+                .setHeader("some", "header")
+                .setTimeout(100 + i)
+                .build();
+            TFuture<JsonResponse<Pong>> f = subChannel.send(
                     request,
-                    InetAddress.getByName(this.host),
-                    this.port
+                    InetAddress.getByName(host),
+                    port
                 );
 
-            final int iteration = i;
-            Futures.addCallback(f, new FutureCallback<JsonResponse<Pong>>() {
+            f.addCallback(new TFutureCallback<JsonResponse<Pong>>() {
                 @Override
-                public void onSuccess(JsonResponse<Pong> pongResponse) {
-                    if (iteration % 1000 == 0) {
-                        System.out.println(pongResponse);
+                public void onResponse(JsonResponse<Pong> pongResponse) {
+                    done.countDown();
+                    String msg = pongResponse.toString();
+                    if (msgs.containsKey(msg)) {
+                        msgs.put(msg, msgs.get(msg) + 1);
+                    } else {
+                        msgs.put(msg, 1);
                     }
-                }
-
-                @Override
-                public void onFailure(Throwable throwable) {
-
                 }
             });
         }
 
-        tchannel.shutdown();
+        done.await();
+        for (String msg : msgs.keySet()) {
+            System.out.println(String.format("%s\n\tcount:%d", msg, msgs.get(msg)));
+        }
 
+        tchannel.shutdown(false);
     }
-
 }

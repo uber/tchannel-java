@@ -22,16 +22,8 @@
 
 package com.uber.tchannel.api.handlers;
 
-import com.uber.tchannel.messages.Request;
-import com.uber.tchannel.messages.ThriftRequest;
-import com.uber.tchannel.messages.ThriftResponse;
+import com.uber.tchannel.messages.Response;
 
-public abstract class ThriftRequestHandler<T, U> implements RequestHandler {
-    @Override
-    @SuppressWarnings({"unchecked"})
-    public ThriftResponse<U> handle(Request request) {
-        return handleImpl((ThriftRequest<T>)request);
-    }
-
-    public abstract ThriftResponse<U> handleImpl(ThriftRequest<T> request);
+public interface TFutureCallback<V extends Response> {
+    void onResponse(V response);
 }

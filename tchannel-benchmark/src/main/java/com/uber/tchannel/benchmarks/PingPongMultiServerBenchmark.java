@@ -27,7 +27,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
@@ -57,8 +59,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.lang.Thread.sleep;
 
 @State(Scope.Thread)
 public class PingPongMultiServerBenchmark {
@@ -132,22 +132,16 @@ public class PingPongMultiServerBenchmark {
             .setRetryLimit(0)
             .build();
 
-        ListenableFuture<JsonResponse<Pong>> future = this.subClient.send(request);
-        Futures.addCallback(future, new FutureCallback<JsonResponse<Pong>>() {
+        TFuture<JsonResponse<Pong>> future = this.subClient.send(request);
+        future.addCallback(new TFutureCallback<JsonResponse<Pong>>() {
             @Override
-            public void onSuccess(JsonResponse<Pong> pongResponse) {
-
+            public void onResponse(JsonResponse<Pong> pongResponse) {
                 if (!pongResponse.isError()) {
                     counters.actualQPS.incrementAndGet();
                     pongResponse.release();
                 } else {
                     counters.errorQPS.incrementAndGet();
                 }
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                System.out.println(throwable.getMessage());
             }
         });
     }

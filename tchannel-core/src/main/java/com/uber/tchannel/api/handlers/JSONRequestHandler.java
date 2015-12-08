@@ -29,6 +29,7 @@ import com.uber.tchannel.messages.Request;
 public abstract class JSONRequestHandler<T, U> implements RequestHandler {
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public JsonResponse<U> handle(Request request) {
         return handleImpl((JsonRequest<T>)request);
     }

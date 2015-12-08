@@ -22,19 +22,17 @@
 
 package com.uber.tchannel.thrift;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.thrift.generated.KeyValue;
 import com.uber.tchannel.thrift.generated.NotFoundError;
+import com.uber.tchannel.utils.TChannelUtilities;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class KeyValueClient {
 
@@ -42,83 +40,80 @@ public class KeyValueClient {
         System.out.println("Connecting to KeyValue Server…");
         TChannel tchannel = new TChannel.Builder("keyvalue-client")
                 .build();
+        SubChannel subChannel = tchannel.makeSubChannel("keyvalue-service");
 
-        setValue(tchannel, "foo", "bar");
-        String value = getValue(tchannel, "foo");
+        setValue(subChannel, "foo", "bar");
+        String value = getValue(subChannel, "foo");
 
         System.out.println(String.format("{'%s' => '%s'}", "foo", value));
 
         try {
-            String otherValue = getValue(tchannel, "baz");
+            String otherValue = getValue(subChannel, "baz");
             System.out.println(String.format("{'%s' => '%s'}", "foo", otherValue));
         } catch (NotFoundError e) {
             System.out.println(String.format("Key '%s' not found.", e.getKey()));
         }
 
-        tchannel.shutdown();
+        tchannel.shutdown(false);
 
         System.out.println("Disconnected from KeyValue Server.");
-
     }
 
-    public static void setValue(TChannel tchannel, String key, String value) throws Exception {
+    public static void setValue(SubChannel subChannel, String key, String value) throws Exception {
         KeyValue.setValue_args setValue = new KeyValue.setValue_args(key, value);
 
-        ListenableFuture<ThriftResponse<KeyValue.setValue_result>> future = tchannel
-            .makeSubChannel("keyvalue-service")
+        TFuture<ThriftResponse<KeyValue.setValue_result>> future = subChannel
             .send(
                 new ThriftRequest.Builder<KeyValue.setValue_args>("keyvalue-service", "KeyValue::setValue")
+                    .setTimeout(1000)
                     .setBody(setValue)
                     .build(),
-                InetAddress.getLocalHost(),
+                TChannelUtilities.getCurrentIp(),
                 8888
             );
 
-        ThriftResponse<KeyValue.setValue_result> response = future.get();
-        if (response.isError()) {
-            System.out.println("setValue failed due to: " + response.getError().getMessage());
-        } else {
-            System.out.println("setValue succeeded");
+        try (ThriftResponse<KeyValue.setValue_result> response = future.get()) {
+            if (response.isError()) {
+                System.out.println("setValue failed due to: " + response.getError().getMessage());
+            } else {
+                System.out.println("setValue succeeded");
+            }
         }
-
-        response.release();
     }
 
     public static String getValue(
-            TChannel tchannel,
+            SubChannel subChannel,
             String key
-    ) throws NotFoundError, UnknownHostException, TimeoutException,
-            ExecutionException, InterruptedException, TChannelError {
+    ) throws NotFoundError, ExecutionException, InterruptedException, TChannelError {
 
         KeyValue.getValue_args getValue = new KeyValue.getValue_args(key);
 
-        ListenableFuture<ThriftResponse<KeyValue.getValue_result>> future = tchannel
-            .makeSubChannel("keyvalue-service")
+        TFuture<ThriftResponse<KeyValue.getValue_result>> future = subChannel
             .send(
                 new ThriftRequest.Builder<KeyValue.getValue_args>("keyvalue-service", "KeyValue::getValue")
+                    .setTimeout(1000)
                     .setBody(getValue)
                     .build(),
-                InetAddress.getLocalHost(),
+                TChannelUtilities.getCurrentIp(),
                 8888
             );
 
-        ThriftResponse<KeyValue.getValue_result> getResult = future.get();
-        if (getResult.isError()) {
-            System.out.println("getValue failed due to: " + getResult.getError().getMessage());
-        } else {
-            System.out.println("getValue succeeded");
+        try (ThriftResponse<KeyValue.getValue_result> getResult = future.get()) {
+            if (getResult.isError()) {
+                System.out.println("getValue failed due to: " + getResult.getError().getMessage());
+                return null;
+            } else {
+                System.out.println("getValue succeeded");
+            }
+
+            String value = getResult.getBody(KeyValue.getValue_result.class).getSuccess();
+            NotFoundError err = getResult.getBody(KeyValue.getValue_result.class).getNotFound();
+
+            if (value == null) {
+                throw err;
+            }
+
+            return value;
         }
-
-        String value = getResult.getBody(KeyValue.getValue_result.class).getSuccess();
-        NotFoundError err = getResult.getBody(KeyValue.getValue_result.class).getNotFound();
-
-        if (value == null) {
-            throw err;
-        }
-
-        getResult.release();
-
-        return value;
     }
-
 }

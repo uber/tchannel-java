@@ -22,10 +22,10 @@
 
 package com.uber.tchannel.handlers;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.CallFrame;
@@ -133,7 +133,7 @@ public class FrameFragmenterTest extends BaseTest {
             .setTimeout(20000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             port
@@ -149,26 +149,26 @@ public class FrameFragmenterTest extends BaseTest {
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 1);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 1);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         client.shutdown();
         server.shutdown();
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
-    protected  class EchoHandler implements RequestHandler {
+    protected class EchoHandler implements RequestHandler {
         @Override
         public Response handle(Request request) {
 

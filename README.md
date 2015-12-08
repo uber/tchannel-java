@@ -51,7 +51,7 @@ JsonRequest<Ping> request = new JsonRequest.Builder<Ping>(new Ping("ping?"))
 	.build();
 
 // Make an asynchronous request
-ListenableFuture<JsonResponse<Pong>> responseFuture = tchannel
+TFuture<JsonResponse<Pong>> responseFuture = tchannel
 	.makeSubChannel("json-service").send(
 		request,
 		tchannel.getHost(),
@@ -59,9 +59,9 @@ ListenableFuture<JsonResponse<Pong>> responseFuture = tchannel
 	);
 
 // Block and wait for the response
-JsonResponse<Pong> response = responseFuture.get();
-System.out.println(response);
-response.release();
+try (JsonResponse<Pong> response = responseFuture.get()) {
+    System.out.println(response);
+}
 ```
 
 ## Run The Examples

@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.api;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
@@ -41,6 +40,7 @@ import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
@@ -61,9 +61,8 @@ public final class SubChannel {
     private final PeerManager peerManager;
     private final long initTimeout;
     private final Connection.Direction preferredDirection;
-
-    private Map<String, RequestHandler> requestHandlers = new HashMap<>();
-    private List<SubPeer> peers = new ArrayList<>();
+    private final List<SubPeer> peers = new ArrayList<>();
+    private final Map<String, RequestHandler> requestHandlers = new HashMap<>();
 
     private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
@@ -181,7 +180,7 @@ public final class SubChannel {
         return res;
     }
 
-    public <T, U> ListenableFuture<ThriftResponse<U>> send(
+    public <T, U> TFuture<ThriftResponse<U>> send(
             ThriftRequest<T> request,
             InetAddress host,
             int port
@@ -192,13 +191,13 @@ public final class SubChannel {
         return sendRequest(request, host, port);
     }
 
-    public <T, U> ListenableFuture<ThriftResponse<U>> send(
+    public <T, U> TFuture<ThriftResponse<U>> send(
         ThriftRequest<T> request
     ) throws TChannelError {
         return send(request, null, 0);
     }
 
-    public <T, U> ListenableFuture<JsonResponse<U>> send(
+    public <T, U> TFuture<JsonResponse<U>> send(
         JsonRequest<T> request,
         InetAddress host,
         int port
@@ -209,13 +208,13 @@ public final class SubChannel {
         return sendRequest(request, host, port);
     }
 
-    public <T, U> ListenableFuture<JsonResponse<U>> send(
+    public <T, U> TFuture<JsonResponse<U>> send(
         JsonRequest<T> request
     ) {
         return send(request, null, 0);
     }
 
-    public ListenableFuture<RawResponse> send(
+    public TFuture<RawResponse> send(
         RawRequest request,
         InetAddress host,
         int port
@@ -226,13 +225,13 @@ public final class SubChannel {
         return sendRequest(request, host, port);
     }
 
-    public ListenableFuture<RawResponse> send(
+    public TFuture<RawResponse> send(
         RawRequest request
     ) {
         return send(request, null, 0);
     }
 
-    protected <V> ListenableFuture<V> sendRequest(
+    protected <V extends Response> TFuture<V> sendRequest(
         Request request,
         InetAddress host,
         int port

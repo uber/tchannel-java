@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * The logic unit for managing out requests
  */
-public final class OutRequest<V> {
+public final class OutRequest<V extends Response> {
     private static final Logger logger = LoggerFactory.getLogger(OutRequest.class);
 
     private final SubChannel subChannel;
@@ -32,17 +32,18 @@ public final class OutRequest<V> {
     private final TFuture<V> future;
     private final Set<SocketAddress> usedPeers = new HashSet<SocketAddress>();
 
-    private AtomicInteger retryCount = new AtomicInteger(0);
+    private final AtomicInteger retryCount = new AtomicInteger(0);
     private int retryLimit = 0;
     private Timeout timeout = null;
     private ChannelFuture channelFuture = null;
 
     private ErrorResponse lastError = null;
 
+    @SuppressWarnings({"unchecked"})
     public OutRequest(SubChannel subChannel, Request request) {
         this.subChannel = subChannel;
         this.request = request;
-        this.future = TFuture.create();
+        this.future = TFuture.create(request.getArgScheme());
         this.retryLimit = request.getRetryLimit();
     }
 

@@ -22,19 +22,17 @@
 
 package com.uber.tchannel.channels;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.RequestHandler;
+import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
-import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.util.CharsetUtil;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -88,36 +86,36 @@ public class ConnectionTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             port
         );
 
-        Response res = (Response)future.get();
-        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
-        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
-        res.release();
+        try (Response res = future.get()) {
+            assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
+            assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        }
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 1);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 1);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         client.shutdown();
         sleep(100);
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         server.shutdown();
     }
@@ -150,36 +148,36 @@ public class ConnectionTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             port
         );
 
-        Response res = (Response)future.get();
-        assertEquals(res.getArg2().toString(CharsetUtil.UTF_8), "title");
-        assertEquals(res.getArg3().toString(CharsetUtil.UTF_8), "hello");
-        res.release();
+        try (Response res = future.get()) {
+            assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
+            assertEquals("hello", res.getArg3().toString(CharsetUtil.UTF_8));
+        }
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 1);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(1, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 1);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(1, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         server.shutdown();
         sleep(100);
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         stats = server.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
         client.shutdown();
     }
@@ -201,29 +199,29 @@ public class ConnectionTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             8888
         );
 
-        Response res = (Response)future.get();
-        assertTrue(res.isError());
-        assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
-        assertEquals("Failed to connect to the host", res.getError().getMessage());
+        try (Response res = future.get()) {
+            assertTrue(res.isError());
+            assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
+            assertEquals("Failed to connect to the host", res.getError().getMessage());
+        }
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
-        res.release();
         client.shutdown();
         sleep(100);
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -248,27 +246,26 @@ public class ConnectionTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req
         );
 
-        Response res = (Response)future.get();
-        assertTrue(res.isError());
-        assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
-        assertEquals("Failed to connect to the host", res.getError().getMessage());
-
+        try (Response res = future.get()) {
+            assertTrue(res.isError());
+            assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
+            assertEquals("Failed to connect to the host", res.getError().getMessage());
+        }
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
 
-        res.release();
         client.shutdown();
         sleep(100);
 
         stats = client.getPeerManager().getStats();
-        assertEquals((int)stats.get("connections.in"), 0);
-        assertEquals((int)stats.get("connections.out"), 0);
+        assertEquals(0, (int)stats.get("connections.in"));
+        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -299,7 +296,7 @@ public class ConnectionTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             port
@@ -308,10 +305,11 @@ public class ConnectionTest extends BaseTest {
         client.shutdown();
         server.shutdown();
 
-        RawResponse res = future.get();
-        assertEquals(true, res.isError());
-        assertEquals("Connection was reset due to network error", res.getError().getMessage());
-        assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
+        try (RawResponse res = future.get()) {
+            assertTrue(res.isError());
+            assertEquals("Connection was reset due to network error", res.getError().getMessage());
+            assertEquals(ErrorType.NetworkError, res.getError().getErrorType());
+        }
     }
 
     @Test
@@ -348,30 +346,20 @@ public class ConnectionTest extends BaseTest {
                 .setTimeout(5)
                 .build();
 
-            ListenableFuture<RawResponse> future = subClient.send(
+            TFuture<RawResponse> future = subClient.send(
                 req,
                 host,
                 port
             );
-
-            Futures.addCallback(future, new FutureCallback<RawResponse>() {
+            future.addCallback(new TFutureCallback<RawResponse>() {
                 @Override
-                public void onSuccess(RawResponse response) {
+                public void onResponse(RawResponse response) {
                     if (counter.incrementAndGet() < 10) {
                         assertEquals(ErrorType.Timeout, response.getError().getErrorType());
                     } else {
                         assertEquals(ErrorType.NetworkError, response.getError().getErrorType());
                         assertEquals("Connection was reset due to network error", response.getError().getMessage());
                     }
-
-                    response.release();
-                }
-
-                @Override
-                public void onFailure(Throwable throwable) {
-                    // we should never reach here
-                    assertTrue(false);
-                    System.out.println(throwable.getMessage());
                 }
             });
         }
@@ -386,24 +374,23 @@ public class ConnectionTest extends BaseTest {
             .setTimeout(20000)
             .build();
 
-        ListenableFuture<RawResponse> future = subClient.send(
+        TFuture<RawResponse> future = subClient.send(
             req,
             host,
             port
         );
 
-        RawResponse res = future.get();
-        assertFalse(res.isError());
-        assertEquals("title", res.getHeader());
-        assertEquals("hello", res.getBody());
-
-        res.release();
+        try (RawResponse res = future.get()) {
+            assertFalse(res.isError());
+            assertEquals("title", res.getHeader());
+            assertEquals("hello", res.getBody());
+        }
 
         client.shutdown();
         server.shutdown();
     }
 
-    protected  class EchoHandler implements RequestHandler {
+    protected static class EchoHandler implements RequestHandler {
         public boolean accessed = false;
         private boolean delayed = false;
 
@@ -423,15 +410,13 @@ public class ConnectionTest extends BaseTest {
             if (delayed) {
                 try {
                     sleep(300);
-                } catch (Exception ex) {
+                } catch (Exception ignored) {
                 }
             }
 
-            request.getArg2().retain();
-            request.getArg3().retain();
             RawResponse response = new RawResponse.Builder(request)
-                .setArg2(request.getArg2())
-                .setArg3(request.getArg3())
+                .setArg2(request.getArg2().retain())
+                .setArg3(request.getArg3().retain())
                 .build();
 
             accessed = true;
