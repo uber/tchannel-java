@@ -22,12 +22,11 @@
 
 package com.uber.tchannel.json;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
-
-import java.net.InetAddress;
+import com.uber.tchannel.utils.TChannelUtilities;
 
 public class JsonClient {
 
@@ -35,19 +34,21 @@ public class JsonClient {
         final TChannel tchannel = new TChannel.Builder("json-server").build();
 
         JsonRequest<RequestPojo> req = new JsonRequest.Builder<RequestPojo>(
-            "json-service",
+            "json-server",
             "json-endpoint")
             .setBody(new RequestPojo(0, "hello?"))
+            .setTimeout(1000)
             .build();
-        ListenableFuture<JsonResponse<ResponsePojo>> p = tchannel
+        TFuture<JsonResponse<ResponsePojo>> p = tchannel
             .makeSubChannel("json-service").send(
                 req,
-                InetAddress.getLocalHost(), 8888
+                TChannelUtilities.getCurrentIp(),
+                8888
             );
 
-        JsonResponse<ResponsePojo> res = p.get();
-
-        System.out.println(res);
+        try (JsonResponse<ResponsePojo> res = p.get()) {
+            System.out.println(res);
+        }
 
         tchannel.shutdown();
     }

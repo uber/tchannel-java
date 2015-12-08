@@ -22,15 +22,11 @@
 
 package com.uber.tchannel.benchmarks;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.RequestHandler;
-import com.uber.tchannel.messages.JsonRequest;
-import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
@@ -60,8 +56,6 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import java.net.InetAddress;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.lang.Thread.sleep;
 
 @State(Scope.Thread)
 public class LargePayloadBenchmark {
@@ -124,21 +118,20 @@ public class LargePayloadBenchmark {
             .setTimeout(20000)
             .build();
 
-        ListenableFuture<RawResponse> future = this.subClient
+        TFuture<RawResponse> future = this.subClient
             .send(
                 request,
                 this.host,
                 this.port
             );
-        Futures.addCallback(future, new FutureCallback<RawResponse>() {
+        future.addCallback(new TFutureCallback<RawResponse>() {
             @Override
-            public void onSuccess(RawResponse pongResponse) {
-
+            public void onResponse(RawResponse pongResponse) {
                 if (!pongResponse.isError()) {
                     counters.actualQPS.incrementAndGet();
                     pongResponse.release();
                 } else {
-//                     System.out.println(pongResponse.getError().getMessage());
+                    // System.out.println(pongResponse.getError().getMessage());
                     switch (pongResponse.getError().getErrorType()) {
                         case Busy:
                             counters.busyQPS.incrementAndGet();
@@ -153,11 +146,6 @@ public class LargePayloadBenchmark {
                             counters.errorQPS.incrementAndGet();
                     }
                 }
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                System.out.println(throwable.getMessage());
             }
         });
     }

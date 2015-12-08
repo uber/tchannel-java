@@ -32,6 +32,7 @@ import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 
 import java.net.InetAddress;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class AsyncRequest {
@@ -42,12 +43,11 @@ public class AsyncRequest {
         SubChannel subChannel = client.makeSubChannel("server");
 
         final long start = System.currentTimeMillis();
+        final CountDownLatch done = new CountDownLatch(3);
 
-        final AtomicInteger counter = new AtomicInteger(0);
         TFutureCallback<RawResponse> callback = new TFutureCallback<RawResponse>() {
             @Override
             public void onResponse(RawResponse response) {
-
                 // when using callback, resource associated with response is released by the the TChannel library
                 if (!response.isError()) {
                     System.out.println(String.format("Response received: response code: %s, header: %s, body: %s",
@@ -59,11 +59,7 @@ public class AsyncRequest {
                         response.toString()));
                 }
 
-                if (counter.incrementAndGet() >= 3) {
-                    synchronized (counter) {
-                        counter.notifyAll();
-                    }
-                }
+                done.countDown();
             }
         };
 
@@ -81,10 +77,7 @@ public class AsyncRequest {
             future.addCallback(callback);
         }
 
-        synchronized (counter) {
-            counter.wait();
-        }
-
+        done.await();
         System.out.println(String.format("\nTime cost: %dms", System.currentTimeMillis() - start));
 
         // close channels asynchronously

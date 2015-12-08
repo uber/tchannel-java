@@ -24,13 +24,12 @@ package com.uber.tchannel.thrift;
 
 import com.uber.tchannel.api.TChannel;
 
-import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class KeyValueServer {
 
-    public static void main(String[] args) throws InterruptedException, UnknownHostException {
+    public static void main(String[] args) throws InterruptedException {
 
         Map<String, String> keyValueStore = new ConcurrentHashMap<>();
 
@@ -43,5 +42,6 @@ public class KeyValueServer {
             .register("KeyValue::setValue", new SetValueRequestHandler(keyValueStore));
 
         tchannel.listen().channel().closeFuture().sync();
+        tchannel.shutdown(false);
     }
 }
