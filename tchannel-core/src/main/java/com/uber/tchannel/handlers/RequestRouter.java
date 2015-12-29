@@ -144,7 +144,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             @Override
             public void onFailure(Throwable throwable) {
                 logger.error("Failed to handle the request due to exception.", throwable);
-                sendError(ErrorType.BadRequest,
+                sendError(ErrorType.UnexpectedError,
                     "Failed to handle the request: " + throwable.getMessage(),
                     request, ctx);
                 return;
