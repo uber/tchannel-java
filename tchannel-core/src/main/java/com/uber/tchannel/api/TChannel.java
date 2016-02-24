@@ -136,7 +136,7 @@ public final class TChannel {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
         this.listeningPort = localAddress.getPort();
-        this.listeningHost = localAddress.getHostName();
+        this.listeningHost = localAddress.getAddress().getHostAddress();
         this.peerManager.setHostPort(String.format("%s:%d", this.listeningHost, this.listeningPort));
         return f;
     }
