@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TChannelBuilderTest extends BaseTest {
 
@@ -41,6 +42,17 @@ public class TChannelBuilderTest extends BaseTest {
         assertEquals("localhost", tchannel.getHost().getCanonicalHostName());
         tchannel.shutdown();
 
+    }
+
+    @Test
+    public void testServerListeningHostValidity() throws Exception {
+
+        TChannel tchannel = new TChannel.Builder("some-service")
+                .setServerHost(InetAddress.getByName("localhost"))
+                .build();
+        tchannel.listen();
+        System.out.println(tchannel.getListeningHost());
+        assertTrue((tchannel.getListeningHost().matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")));
     }
 
 }

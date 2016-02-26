@@ -96,6 +96,10 @@ public final class TChannel {
         this.clientMaxPendingRequests = builder.clientMaxPendingRequests;
     }
 
+    public String getListeningHost() {
+        return listeningHost;
+    }
+
     public int getListeningPort() {
         return listeningPort;
     }
