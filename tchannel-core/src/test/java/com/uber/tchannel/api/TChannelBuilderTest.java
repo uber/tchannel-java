@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TChannelBuilderTest extends BaseTest {
 
@@ -41,6 +42,21 @@ public class TChannelBuilderTest extends BaseTest {
         assertEquals("localhost", tchannel.getHost().getCanonicalHostName());
         tchannel.shutdown();
 
+    }
+
+    @Test
+    public void testServerListeningHostValidity() throws Exception {
+
+        // InetAddress constructed using hostname will not return IP address
+        // with getHostName call
+        TChannel tchannel = new TChannel.Builder("some-service")
+                .setServerHost(InetAddress.getByName("localhost"))
+                .build();
+        tchannel.listen();
+
+        // The regular expression used here doesn't cover all invalid cases, but it's
+        // consistent with the one in javascript code
+        assertTrue((tchannel.getListeningHost().matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")));
     }
 
 }

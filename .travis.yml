@@ -1,8 +1,4 @@
 sudo: required
 language: java
-addons:
-  apt:
-    packages:
-    - thrift-compiler
 before_install:
     - bash build/travis/install-thrift.sh
