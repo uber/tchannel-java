@@ -1,4 +1,5 @@
-sudo: required
+sudo: false
 language: java
 before_install:
-    - bash build/travis/install-thrift.sh
+    - export PATH="$PATH:$HOME/thrift/bin"
+    - build/travis/install-thrift.sh
