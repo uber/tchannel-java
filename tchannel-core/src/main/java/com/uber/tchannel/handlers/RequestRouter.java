@@ -119,6 +119,10 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         // Get handler for this method
         RequestHandler handler = this.getRequestHandler(service, endpoint);
         if (handler == null) {
+            handler = topChannel.getDefaultHandler();
+        }
+
+        if (handler == null) {
             sendError(ErrorType.BadRequest,
                 "Invalid handler function",
                 request, ctx);
