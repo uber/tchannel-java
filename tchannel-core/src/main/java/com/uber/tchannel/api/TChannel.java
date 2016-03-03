@@ -81,7 +81,7 @@ public final class TChannel {
     private final int clientMaxPendingRequests;
 
     private Map<String, SubChannel> subChannels = new HashMap<>();
-    private RequestHandler defaultHandler;
+    private RequestHandler defaultUserHandler;
 
     private TChannel(Builder builder) {
         this.service = builder.service;
@@ -143,8 +143,8 @@ public final class TChannel {
         return f;
     }
 
-    public void setDefaultHandler(RequestHandler requestHandler) {
-        this.defaultHandler = requestHandler;
+    public void setDefaultUserHandler(RequestHandler requestHandler) {
+        this.defaultUserHandler = requestHandler;
     }
 
     public SubChannel getSubChannel(String service) {
@@ -199,8 +199,8 @@ public final class TChannel {
         return clientMaxPendingRequests;
     }
 
-    public RequestHandler getDefaultHandler() {
-        return defaultHandler;
+    public RequestHandler getDefaultUserHandler() {
+        return defaultUserHandler;
     }
 
     public static class Builder {
