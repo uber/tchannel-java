@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.api;
 
+import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
@@ -80,6 +81,7 @@ public final class TChannel {
     private final int clientMaxPendingRequests;
 
     private Map<String, SubChannel> subChannels = new HashMap<>();
+    private RequestHandler defaultUserHandler;
 
     private TChannel(Builder builder) {
         this.service = builder.service;
@@ -141,6 +143,10 @@ public final class TChannel {
         return f;
     }
 
+    public void setDefaultUserHandler(RequestHandler requestHandler) {
+        this.defaultUserHandler = requestHandler;
+    }
+
     public SubChannel getSubChannel(String service) {
         return subChannels.get(service);
     }
@@ -191,6 +197,10 @@ public final class TChannel {
 
     public int getClientMaxPendingRequests() {
         return clientMaxPendingRequests;
+    }
+
+    public RequestHandler getDefaultUserHandler() {
+        return defaultUserHandler;
     }
 
     public static class Builder {
