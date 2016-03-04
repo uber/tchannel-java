@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
+set -x
+
+mkdir -p "$THRIFT_PREFIX"
+
 wget http://archive.apache.org/dist/thrift/0.9.2/thrift-0.9.2.tar.gz
 tar -xzvf thrift-0.9.2.tar.gz
 cd thrift-0.9.2
-./configure --with-cpp=no --with-c_glib=no --with-java=yes --with-ruby=no --with-erlang=no --with-go=no --with-nodejs=no
-make -j2 && sudo make install
-cd ..
+./configure --prefix="$THRIFT_PREFIX" --enable-libs=no --enable-tests=no --enable-tutorial=no
+make -j2 && make install
