@@ -44,9 +44,11 @@ public class ErrorCodecTest extends BaseTest {
         );
 
         TFrame tFrame = MessageCodec.encode(ByteBufAllocator.DEFAULT, errorFrame);
+        tFrame = CodecTestUtil.encodeDecode(tFrame);
+
         ErrorFrame newErrorFrame =
             (ErrorFrame) MessageCodec.decode(
-                CodecTestUtil.encodeDecode(tFrame)
+                tFrame
             );
 
         assertEquals(errorFrame.getId(), newErrorFrame.getId());

@@ -44,7 +44,7 @@ public class InitRequestHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
 
         Frame frame = MessageCodec.decode(
             MessageCodec.decode(buf)

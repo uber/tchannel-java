@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.channels;
 
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * Simple ChannelHandlerAdapter that is responsible solely for registering new Channels with the PeerManager
  * and de-registering Channels when the go inactive.
  */
-public class ChannelRegistrar extends ChannelHandlerAdapter {
+public class ChannelRegistrar extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(ChannelRegistrar.class);
 
