@@ -48,7 +48,7 @@ public class HealthCheckTest extends BaseTest {
                 .setServerHost(host)
                 .build();
         final SubChannel subServer = server.makeSubChannel("server");
-        subServer.registerHealthHanlder();
+        subServer.registerHealthHandler();
         server.listen();
 
         int port = server.getListeningPort();

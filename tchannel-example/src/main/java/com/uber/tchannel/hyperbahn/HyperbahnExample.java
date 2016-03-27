@@ -64,7 +64,7 @@ public class HyperbahnExample {
 
         // register the service handler
         hyperbahn.makeClientChannel("javaServer")
-            .registerHealthHanlder()
+            .registerHealthHandler()
             .register("ping", new PingRequestHandler());
 
         final TFuture<JsonResponse<AdvertiseResponse>> future = hyperbahn.advertise();

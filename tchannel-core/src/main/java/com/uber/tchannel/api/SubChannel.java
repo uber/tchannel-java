@@ -100,7 +100,12 @@ public final class SubChannel {
         return this;
     }
 
+    @Deprecated
     public SubChannel registerHealthHanlder() {
+        return registerHealthHandler();
+    }
+
+    public SubChannel registerHealthHandler() {
         return registerHealthHandler(new HealthCheckRequestHandler());
     }
 
