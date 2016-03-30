@@ -32,6 +32,7 @@ import com.uber.tchannel.handlers.MessageDefragmenter;
 import com.uber.tchannel.handlers.MessageFragmenter;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
+import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -40,6 +41,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -82,6 +84,7 @@ public final class TChannel {
 
     private Map<String, SubChannel> subChannels = new HashMap<>();
     private RequestHandler defaultUserHandler;
+    private SimpleChannelInboundHandler<Request> customRequestRouter;
 
     private TChannel(Builder builder) {
         this.service = builder.service;
@@ -201,6 +204,14 @@ public final class TChannel {
 
     public RequestHandler getDefaultUserHandler() {
         return defaultUserHandler;
+    }
+
+    public SimpleChannelInboundHandler<Request> getCustomRequestRouter() {
+        return customRequestRouter;
+    }
+
+    public void setCustomRequestRouter(SimpleChannelInboundHandler<Request> customRequestRouter) {
+        this.customRequestRouter = customRequestRouter;
     }
 
     public static class Builder {
@@ -334,9 +345,12 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageFragmenter", new MessageFragmenter());
 
                     // Pass RequestHandlers to the RequestRouter
-                    ch.pipeline().addLast("RequestRouter", new RequestRouter(
-                        topChannel, executorService));
-
+                    if (topChannel.getCustomRequestRouter() != null) {
+                        ch.pipeline().addLast("RequestRouter", topChannel.getCustomRequestRouter());
+                    } else {
+                        ch.pipeline().addLast("RequestRouter", new RequestRouter(
+                                topChannel, executorService));
+                    }
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel, timer));
 
                     // Register Channels as they are created.

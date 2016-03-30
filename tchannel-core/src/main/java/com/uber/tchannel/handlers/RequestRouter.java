@@ -80,7 +80,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     @Override
     protected void messageReceived(final ChannelHandlerContext ctx, final Request request) {
 
-        // There is nothing to do if the connection is already distroyed.
+        // There is nothing to do if the connection is already destroyed.
         if (!ctx.channel().isActive()) {
             logger.warn("drop request when channel is inActive");
             request.release();
