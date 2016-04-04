@@ -120,7 +120,7 @@ public abstract class Request implements RawMessage {
     }
 
     @Override
-    public final void release() {
+    public void release() {
         if (arg1 != null) {
             arg1.release();
             arg1 = null;
@@ -142,7 +142,7 @@ public abstract class Request implements RawMessage {
         release();
     }
 
-    public final int argSize() {
+    public int argSize() {
         int size = 0;
 
         if (arg1 != null) {
@@ -160,38 +160,38 @@ public abstract class Request implements RawMessage {
         return size;
     }
 
-    public final void setId(int id) {
+    public void setId(int id) {
         this.id = id;
     }
 
-    public final long getTTL() {
+    public long getTTL() {
         return ttl;
     }
 
-    public final String getService() {
+    public String getService() {
         return this.service;
     }
 
-    public final void setTransportHeader(String key, String value) {
+    public void setTransportHeader(String key, String value) {
         this.transportHeaders.put(key, value);
     }
 
-    public final long getTimeout() {
+    public long getTimeout() {
         return ttl;
     }
 
-    public final int getRetryLimit() {
+    public int getRetryLimit() {
         return retryLimit;
     }
 
-    public final void reset() {
+    public void reset() {
         // reset the read index for retries
         arg1.resetReaderIndex();
         arg2.resetReaderIndex();
         arg3.resetReaderIndex();
     }
 
-    public final String getEndpoint() {
+    public String getEndpoint() {
         if (this.endpoint == null) {
             this.endpoint = this.arg1.toString(CharsetUtil.UTF_8);
         }
@@ -199,23 +199,23 @@ public abstract class Request implements RawMessage {
         return this.endpoint;
     }
 
-    public final ArgScheme getArgScheme() {
+    public ArgScheme getArgScheme() {
         return ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
     }
 
-    public final void setArgScheme(ArgScheme argScheme) {
+    public void setArgScheme(ArgScheme argScheme) {
         setTransportHeader(TransportHeaders.ARG_SCHEME_KEY, argScheme.getScheme());
     }
 
-    public final String getRetryFlags() {
+    public String getRetryFlags() {
         return transportHeaders.get(TransportHeaders.RETRY_FLAGS_KEY);
     }
 
-    public final void setRetryFlags(Set<RetryFlag> flags) {
+    public void setRetryFlags(Set<RetryFlag> flags) {
         setRetryFlags(RetryFlag.flagsToString(flags));
     }
 
-    public final void setRetryFlags(String flags) {
+    public void setRetryFlags(String flags) {
         if (!RetryFlag.validFlags(flags)) {
             throw new UnsupportedOperationException("Invalid retry flag: " + flags);
         }

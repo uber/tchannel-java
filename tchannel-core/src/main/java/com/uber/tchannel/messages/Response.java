@@ -159,19 +159,19 @@ public abstract class Response extends ResponseMessage implements RawMessage {
     }
 
     @Override
-    public final boolean isError() {
+    public boolean isError() {
         return type == FrameType.Error || getError() != null;
     }
 
-    public final ErrorResponse getError() {
+    public ErrorResponse getError() {
         return this.error;
     }
 
-    public final ArgScheme getArgScheme() {
+    public ArgScheme getArgScheme() {
         return ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
     }
 
-    public final int argSize() {
+    public int argSize() {
         int size = 0;
 
         if (arg2 != null) {
