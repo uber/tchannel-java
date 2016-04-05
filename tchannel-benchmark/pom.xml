@@ -33,7 +33,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
     <parent>
         <artifactId>tchannel</artifactId>
         <groupId>com.uber.tchannel</groupId>
-        <version>0.4.0</version>
+        <version>0.4.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -66,7 +66,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
         <dependency>
             <groupId>com.uber.tchannel</groupId>
             <artifactId>tchannel-core</artifactId>
-            <version>0.4.0</version>
+            <version>0.4.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
