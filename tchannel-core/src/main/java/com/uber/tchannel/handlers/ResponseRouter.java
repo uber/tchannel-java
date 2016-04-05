@@ -186,7 +186,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, ResponseMessage response) {
+    protected void channelRead0(ChannelHandlerContext ctx, ResponseMessage response) {
         handleResponse(response);
     }
 

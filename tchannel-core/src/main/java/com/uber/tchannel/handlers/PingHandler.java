@@ -30,7 +30,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 public class PingHandler extends SimpleChannelInboundHandler<PingRequestFrame> {
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, PingRequestFrame msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, PingRequestFrame msg) throws Exception {
         ctx.writeAndFlush(MessageCodec.encode(ctx.alloc(), new PingResponseFrame(msg.getId())));
     }
 

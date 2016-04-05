@@ -43,7 +43,7 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, ByteBuf buf) throws TChannelError {
+    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws TChannelError {
 
         Frame frame = MessageCodec.decode(
             MessageCodec.decode(buf)

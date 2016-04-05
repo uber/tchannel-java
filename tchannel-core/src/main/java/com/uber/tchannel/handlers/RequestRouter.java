@@ -78,7 +78,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     }
 
     @Override
-    protected void messageReceived(final ChannelHandlerContext ctx, final Request request) {
+    protected void channelRead0(final ChannelHandlerContext ctx, final Request request) {
 
         // There is nothing to do if the connection is already destroyed.
         if (!ctx.channel().isActive()) {
