@@ -27,6 +27,7 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -38,26 +39,57 @@ public class TChannelUtilities {
 
     public static final ByteBuf emptyByteBuf = Unpooled.EMPTY_BUFFER;
 
-    public static InetAddress getCurrentIp() {
+    public static int scoreAddr(NetworkInterface iface, InetAddress addr) {
+        int score = 0;
+
+        if (addr instanceof Inet4Address) {
+            score += 300;
+        }
+
         try {
-            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface
-                .getNetworkInterfaces();
-            while (networkInterfaces.hasMoreElements()) {
-                NetworkInterface ni = (NetworkInterface) networkInterfaces
-                    .nextElement();
-                Enumeration<InetAddress> nias = ni.getInetAddresses();
-                while(nias.hasMoreElements()) {
-                    InetAddress ia= (InetAddress) nias.nextElement();
-                    if (!ia.isLinkLocalAddress()
-                        && !ia.isLoopbackAddress()
-                        && ia instanceof Inet4Address) {
-                        return ia;
-                    }
+            if (!iface.isLoopback() && !addr.isLoopbackAddress()) {
+                score += 100;
+                if (iface.isUp()) {
+                    score += 100;
                 }
             }
         } catch (SocketException e) {
-            logger.error("unable to get current IP.", e);
+            ;
         }
-        return null;
+
+        return score;
+    }
+
+    public static InetAddress getCurrentIp() {
+        int bestScore = -1;
+        InetAddress bestAddr = null;
+
+        try {
+            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+
+            while (networkInterfaces.hasMoreElements()) {
+                NetworkInterface iface = (NetworkInterface) networkInterfaces.nextElement();
+
+                Enumeration<InetAddress> addrs = iface.getInetAddresses();
+
+                while (addrs.hasMoreElements()) {
+                    InetAddress addr = (InetAddress) addrs.nextElement();
+
+                    int score = scoreAddr(iface, addr);
+
+                    // Prefer the latest match, instead of the earliest like
+                    // the Go implementation. This is because the ordering of
+                    // this output is reversed from Go.
+                    if (score >= bestScore) {
+                        bestScore = score;
+                        bestAddr = addr;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            ;
+        }
+
+        return bestAddr;
     }
 }
