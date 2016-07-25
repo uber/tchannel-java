@@ -54,7 +54,7 @@ public class TChannelUtilities {
                 }
             }
         } catch (SocketException e) {
-            logger.error("unable to score IP.", e);
+            logger.error("Unable to score IP {} of interface {}", addr, iface, e);
         }
 
         return score;
@@ -87,7 +87,7 @@ public class TChannelUtilities {
                 }
             }
         } catch (IOException e) {
-            logger.error("problem getting local IP.", e);
+            logger.error("Problem getting local IP", e);
         }
 
         return bestAddr;
