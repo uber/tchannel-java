@@ -265,6 +265,9 @@ public final class SubChannel {
     ) {
         Request request = outRequest.getRequest();
 
+        // TODO could add tracing here. Read headers from EncodedRequest
+        // this.topChannel
+
         // Validate if the ArgScheme is set correctly
         if (request.getArgScheme() == null) {
             request.setArgScheme(ArgScheme.RAW);
