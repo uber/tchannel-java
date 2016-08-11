@@ -1,4 +1,9 @@
-.PHONY : release
+.PHONY: all test release
+
+all: test
+
+test:
+	mvn test
 
 release:	
 	@echo "please make sure you are using java 7."
