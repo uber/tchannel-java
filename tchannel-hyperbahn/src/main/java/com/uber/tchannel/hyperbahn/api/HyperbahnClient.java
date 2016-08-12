@@ -81,7 +81,7 @@ public final class HyperbahnClient {
     /**
      * Starts advertising on Hyperbahn at a fixed interval.
      *
-     * The caller of this function owns the returned buffer it is their responsibility to release it.
+     * The caller of this function owns the returned buffer and it is their responsibility to release it.
      *
      * @return a future that resolves to the response of the first advertise request
      */
