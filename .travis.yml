@@ -5,6 +5,10 @@ env:
     global:
         - THRIFT_PREFIX=$HOME/thrift
 
+cache:
+  directories:
+    - $HOME/thrift
+
 before_install:
     - export PATH="$PATH:$THRIFT_PREFIX/bin"
     - build/travis/install-thrift.sh
