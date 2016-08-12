@@ -4,6 +4,7 @@ language: java
 env:
     global:
         - THRIFT_PREFIX=$HOME/thrift
+        - MAVEN_OPTS=-Dio.netty.leakDetectionLevel=paranoid
 
 cache:
   directories:
