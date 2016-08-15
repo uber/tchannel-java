@@ -45,6 +45,7 @@ import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.messages.ThriftSerializer;
+import com.uber.tchannel.tracing.Tracing;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -265,8 +266,9 @@ public final class SubChannel {
     ) {
         Request request = outRequest.getRequest();
 
-        // TODO could add tracing here. Read headers from EncodedRequest
-        // this.topChannel
+        // The tracing span is finish()'ed via callback on outRequest.getFuture()
+        Tracing.startOutboundSpan(
+                outRequest, topChannel.getTracer(), topChannel.getTracingContext());
 
         // Validate if the ArgScheme is set correctly
         if (request.getArgScheme() == null) {
