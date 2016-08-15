@@ -220,12 +220,13 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
         @Override
         public Response call() throws Exception {
+            if (topChannel.getTracer() == null) {
+                return callWithoutTracing();
+            }
             Span span = Tracing.startInboundSpan(request,
                     topChannel.getTracer(), topChannel.getTracingContext());
             try {
-                Response response = handler.handle(request);
-                request.release();
-                return response;
+                return callWithoutTracing();
             } catch (Exception e) {
                 span.log("exception", e);
                 throw e;
@@ -233,6 +234,12 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 span.finish();
                 topChannel.getTracingContext().clear();
             }
+        }
+
+        private Response callWithoutTracing() throws Exception {
+            Response response = handler.handle(request);
+            request.release();
+            return response;
         }
     }
 }
