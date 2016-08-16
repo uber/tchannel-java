@@ -163,10 +163,11 @@ public class TracingPropagationTest {
             String encodings = request.getBody(Example.class).getAString();
             TraceResponse response = observeSpanAndDownstream(encodings);
             ByteBuf bytes = new JSONSerializer().encodeBody(response);
-            String json = new String(bytes.array());
+            Example thriftResponse = new Example(new String(bytes.array()), 0);
+            bytes.release();
             return new ThriftResponse.Builder<Example>(request)
                     .setTransportHeaders(request.getTransportHeaders())
-                    .setBody(new Example(json, 0))
+                    .setBody(thriftResponse)
                     .build();
         }
     }
@@ -239,13 +240,15 @@ public class TracingPropagationTest {
                 tchannel.getListeningPort()
         );
 
-        ThriftResponse<Example> response = responsePromise.get();
-        assertNull(response.getError());
-        String json = response.getBody(Example.class).getAString();
-        response.release();
+        ThriftResponse<Example> thriftResponse = responsePromise.get();
+        assertNull(thriftResponse.getError());
+        String json = thriftResponse.getBody(Example.class).getAString();
+        thriftResponse.release();
         ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
         byteBuf.writeBytes(json.getBytes());
-        return new JSONSerializer().decodeBody(byteBuf, TraceResponse.class);
+        TraceResponse response = new JSONSerializer().decodeBody(byteBuf, TraceResponse.class);
+        byteBuf.release();
+        return response;
     }
 
     @Test
