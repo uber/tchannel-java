@@ -77,6 +77,7 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
         }
 
         arg2 = serializer.encodeHeaders(headers, getArgScheme());
+        this.headers = null;
     }
 
     public T getBody(Class<T> bodyType) {

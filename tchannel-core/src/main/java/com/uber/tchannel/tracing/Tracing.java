@@ -79,6 +79,10 @@ public class Tracing {
             PrefixedHeadersCarrier carrier = new PrefixedHeadersCarrier(headers);
             try {
                 parentContext = tracer.extract(Format.Builtin.TEXT_MAP, carrier);
+                Map<String, String> nonTracingHeaders = carrier.getNonTracingHeaders();
+                if (nonTracingHeaders.size() < headers.size()) {
+                    traceableRequest.updateHeaders(nonTracingHeaders);
+                }
             } catch (Exception e) {
                 logger.error("Failed to extract span context from headers", e);
             }
