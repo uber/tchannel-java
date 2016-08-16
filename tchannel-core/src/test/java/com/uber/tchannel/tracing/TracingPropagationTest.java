@@ -20,7 +20,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.opentracing.tag.Tags;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,11 +44,11 @@ public class TracingPropagationTest {
 
     private static final String BAGGAGE_KEY = "baggage-key";
 
-    private Tracer tracer;
-    private InMemoryReporter reporter;
-    private TracingContext tracingContext;
-    private TChannel tchannel;
-    private SubChannel subChannel;
+    private static Tracer tracer;
+    private static InMemoryReporter reporter;
+    private static TracingContext tracingContext;
+    private static TChannel tchannel;
+    private static SubChannel subChannel;
 
     private final String forwardEncodings;
     private final boolean sampled;
@@ -71,8 +73,8 @@ public class TracingPropagationTest {
         return data;
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeClass
+    public static void setUp() throws Exception {
         reporter = new InMemoryReporter();
         Sampler sampler = new ConstSampler(true);
         tracer = new Tracer.Builder("tchannel-name", reporter, sampler).build();
@@ -92,13 +94,19 @@ public class TracingPropagationTest {
         tchannel.listen();
     }
 
-    @After
-    public void tearDown() {
+    @AfterClass
+    public static void tearDown() {
         reporter.close();
         tchannel.shutdown();
     }
 
-    class TraceResponse {
+    @Before
+    public void setUpInstance() {
+        tracingContext.clear();
+        reporter.getSpans().clear(); // TODO reporter should expose clear() method
+    }
+
+    static class TraceResponse {
         String traceId;
         boolean sampled;
         String baggage;
@@ -115,13 +123,10 @@ public class TracingPropagationTest {
         }
     }
 
-    private class JSONHandler extends JSONRequestHandler<String, TraceResponse> {
-
+    private static class JSONHandler extends JSONRequestHandler<String, TraceResponse> {
         @Override
         public JsonResponse<TraceResponse> handleImpl(JsonRequest<String> request) {
             String encodings = request.getBody(String.class);
-            System.out.println("JSON: Received headers  : " + request.getHeaders());
-            System.out.println("JSON: Received encodings: " + encodings);
             TraceResponse response = observeSpanAndDownstream(encodings);
             return new JsonResponse.Builder<TraceResponse>(request)
                     .setTransportHeaders(request.getTransportHeaders())
@@ -130,12 +135,10 @@ public class TracingPropagationTest {
         }
     }
 
-    private class ThriftHandler extends ThriftRequestHandler<Example, Example> {
+    private static class ThriftHandler extends ThriftRequestHandler<Example, Example> {
         @Override
         public ThriftResponse<Example> handleImpl(ThriftRequest<Example> request) {
             String encodings = request.getBody(Example.class).getAString();
-            System.out.println("Thrift: Received headers  : " + request.getHeaders());
-            System.out.println("Thrift: Received encodings: " + encodings);
             TraceResponse response = observeSpanAndDownstream(encodings);
             ByteBuf bytes = new JSONSerializer().encodeBody(response);
             String json = new String(bytes.array());
@@ -146,7 +149,7 @@ public class TracingPropagationTest {
         }
     }
 
-    private TraceResponse observeSpanAndDownstream(String encodings) {
+    private static TraceResponse observeSpanAndDownstream(String encodings) {
         Span span = (Span) tracingContext.currentSpan();
         TraceResponse response = new TraceResponse();
         response.traceId = String.format("%x", span.getContext().getTraceID());
@@ -160,7 +163,7 @@ public class TracingPropagationTest {
         return response;
     }
 
-    private TraceResponse callDownstream(String encodings) throws Exception {
+    private static TraceResponse callDownstream(String encodings) throws Exception {
         if (encodings.length() == 0) {
             return null;
         }
@@ -182,7 +185,7 @@ public class TracingPropagationTest {
         }
     }
 
-    private TraceResponse callDownstreamJSON(String remainingEncodings) throws Exception {
+    private static TraceResponse callDownstreamJSON(String remainingEncodings) throws Exception {
         JsonRequest<String> request = new JsonRequest
                 .Builder<String>("tchannel-name", "endpoint")
                 .setTimeout(2000000)
@@ -202,7 +205,7 @@ public class TracingPropagationTest {
         return resp;
     }
 
-    private TraceResponse callDownstreamThrift(String remainingEncodings) throws Exception {
+    private static TraceResponse callDownstreamThrift(String remainingEncodings) throws Exception {
         ThriftRequest<Example> request = new ThriftRequest
                 .Builder<Example>("tchannel-name", "Behavior::trace")
                 .setBody(new Example(remainingEncodings, 0))
@@ -225,8 +228,6 @@ public class TracingPropagationTest {
 
     @Test
     public void testPropagation() throws Exception {
-        System.out.println("forwardEncodings: " + forwardEncodings);
-
         Span span = (Span) tracer.buildSpan("root").start();
         String traceId = String.format("%x", span.getContext().getTraceID());
         String baggage = "Baggage-" + System.currentTimeMillis();
@@ -235,12 +236,13 @@ public class TracingPropagationTest {
             Tags.SAMPLING_PRIORITY.set(span, (short) 0);
         }
         tracingContext.pushSpan(span);
+
         TraceResponse response = callDownstream(forwardEncodings);
 
-        System.out.println("Final response: " + response);
         List<String> encodings = new ArrayList<>(Arrays.asList(forwardEncodings.split(",")));
         validate(encodings, traceId, baggage, response);
         // TODO validate submitted spans
+        // assertEquals(4, reporter.getSpans().size());
     }
 
     private void validate(List<String> encodings, String traceId, String baggage, TraceResponse response) {
