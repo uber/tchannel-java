@@ -73,9 +73,7 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
     public void updateHeaders(Map<String, String> headers) {
         if (arg2 != null) {
             arg2.release();
-            arg2 = null;
         }
-
         arg2 = serializer.encodeHeaders(headers, getArgScheme());
         this.headers = null;
     }

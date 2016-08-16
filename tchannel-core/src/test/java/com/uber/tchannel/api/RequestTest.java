@@ -78,7 +78,6 @@ public class RequestTest extends BaseTest {
         JsonRequest<String> request = new JsonRequest.Builder<String>("tchannel-name", "endpoint")
             .setTimeout(2000000)
             .setBody(requestBody)
-                .setHeader("x", "y")
             .build();
 
         TFuture<JsonResponse<Integer>> responsePromise = subChannel.send(

@@ -21,14 +21,81 @@
  */
 package com.uber.tchannel.tracing;
 
+import com.uber.jaeger.Tracer;
+import com.uber.jaeger.reporters.InMemoryReporter;
+import com.uber.jaeger.samplers.ConstSampler;
+import com.uber.jaeger.samplers.Sampler;
 import com.uber.tchannel.BaseTest;
+import io.opentracing.Span;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.util.EmptyStackException;
+
+import static org.junit.Assert.*;
+
 public class TracingContextTest extends BaseTest {
-    com.uber.jaeger.Tracer tracer;
+    private Tracer tracer;
+    private InMemoryReporter reporter;
+    private TracingContext tracingContext;
+
+    @Before
+    public void setUp() throws Exception {
+        reporter = new InMemoryReporter();
+        Sampler sampler = new ConstSampler(true);
+        tracer = new Tracer.Builder("tchannel-name", reporter, sampler).build();
+
+        tracingContext = new TracingContext.ThreadLocal();
+    }
+
+    @After
+    public void tearDown() {
+        reporter.close();
+    }
+
+    @Test(expected = EmptyStackException.class)
+    public void testTracingContextNoCurrent() throws Exception {
+        tracingContext.currentSpan();
+    }
+
+    @Test(expected = EmptyStackException.class)
+    public void testTracingContextCannotPop() throws Exception {
+        tracingContext.popSpan();
+    }
 
     @Test
     public void testTracingContext() throws Exception {
-        // nothing to do
+        assertFalse(tracingContext.hasSpan());
+
+        Span span = tracer.buildSpan("test").start();
+        tracingContext.pushSpan(span);
+        assertTrue(tracingContext.hasSpan());
+        assertEquals(span, tracingContext.currentSpan());
+        assertEquals(span, tracingContext.popSpan());
+        assertFalse(tracingContext.hasSpan());
+
+        Span span1 = tracer.buildSpan("test").start();
+        Span span2 = tracer.buildSpan("test").start();
+        tracingContext.pushSpan(span1);
+        tracingContext.pushSpan(span2);
+        assertEquals(span2, tracingContext.currentSpan());
+        assertEquals(span2, tracingContext.popSpan());
+        assertEquals(span1, tracingContext.popSpan());
+        assertFalse(tracingContext.hasSpan());
+    }
+
+    @Test
+    public void testTracingContextThreadLocal() throws Exception {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Span span = tracer.buildSpan("test").start();
+                tracingContext.pushSpan(span);
+                assertTrue("Have span in worker thread", tracingContext.hasSpan());
+            }
+        });
+        thread.join();
+        assertFalse("No span in main thread", tracingContext.hasSpan());
     }
 }
