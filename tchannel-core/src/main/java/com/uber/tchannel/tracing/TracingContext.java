@@ -93,7 +93,7 @@ public interface TracingContext {
 
     class ThreadLocal implements TracingContext {
 
-        private final static java.lang.ThreadLocal<Stack<Span>> stack =
+        private final java.lang.ThreadLocal<Stack<Span>> stack =
                 new java.lang.ThreadLocal<Stack<Span>>() {
                     @Override
                     protected Stack<Span> initialValue() {
@@ -101,7 +101,7 @@ public interface TracingContext {
                     }
                 };
 
-        private static Stack<Span> stack() {
+        private Stack<Span> stack() {
             return stack.get();
         }
 
