@@ -86,8 +86,8 @@ public final class RawRequest extends Request {
         }
 
         @Override
-        public Builder setTimeout(long timeout) {
-            super.setTimeout(timeout);
+        public Builder setTimeout(long timeoutMillis) {
+            super.setTimeout(timeoutMillis);
             return this;
         }
 

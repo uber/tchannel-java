@@ -55,6 +55,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -211,7 +212,7 @@ public class TracingPropagationTest {
     private static TraceResponse callDownstreamJSON(String remainingEncodings) throws Exception {
         JsonRequest<String> request = new JsonRequest
                 .Builder<String>("tchannel-name", "endpoint")
-                .setTimeout(2000000)
+                .setTimeout(1, TimeUnit.MINUTES)
                 .setBody(remainingEncodings)
                 .build();
 
@@ -231,6 +232,7 @@ public class TracingPropagationTest {
     private static TraceResponse callDownstreamThrift(String remainingEncodings) throws Exception {
         ThriftRequest<Example> request = new ThriftRequest
                 .Builder<Example>("tchannel-name", "Behavior::trace")
+                .setTimeout(1, TimeUnit.MINUTES)
                 .setBody(new Example(remainingEncodings, 0))
                 .build();
 

@@ -343,8 +343,8 @@ public abstract class Request implements RawMessage {
             return this;
         }
 
-        public Builder setTimeout(long timeout) {
-            this.ttl = timeout;
+        public Builder setTimeout(long timeoutMillis) {
+            this.ttl = timeoutMillis;
             return this;
         }
 
