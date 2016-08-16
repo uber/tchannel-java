@@ -21,7 +21,7 @@ public class Tracing {
 
     private static final Logger logger = LoggerFactory.getLogger(Tracing.class);
 
-    public static void  startOutboundSpan(
+    public static void startOutboundSpan(
             OutRequest outRequest,
             Tracer tracer,
             TracingContext tracingContext
@@ -35,10 +35,11 @@ public class Tracing {
             Span parentSpan = tracingContext.currentSpan();
             builder.asChildOf(parentSpan.context());
         }
-        // TODO add peer tags
+        // TODO add tags for peer host:port
         builder
                 .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
-                .withTag(Tags.PEER_SERVICE.getKey(), request.getService());
+                .withTag(Tags.PEER_SERVICE.getKey(), request.getService())
+                .withTag("as", request.getArgScheme().name());
 
         final Span span = builder.start();
 
@@ -90,7 +91,14 @@ public class Tracing {
             // TODO if tracer is Zipkin compatible, extract parent from Trace fields
         }
         Tracer.SpanBuilder builder = tracer.buildSpan(request.getEndpoint());
-        // TODO add tags
+        builder
+                .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+                .withTag("as", request.getArgScheme().name());
+        Map<String, String> transportHeaders = request.getTransportHeaders();
+        if (transportHeaders != null && transportHeaders.containsKey("cn")) {
+            builder.withTag(Tags.PEER_SERVICE.getKey(), transportHeaders.get("cn"));
+        }
+        // TODO add tags for peer host:port
         if (parentContext != null) {
             builder.asChildOf(parentContext);
         }

@@ -241,8 +241,9 @@ public class TracingPropagationTest {
 
         List<String> encodings = new ArrayList<>(Arrays.asList(forwardEncodings.split(",")));
         validate(encodings, traceId, baggage, response);
-        // TODO validate submitted spans
-        // assertEquals(4, reporter.getSpans().size());
+        if (sampled) {
+            assertEquals(4, reporter.getSpans().size());
+        }
     }
 
     private void validate(List<String> encodings, String traceId, String baggage, TraceResponse response) {
