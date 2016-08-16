@@ -13,7 +13,7 @@ public class PrefixedHeadersTest {
     @Test
     public void testPrefixedHeadersReader() throws Exception {
         Map<String, String> headers = ImmutableMap.of("as", "thrift", "$abc$trace-id", "12345");
-        PrefixedHeadersCarrier carrier = new PrefixedHeadersCarrier("$abc$", headers);
+        PrefixedHeadersCarrier carrier = new PrefixedHeadersCarrier(headers, "$abc$");
         Map<String, String> extracted = new HashMap<>();
         for (Map.Entry<String, String> kv: carrier) {
             extracted.put(kv.getKey(), kv.getValue());
@@ -24,7 +24,7 @@ public class PrefixedHeadersTest {
     @Test
     public void testPrefixedHeadersWriter() throws Exception {
         Map<String, String> headers = new HashMap<>(ImmutableMap.of("as", "thrift"));
-        PrefixedHeadersCarrier carrier = new PrefixedHeadersCarrier("$abc$", headers);
+        PrefixedHeadersCarrier carrier = new PrefixedHeadersCarrier(headers, "$abc$");
         carrier.put("trace-id", "12345");
         assertEquals(ImmutableMap.of("as", "thrift", "$abc$trace-id", "12345"), headers);
     }
