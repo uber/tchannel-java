@@ -34,5 +34,5 @@ import java.util.Map;
  */
 public interface TraceableRequest {
     Map<String, String> getHeaders();
-    void updateHeaders(Map<String, String> headers);
+    void setHeaders(Map<String, String> headers);
 }

@@ -70,7 +70,7 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
         return getHeaders().get(key);
     }
 
-    public void updateHeaders(Map<String, String> headers) {
+    public void setHeaders(Map<String, String> headers) {
         if (arg2 != null) {
             arg2.release();
         }
