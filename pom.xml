@@ -72,6 +72,7 @@
         <module>tchannel-example</module>
         <module>tchannel-benchmark</module>
         <module>tchannel-hyperbahn</module>
+        <module>tchannel-crossdock</module>
     </modules>
 
     <properties>
