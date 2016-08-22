@@ -1,4 +1,9 @@
-.PHONY : release
+.PHONY: all test release
+
+all: test
+
+test:
+	mvn test
 
 -include tchannel-crossdock/rules.mk
 

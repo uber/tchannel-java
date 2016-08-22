@@ -25,7 +25,7 @@
 
     <groupId>com.uber.tchannel</groupId>
     <artifactId>tchannel</artifactId>
-    <version>0.4.3-SNAPSHOT</version>
+    <version>0.4.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>tchannel</name>
