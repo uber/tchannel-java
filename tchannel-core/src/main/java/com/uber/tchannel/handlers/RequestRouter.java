@@ -126,7 +126,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
         if (handler == null) {
             sendError(ErrorType.BadRequest,
-                "Invalid handler function",
+                "No handler function for service:endpoint=" + service + ":" + endpoint,
                 request, ctx);
             return;
         }

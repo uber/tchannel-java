@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# mvn thrift plugin runs thrift from invididual module directories
+pwd=${PWD}
+
+THRIFT_VER=0.9.2
+THRIFT_IMG=thrift:${THRIFT_VER}
+THRIFT="docker run -v ${pwd}:/data ${THRIFT_IMG} thrift"
+
+# the thrift file name is relative to the module directory
+for last; do true; done
+
+args=$(echo $@ | sed "s|${pwd}|/data|g" | sed "s|${last}|/data/${last}|g")
+
+echo Running Docker-based Thrift in pwd=${pwd}
+echo 'Remapped arguments:' $@
+echo '                to:' $args
+
+set -x
+set -e
+
+${THRIFT} $args
+
+# docker command runs as root, but we need normal permissions
+sudo chmod -R 0777 ${pwd}/target/generated-sources/thrift/gen-java

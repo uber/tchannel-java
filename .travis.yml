@@ -1,15 +1,49 @@
-sudo: false
+sudo: required
+dist: trusty
+services:
+- docker
+
 language: java
+jdk:
+- oraclejdk7
 
 env:
-    global:
-        - THRIFT_PREFIX=$HOME/thrift
-        - MAVEN_OPTS=-Dio.netty.leakDetectionLevel=paranoid
+  global:
+  - DOCKER_COMPOSE_VERSION=1.8.0
+  - COMMIT=${TRAVIS_COMMIT::8}
+  # DOCKER_PASS
+  - secure: bJKEmU7ykISQ1/OMoTwapQ6ia+yNq9XyB2Ten//Fh54tbGJasYkV0HcdcUGM6JXaOfQKJrlQQj/6iAsviE0057DvSZ8HGnJv3qm+wXkVmyVZE2fBpokdqNxCFC67ztP2JWj5XGVOdJF6bxfpCOmNNlayW0matiiRgnJs8WpTJvH7LOGo1K0IbRZGriITwQJAhoGIj8/bHiW+HNyNYmUpTwzj8BBsuxtcVsNXL7AKdS1JiMLtzEBRwUzsCsWFkMlaEDAP9+zX2yi8Nm4LIl2z/SIpD0gyxhsHlrx2HyyrZh1KJTqStxHipYPVw2FHirLnVmI3ttgaAUhb7u+c9muv83EWVlgK6hG1gAWhVnbEQryFYG7EMl2/YZ6Au6RXCJ7DH3k+DEQNUAJng2/d4tz2FZDft7lX3Uz9BSDonth8cbLA5DVvdqPMJ8sQgjrDNTuabsOAQZIxttB3sX0J9tS17oSgRZVhHQM5quzPFQQZqRd8ssNRR8ncyuoXKuVFBIwEYsCjnTEganzh/9Pq7YS4w8MDljdlJbqSHOj7zPCwz8m4vD68ChDEae9jDNawWTwhnlwWeoX5zRUmLSCgcjd7xJMrQdoQir7OKJPWrJ38H5k07ejW4SX28u1WCS7TnMhfQQJG8Nz+bO06i3f9ZshCnVt56TWd9elWmJkhyme0B3o=
+  # DOCKER_USER
+  - secure: NZXCRnZypmJsMNfGnHMQ3ZHGmuiYTB+kf7b66v+mccguQSweDIb3pp3jpdo7syTqi4lZZk0R2KE+PXdcBgxGwd1XPZX+SXH99hx/yN84cfSRiXeAMlsksRQZrh6qqA8diXOjARnGyrmeHYgaj/Uh/fUXGRjB975P643HSCuReQ7OkY+EgcvhfaI4e4CuBoXxlYQbLvZoUQt9CH0kJVpLOXJOXLWEsklwsYDejDGLTMFV64cN5CPEHPWqbVxmzUN86PA5c8R3wQfalmq6KqgU7cugLxQf5OAFSDkc+PwGjQXFei/sDvrMR1vrIvjX8vERgd41Lb8NqgRtN1C26PnVkRmTLoEm4q/uDSb9FkAJcSnDmXgqBPz4K4FzCIBOSy3jK4X/oPZAabl3gB+XFLg1q/W6r56yVej9b2qoIs1oFT309t9DfXBP0WlJv9HQbFI5UMa5uqwNhq2jK8bek5QXPm2u+/8239RCSyTKZ2u4ujDqxsORpSn2yUhIundBzwJHBja3vVG/+IJdfAKaombtIy9Ks0hLNLyjr9Stbhu3ShpMOvYSnR7kRNn9BGsh19FQisvxk5mdnmr5duGAaJS8ikiwJKnVUwITFL/SjpgDepP8NcfLYydIK1yBTWUbVn0tSUci6BiiQs1rC/o5bjmeYFzn/tdvWg+AwoPtiFKFytU=
 
-cache:
-  directories:
-    - $HOME/thrift
+matrix:
+  include:
+    env: CROSSDOCK=true
+    jdk: oraclejdk7
 
 before_install:
-    - export PATH="$PATH:$THRIFT_PREFIX/bin"
-    - build/travis/install-thrift.sh
+- sudo rm -rf /usr/local/bin/thrift
+- sudo cp build/travis/thrift /usr/local/bin/
+
+install:
+- make install_ci
+
+script:
+- make test_ci
+
+after_failure:
+- make crossdock_logs_ci
+
+after_success:
+- export REPO=tchannelhub/xdock-java
+- export PR=https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST
+- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo `curl -s $PR | jq -r .head.ref`; fi)
+- export TAG=`if [ "$BRANCH" == "master" ]; then echo "latest"; else echo $BRANCH; fi`
+- echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, REPO=$REPO, PR=$PR, BRANCH=$BRANCH, TAG=$TAG"
+- export DOCKER=$(if [ "$CROSSDOCK" == "true" ]; then echo docker; else echo true; fi)
+- $DOCKER login -u $DOCKER_USER -p $DOCKER_PASS
+- $DOCKER build -f tchannel-crossdock/Dockerfile -t $REPO:$COMMIT tchannel-crossdock
+- $DOCKER tag $REPO:$COMMIT $REPO:$TAG
+- $DOCKER tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+- $DOCKER push $REPO
+

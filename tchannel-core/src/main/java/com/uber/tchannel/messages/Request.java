@@ -113,9 +113,9 @@ public abstract class Request implements RawMessage {
             this.id,
             this.service,
             this.transportHeaders,
-            this.arg1.toString(CharsetUtil.UTF_8),
-            this.arg2.toString(CharsetUtil.UTF_8),
-            this.arg3.toString(CharsetUtil.UTF_8)
+            arg1 == null ? "null" : arg1.toString(CharsetUtil.UTF_8),
+            arg2 == null ? "null" : arg2.toString(CharsetUtil.UTF_8),
+            arg3 == null ? "null" : arg3.toString(CharsetUtil.UTF_8)
         );
     }
 
