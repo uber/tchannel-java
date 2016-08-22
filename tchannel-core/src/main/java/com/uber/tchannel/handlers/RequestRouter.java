@@ -36,10 +36,12 @@ import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.ResponseMessage;
+import com.uber.tchannel.tracing.Tracing;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
+import io.opentracing.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +133,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
         // Handle the request in a separate thread and get a future to it
         ListenableFuture<Response> responseFuture = listeningExecutorService.submit(
-                new CallableHandler(handler, request));
+                new CallableHandler(handler, topChannel, request));
 
         Futures.addCallback(responseFuture, new FutureCallback<Response>() {
             @Override
@@ -207,15 +209,34 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private class CallableHandler implements Callable<Response> {
         private final Request request;
+        private final TChannel topChannel;
         private final RequestHandler handler;
 
-        public CallableHandler(RequestHandler handler, Request request) {
+        public CallableHandler(RequestHandler handler, TChannel topChannel, Request request) {
             this.handler = handler;
+            this.topChannel = topChannel;
             this.request = request;
         }
 
         @Override
         public Response call() throws Exception {
+            if (topChannel.getTracer() == null) {
+                return callWithoutTracing();
+            }
+            Span span = Tracing.startInboundSpan(request,
+                    topChannel.getTracer(), topChannel.getTracingContext());
+            try {
+                return callWithoutTracing();
+            } catch (Exception e) {
+                span.log("exception", e);
+                throw e;
+            } finally {
+                span.finish();
+                topChannel.getTracingContext().clear();
+            }
+        }
+
+        private Response callWithoutTracing() throws Exception {
             Response response = handler.handle(request);
             request.release();
             return response;

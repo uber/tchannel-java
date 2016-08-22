@@ -417,21 +417,21 @@ public class PeerManagerTest extends BaseTest {
 
         Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
         Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
-        conn1.waitForIdentified(2000);
-        conn2.waitForIdentified(2000);
+        conn1.waitForIdentified(3000);
+        conn2.waitForIdentified(3000);
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
+        assertEquals("client connections.in", 1, (int)stats.get("connections.in"));
+        assertEquals("client connections.out", 1, (int)stats.get("connections.out"));
 
         stats = server1.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertEquals("server1 connections.in", 1, (int)stats.get("connections.in"));
+        assertEquals("server1 connections.out", 0, (int)stats.get("connections.out"));
 
         stats = server2.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
+        assertEquals("server2 connections.in", 0, (int)stats.get("connections.in"));
+        assertEquals("server2 connections.out", 1, (int)stats.get("connections.out"));
 
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")

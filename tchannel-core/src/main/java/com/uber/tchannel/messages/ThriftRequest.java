@@ -65,8 +65,8 @@ public class ThriftRequest<T> extends EncodedRequest<T> {
         }
 
         @Override
-        public Builder<T> setTimeout(long timeout) {
-            super.setTimeout(timeout);
+        public Builder<T> setTimeout(long timeoutMillis) {
+            super.setTimeout(timeoutMillis);
             return this;
         }
 

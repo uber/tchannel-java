@@ -23,13 +23,14 @@
 package com.uber.tchannel.messages;
 
 import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.tracing.TraceableRequest;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class EncodedRequest<T> extends Request {
+public abstract class EncodedRequest<T> extends Request implements TraceableRequest {
 
     private static final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
         {
@@ -67,6 +68,14 @@ public abstract class EncodedRequest<T> extends Request {
 
     public String getHeader(String key) {
         return getHeaders().get(key);
+    }
+
+    public void setHeaders(Map<String, String> headers) {
+        if (arg2 != null) {
+            arg2.release();
+        }
+        arg2 = serializer.encodeHeaders(headers, getArgScheme());
+        this.headers = null;
     }
 
     public T getBody(Class<T> bodyType) {

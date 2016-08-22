@@ -33,6 +33,7 @@ import com.uber.tchannel.handlers.MessageFragmenter;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.tracing.TracingContext;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -49,6 +50,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.HashedWheelTimer;
+import io.opentracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +83,8 @@ public final class TChannel {
     private final long initTimeout;
     private final int resetOnTimeoutLimit;
     private final int clientMaxPendingRequests;
+    private final Tracer tracer;
+    private final TracingContext tracingContext;
 
     private Map<String, SubChannel> subChannels = new HashMap<>();
     private RequestHandler defaultUserHandler;
@@ -99,6 +103,8 @@ public final class TChannel {
         this.peerManager = new PeerManager(builder.bootstrap(this));
         this.timer = builder.timer;
         this.clientMaxPendingRequests = builder.clientMaxPendingRequests;
+        this.tracer = builder.tracer;
+        this.tracingContext = builder.tracingContext;
     }
 
     public String getListeningHost() {
@@ -136,6 +142,10 @@ public final class TChannel {
     public boolean isListening() {
         return !listeningHost.equals("0.0.0.0");
     }
+
+    public Tracer getTracer() { return tracer; }
+
+    public TracingContext getTracingContext() { return tracingContext; }
 
     public ChannelFuture listen() throws InterruptedException {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
@@ -229,6 +239,9 @@ public final class TChannel {
         private int resetOnTimeoutLimit = Integer.MAX_VALUE;
         private int clientMaxPendingRequests = 100000;
 
+        private Tracer tracer;
+        private TracingContext tracingContext = new TracingContext.Default();
+
         public Builder(String service) {
             if (service == null) {
                 throw new NullPointerException("`service` cannot be null");
@@ -282,6 +295,16 @@ public final class TChannel {
 
         public Builder setResetOnTimeoutLimit(int resetOnTimeoutLimit) {
             this.resetOnTimeoutLimit = resetOnTimeoutLimit;
+            return this;
+        }
+
+        public Builder setTracer(Tracer tracer) {
+            this.tracer = tracer;
+            return this;
+        }
+
+        public Builder setTracingContext(TracingContext tracingContext) {
+            this.tracingContext = tracingContext;
             return this;
         }
 
