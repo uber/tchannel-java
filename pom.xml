@@ -25,7 +25,7 @@
 
     <groupId>com.uber.tchannel</groupId>
     <artifactId>tchannel</artifactId>
-    <version>0.4.4-SNAPSHOT</version>
+    <version>0.5.0</version>
     <packaging>pom</packaging>
 
     <name>tchannel</name>
@@ -64,7 +64,7 @@
         <connection>scm:git:git@github.com:uber/tchannel-java.git</connection>
         <developerConnection>scm:git:git@github.com:uber/tchannel-java.git</developerConnection>
         <url>git@github.com:uber/tchannel-java.git</url>
-      <tag>HEAD</tag>
+      <tag>tchannel-0.5.0</tag>
   </scm>
 
     <modules>
