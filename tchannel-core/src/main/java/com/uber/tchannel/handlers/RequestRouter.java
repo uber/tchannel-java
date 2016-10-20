@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.handlers.AsyncRequestHandler;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
@@ -131,9 +132,17 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             return;
         }
 
-        // Handle the request in a separate thread and get a future to it
-        ListenableFuture<Response> responseFuture = listeningExecutorService.submit(
+        ListenableFuture<Response> responseFuture;
+        // In case of an AsyncRequestHandler no need to submit a task on the executor. It does
+        // require a down-cast to AsyncRequestHandler.
+        if (handler instanceof AsyncRequestHandler) {
+            AsyncRequestHandler asyncHandler = (AsyncRequestHandler) handler;
+            responseFuture = (ListenableFuture<Response>) asyncHandler.handleAsync(request);
+        } else {
+            // Handle the request in a separate thread and get a future to it
+            responseFuture = listeningExecutorService.submit(
                 new CallableHandler(handler, topChannel, request));
+        }
 
         Futures.addCallback(responseFuture, new FutureCallback<Response>() {
             @Override
