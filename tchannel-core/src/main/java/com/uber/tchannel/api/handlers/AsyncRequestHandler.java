@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Uber Technologies, Inc.
+ * Copyright (c) 2016 Uber Technologies, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,17 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 
+/**
+ * Allows requests to be handle asynchronously by letting the actual handler return a future.
+ */
 public interface AsyncRequestHandler extends RequestHandler {
+
+    /**
+     * Main handle method for the AsyncRequestHandler that returns a ListenableFuture. This method
+     * should not make any blocking calls so that the calling thread is reliquished quickly.
+     *
+     * @param request Request to handle
+     * @return A ListenableFuture representing the result of the request handling.
+     */
     ListenableFuture<? extends Response> handleAsync(Request request);
 }

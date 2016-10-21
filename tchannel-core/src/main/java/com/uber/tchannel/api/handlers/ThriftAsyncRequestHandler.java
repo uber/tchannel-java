@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Uber Technologies, Inc.
+ * Copyright (c) 2016 Uber Technologies, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,10 @@ import com.uber.tchannel.messages.ThriftResponse;
 
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Specialized async handler for thrift calls. Like the AsyncRequestHandler it also allows requests
+ * to be handle asynchronously by letting the actual handler return a future.
+ */
 public abstract class ThriftAsyncRequestHandler<T, U> implements AsyncRequestHandler {
     @Override
     public Response handle(Request request) {
@@ -47,5 +51,13 @@ public abstract class ThriftAsyncRequestHandler<T, U> implements AsyncRequestHan
         return handleImpl((ThriftRequest<T>)request);
     }
 
+    /**
+     * Main handle method for ThriftAsyncRequestHandler that return a ListenableFuture scoped down
+     * to ThriftResponse.  This method should not make any blocking calls so that the calling thread
+     * is reliquished quickly.
+     *
+     * @param request ThriftRequest to handle
+     * @return A ListenableFuture representing the result of thrift request handling.
+     */
     public abstract ListenableFuture<ThriftResponse<U>> handleImpl(ThriftRequest<T> request);
 }
