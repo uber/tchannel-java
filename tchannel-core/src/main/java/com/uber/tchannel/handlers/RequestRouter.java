@@ -219,8 +219,15 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     private ListenableFuture<Response> sendRequestToAsyncHandler(
             final AsyncRequestHandler asyncHandler, final Request request) {
         // span used to trace this request
-        final Span span = Tracing.startInboundSpan(request,
-            topChannel.getTracer(), topChannel.getTracingContext());
+        final Span span;
+        // Tracer and TracingContext are only present when the channel is created with them
+        // therefore can be null.
+        if (topChannel.getTracer() != null) {
+            span = Tracing.startInboundSpan(request, topChannel.getTracer(),
+                topChannel.getTracingContext());
+        } else {
+            span = null;
+        }
         final SettableFuture<Response> responseFuture = SettableFuture.create();
         ListenableFuture<Response> handlerResponseFuture =
             (ListenableFuture<Response>) asyncHandler.handleAsync(request);
@@ -234,13 +241,17 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
             @Override
             public void onFailure(Throwable e) {
-                span.log("exception", e);
+                if (span != null) {
+                    span.log("exception", e);
+                }
                 doRequestEndProcessing();
                 responseFuture.setException(e);
             }
 
             private void doRequestEndProcessing() {
-                span.finish();
+                if (span != null) {
+                    span.finish();
+                }
                 request.release();
                 topChannel.getTracingContext().clear();
             }
