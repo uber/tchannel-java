@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.api.handlers;
 
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
@@ -40,8 +41,8 @@ public abstract class ThriftAsyncRequestHandler<T, U> implements AsyncRequestHan
         try {
             return this.handleAsync(request).get();
         } catch (InterruptedException | ExecutionException ex) {
-            // Cannot do much better with this exception so re-raising a RuntimeException.
-            throw new RuntimeException(ex);
+            // Cannot do much better with this exception so propogate the exception.
+            throw Throwables.propagate(ex);
         }
     }
 
