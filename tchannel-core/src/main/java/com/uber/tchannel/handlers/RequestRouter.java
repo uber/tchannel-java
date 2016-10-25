@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.AsyncRequestHandler;
@@ -137,7 +138,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         // require a down-cast to AsyncRequestHandler.
         if (handler instanceof AsyncRequestHandler) {
             AsyncRequestHandler asyncHandler = (AsyncRequestHandler) handler;
-            responseFuture = (ListenableFuture<Response>) asyncHandler.handleAsync(request);
+            responseFuture = sendRequestToAsyncHandler(asyncHandler, request);
         } else {
             // Handle the request in a separate thread and get a future to it
             responseFuture = listeningExecutorService.submit(
@@ -215,6 +216,37 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         }
     }
 
+    private ListenableFuture<Response> sendRequestToAsyncHandler(
+            final AsyncRequestHandler asyncHandler, final Request request) {
+        // span used to trace this request
+        final Span span = Tracing.startInboundSpan(request,
+            topChannel.getTracer(), topChannel.getTracingContext());
+        final SettableFuture<Response> responseFuture = SettableFuture.create();
+        ListenableFuture<Response> handlerResponseFuture =
+            (ListenableFuture<Response>) asyncHandler.handleAsync(request);
+        // Add callback handlers that close out the tracing span and then proxy the response.
+        Futures.addCallback(handlerResponseFuture, new FutureCallback<Response>() {
+            @Override
+            public void onSuccess(Response response) {
+                doRequestEndProcessing();
+                responseFuture.set(response);
+            }
+
+            @Override
+            public void onFailure(Throwable e) {
+                span.log("exception", e);
+                doRequestEndProcessing();
+                responseFuture.setException(e);
+            }
+
+            private void doRequestEndProcessing() {
+                span.finish();
+                request.release();
+                topChannel.getTracingContext().clear();
+            }
+        });
+        return responseFuture;
+    }
 
     private class CallableHandler implements Callable<Response> {
         private final Request request;

@@ -21,6 +21,11 @@
  */
 package com.uber.tchannel.handlers;
 
+import com.uber.jaeger.Tracer;
+import com.uber.jaeger.reporters.InMemoryReporter;
+import com.uber.jaeger.samplers.ConstSampler;
+import com.uber.jaeger.samplers.Sampler;
+import com.uber.tchannel.tracing.TracingContext;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
@@ -32,6 +37,7 @@ import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.messages.generated.Example;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -42,6 +48,18 @@ import static org.junit.Assert.assertNull;
 
 public class TestThriftAsyncRequestHandler extends BaseTest {
 
+    private static Tracer tracer;
+    private static InMemoryReporter reporter;
+    private static TracingContext tracingContext;
+
+    @BeforeClass
+    public static void setUp() throws Exception {
+        reporter = new InMemoryReporter();
+        Sampler sampler = new ConstSampler(true);
+        tracer = new Tracer.Builder("tchannel-name", reporter, sampler).build();
+        tracingContext = new TracingContext.ThreadLocal();
+    }
+
     @Test
     public void fullRequestResponse() throws Exception {
         final Example requestBody = new Example("Hello, World!", 10);
@@ -49,6 +67,8 @@ public class TestThriftAsyncRequestHandler extends BaseTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setTracer(tracer)
+            .setTracingContext(tracingContext)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new ThriftAsyncRequestHandler<Example, Example>() {
