@@ -48,18 +48,6 @@ import static org.junit.Assert.assertNull;
 
 public class TestThriftAsyncRequestHandler extends BaseTest {
 
-    private static Tracer tracer;
-    private static InMemoryReporter reporter;
-    private static TracingContext tracingContext;
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        reporter = new InMemoryReporter();
-        Sampler sampler = new ConstSampler(true);
-        tracer = new Tracer.Builder("tchannel-name", reporter, sampler).build();
-        tracingContext = new TracingContext.ThreadLocal();
-    }
-
     @Test
     public void fullRequestResponse() throws Exception {
         final Example requestBody = new Example("Hello, World!", 10);
@@ -67,8 +55,7 @@ public class TestThriftAsyncRequestHandler extends BaseTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
-            .setTracer(tracer)
-            .setTracingContext(tracingContext)
+            .setTracingContext(new TracingContext.ThreadLocal())
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new ThriftAsyncRequestHandler<Example, Example>() {
