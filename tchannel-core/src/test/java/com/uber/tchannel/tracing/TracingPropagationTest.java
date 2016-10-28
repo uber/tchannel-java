@@ -22,6 +22,8 @@
 
 package com.uber.tchannel.tracing;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.jaeger.Span;
 import com.uber.jaeger.Tracer;
 import com.uber.jaeger.reporters.InMemoryReporter;
@@ -32,6 +34,7 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.api.handlers.ThriftRequestHandler;
+import com.uber.tchannel.api.handlers.ThriftAsyncRequestHandler;
 import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
@@ -84,16 +87,22 @@ public class TracingPropagationTest {
 
     @Parameters(name = "{index}: encodings({0}), sampled({1})")
     public static Collection<Object[]> data() {
-        String[] encodings = new String[] { "json", "thrift" };
-        boolean[] sampling = new boolean[] { true, false };
+        // String[] encodings = new String[] { "json", "thrift", "thriftAsync" };
+        // boolean[] sampling = new boolean[] { true, false };
         List<Object[]> data = new ArrayList<>();
-        for (String encoding1 : encodings) {
-            for (String encoding2 : encodings) {
-                for (boolean sampled: sampling) {
-                    data.add(new Object[] { encoding1 + "," + encoding2, sampled });
-                }
-            }
-        }
+        data.add(new Object[] {"thriftAsync,json", true});
+        // data.add(new Object[] {"thriftAsync,json", true});
+        // data.add(new Object[] {"thriftAsync,json", false});
+        // data.add(new Object[] {"thriftAsync,thrift", true});
+        // data.add(new Object[] {"thriftAsync,thrift", false});
+
+        // for (String encoding1 : encodings) {
+        //     for (String encoding2 : encodings) {
+        //         for (boolean sampled: sampling) {
+        //             data.add(new Object[] { encoding1 + "," + encoding2, sampled });
+        //         }
+        //     }
+        // }
         return data;
     }
 
@@ -113,7 +122,8 @@ public class TracingPropagationTest {
 
         subChannel = tchannel.makeSubChannel("tchannel-name")
                 .register("endpoint", new JSONHandler())
-                .register("Behavior::trace", new ThriftHandler());
+                .register("Behavior::trace", new ThriftHandler())
+                .register("Behavior::asynctrace", new ThriftAsyncHandler());
 
         tchannel.listen();
     }
@@ -174,6 +184,22 @@ public class TracingPropagationTest {
         }
     }
 
+    private static class ThriftAsyncHandler extends ThriftAsyncRequestHandler<Example, Example> {
+        @Override
+        public ListenableFuture<ThriftResponse<Example>> handleImpl(ThriftRequest<Example> request) {
+            String encodings = request.getBody(Example.class).getAString();
+            TraceResponse traceResponse = observeSpanAndDownstream(encodings);
+            ByteBuf bytes = new JSONSerializer().encodeBody(traceResponse);
+            Example thriftResponse = new Example(new String(bytes.array()), 0);
+            bytes.release();
+            ThriftResponse<Example> response = new ThriftResponse.Builder<Example>(request)
+                    .setTransportHeaders(request.getTransportHeaders())
+                    .setBody(thriftResponse)
+                    .build();
+            return Futures.immediateFuture(response);
+        }
+    }
+
     private static TraceResponse observeSpanAndDownstream(String encodings) {
         Span span = (Span) tracingContext.currentSpan();
         TraceResponse response = new TraceResponse();
@@ -205,6 +231,8 @@ public class TracingPropagationTest {
             return callDownstreamJSON(remainingEncodings);
         } else if (encoding.equals("thrift")) {
             return callDownstreamThrift(remainingEncodings);
+        } else if (encoding.equals("thriftAsync")) {
+            return callDownstreamThriftAsync(remainingEncodings);
         } else {
             throw new IllegalArgumentException(encodings);
         }
@@ -224,6 +252,7 @@ public class TracingPropagationTest {
         );
 
         JsonResponse<TraceResponse> response = responsePromise.get();
+        System.out.println("callDownstreamJSON post-responsePromise.get " + response);
         assertNull(response.getError());
         TraceResponse resp = response.getBody(TraceResponse.class);
         response.release();
@@ -233,6 +262,30 @@ public class TracingPropagationTest {
     private static TraceResponse callDownstreamThrift(String remainingEncodings) throws Exception {
         ThriftRequest<Example> request = new ThriftRequest
                 .Builder<Example>("tchannel-name", "Behavior::trace")
+                .setTimeout(1, TimeUnit.MINUTES)
+                .setBody(new Example(remainingEncodings, 0))
+                .build();
+
+        TFuture<ThriftResponse<Example>> responsePromise = subChannel.send(
+                request,
+                tchannel.getHost(),
+                tchannel.getListeningPort()
+        );
+
+        ThriftResponse<Example> thriftResponse = responsePromise.get();
+        assertNull(thriftResponse.getError());
+        String json = thriftResponse.getBody(Example.class).getAString();
+        thriftResponse.release();
+        ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
+        byteBuf.writeBytes(json.getBytes());
+        TraceResponse response = new JSONSerializer().decodeBody(byteBuf, TraceResponse.class);
+        byteBuf.release();
+        return response;
+    }
+
+    private static TraceResponse callDownstreamThriftAsync(String remainingEncodings) throws Exception {
+        ThriftRequest<Example> request = new ThriftRequest
+                .Builder<Example>("tchannel-name", "Behavior::asynctrace")
                 .setTimeout(1, TimeUnit.MINUTES)
                 .setBody(new Example(remainingEncodings, 0))
                 .build();
