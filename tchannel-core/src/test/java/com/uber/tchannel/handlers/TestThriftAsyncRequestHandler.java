@@ -55,7 +55,6 @@ public class TestThriftAsyncRequestHandler extends BaseTest {
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))
-            .setTracingContext(new TracingContext.ThreadLocal())
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new ThriftAsyncRequestHandler<Example, Example>() {
