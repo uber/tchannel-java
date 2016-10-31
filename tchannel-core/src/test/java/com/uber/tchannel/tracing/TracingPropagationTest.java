@@ -187,6 +187,8 @@ public class TracingPropagationTest {
     private static class ThriftAsyncHandler extends ThriftAsyncRequestHandler<Example, Example> {
         @Override
         public ListenableFuture<ThriftResponse<Example>> handleImpl(final ThriftRequest<Example> request) {
+            // To make downstream calls the original thread should be released therefore a future is
+            // setup and returned. This also simulates the behavior of a real handler impl better.
             final SettableFuture<ThriftResponse<Example>> responseFuture = SettableFuture.create();
             ListeningExecutorService service = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(1));
