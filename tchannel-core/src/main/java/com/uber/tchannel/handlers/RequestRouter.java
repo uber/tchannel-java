@@ -27,8 +27,10 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.handlers.AsyncRequestHandler;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
@@ -131,9 +133,17 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             return;
         }
 
-        // Handle the request in a separate thread and get a future to it
-        ListenableFuture<Response> responseFuture = listeningExecutorService.submit(
+        ListenableFuture<Response> responseFuture;
+        // In case of an AsyncRequestHandler no need to submit a task on the executor. It does
+        // require a down-cast to AsyncRequestHandler.
+        if (handler instanceof AsyncRequestHandler) {
+            AsyncRequestHandler asyncHandler = (AsyncRequestHandler) handler;
+            responseFuture = sendRequestToAsyncHandler(asyncHandler, request);
+        } else {
+            // Handle the request in a separate thread and get a future to it
+            responseFuture = listeningExecutorService.submit(
                 new CallableHandler(handler, topChannel, request));
+        }
 
         Futures.addCallback(responseFuture, new FutureCallback<Response>() {
             @Override
@@ -206,6 +216,48 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         }
     }
 
+    private ListenableFuture<Response> sendRequestToAsyncHandler(
+            final AsyncRequestHandler asyncHandler, final Request request) {
+        // span used to trace this request
+        final Span span;
+        // Tracer and TracingContext are only present when the channel is created with them
+        // therefore can be null.
+        if (topChannel.getTracer() != null) {
+            span = Tracing.startInboundSpan(request, topChannel.getTracer(),
+                topChannel.getTracingContext());
+        } else {
+            span = null;
+        }
+        final SettableFuture<Response> responseFuture = SettableFuture.create();
+        ListenableFuture<Response> handlerResponseFuture =
+            (ListenableFuture<Response>) asyncHandler.handleAsync(request);
+        // Add callback handlers that close out the tracing span and then proxy the response.
+        Futures.addCallback(handlerResponseFuture, new FutureCallback<Response>() {
+            @Override
+            public void onSuccess(Response response) {
+                doRequestEndProcessing();
+                responseFuture.set(response);
+            }
+
+            @Override
+            public void onFailure(Throwable e) {
+                if (span != null) {
+                    span.log("exception", e);
+                }
+                doRequestEndProcessing();
+                responseFuture.setException(e);
+            }
+
+            private void doRequestEndProcessing() {
+                if (span != null) {
+                    span.finish();
+                }
+                request.release();
+                topChannel.getTracingContext().clear();
+            }
+        });
+        return responseFuture;
+    }
 
     private class CallableHandler implements Callable<Response> {
         private final Request request;

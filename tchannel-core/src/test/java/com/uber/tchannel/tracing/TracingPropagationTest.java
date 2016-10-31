@@ -22,6 +22,11 @@
 
 package com.uber.tchannel.tracing;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import com.uber.jaeger.Span;
 import com.uber.jaeger.Tracer;
 import com.uber.jaeger.reporters.InMemoryReporter;
@@ -32,6 +37,7 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.api.handlers.ThriftRequestHandler;
+import com.uber.tchannel.api.handlers.ThriftAsyncRequestHandler;
 import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
@@ -53,12 +59,15 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 /**
  * This test validates tracing context propagation through multiple network hops.
@@ -84,7 +93,7 @@ public class TracingPropagationTest {
 
     @Parameters(name = "{index}: encodings({0}), sampled({1})")
     public static Collection<Object[]> data() {
-        String[] encodings = new String[] { "json", "thrift" };
+        String[] encodings = new String[] { "json", "thrift", "thriftAsync" };
         boolean[] sampling = new boolean[] { true, false };
         List<Object[]> data = new ArrayList<>();
         for (String encoding1 : encodings) {
@@ -113,7 +122,8 @@ public class TracingPropagationTest {
 
         subChannel = tchannel.makeSubChannel("tchannel-name")
                 .register("endpoint", new JSONHandler())
-                .register("Behavior::trace", new ThriftHandler());
+                .register("Behavior::trace", new ThriftHandler())
+                .register("Behavior::asynctrace", new ThriftAsyncHandler());
 
         tchannel.listen();
     }
@@ -174,6 +184,42 @@ public class TracingPropagationTest {
         }
     }
 
+    private static class ThriftAsyncHandler extends ThriftAsyncRequestHandler<Example, Example> {
+        @Override
+        public ListenableFuture<ThriftResponse<Example>> handleImpl(final ThriftRequest<Example> request) {
+            // To make downstream calls the original thread should be released therefore a future is
+            // setup and returned. This also simulates the behavior of a real handler impl better.
+            final SettableFuture<ThriftResponse<Example>> responseFuture = SettableFuture.create();
+            ListeningExecutorService service = MoreExecutors.listeningDecorator(
+                Executors.newFixedThreadPool(1));
+            final Span span = (Span) tracingContext.currentSpan();
+            service.submit(new Callable<Object>() {
+                public Object call() {
+                    try {
+                        // continue the same span
+                        tracingContext.pushSpan(span);
+                        String encodings = request.getBody(Example.class).getAString();
+                        TraceResponse traceResponse = observeSpanAndDownstream(encodings);
+                        ByteBuf bytes = new JSONSerializer().encodeBody(traceResponse);
+                        Example thriftResponse = new Example(new String(bytes.array()), 0);
+                        bytes.release();
+                        ThriftResponse<Example> response = new ThriftResponse.Builder<Example>(request)
+                                .setTransportHeaders(request.getTransportHeaders())
+                                .setBody(thriftResponse)
+                                .build();
+                        responseFuture.set(response);
+                        return new Object();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        fail("Unexpected exception");
+                    }
+                    return null;
+                }
+            });
+            return responseFuture;
+        }
+    }
+
     private static TraceResponse observeSpanAndDownstream(String encodings) {
         Span span = (Span) tracingContext.currentSpan();
         TraceResponse response = new TraceResponse();
@@ -205,6 +251,8 @@ public class TracingPropagationTest {
             return callDownstreamJSON(remainingEncodings);
         } else if (encoding.equals("thrift")) {
             return callDownstreamThrift(remainingEncodings);
+        } else if (encoding.equals("thriftAsync")) {
+            return callDownstreamThriftAsync(remainingEncodings);
         } else {
             throw new IllegalArgumentException(encodings);
         }
@@ -222,7 +270,6 @@ public class TracingPropagationTest {
                 tchannel.getHost(),
                 tchannel.getListeningPort()
         );
-
         JsonResponse<TraceResponse> response = responsePromise.get();
         assertNull(response.getError());
         TraceResponse resp = response.getBody(TraceResponse.class);
@@ -233,6 +280,30 @@ public class TracingPropagationTest {
     private static TraceResponse callDownstreamThrift(String remainingEncodings) throws Exception {
         ThriftRequest<Example> request = new ThriftRequest
                 .Builder<Example>("tchannel-name", "Behavior::trace")
+                .setTimeout(1, TimeUnit.MINUTES)
+                .setBody(new Example(remainingEncodings, 0))
+                .build();
+
+        TFuture<ThriftResponse<Example>> responsePromise = subChannel.send(
+                request,
+                tchannel.getHost(),
+                tchannel.getListeningPort()
+        );
+
+        ThriftResponse<Example> thriftResponse = responsePromise.get();
+        assertNull(thriftResponse.getError());
+        String json = thriftResponse.getBody(Example.class).getAString();
+        thriftResponse.release();
+        ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
+        byteBuf.writeBytes(json.getBytes());
+        TraceResponse response = new JSONSerializer().decodeBody(byteBuf, TraceResponse.class);
+        byteBuf.release();
+        return response;
+    }
+
+    private static TraceResponse callDownstreamThriftAsync(String remainingEncodings) throws Exception {
+        ThriftRequest<Example> request = new ThriftRequest
+                .Builder<Example>("tchannel-name", "Behavior::asynctrace")
                 .setTimeout(1, TimeUnit.MINUTES)
                 .setBody(new Example(remainingEncodings, 0))
                 .build();
