@@ -92,9 +92,6 @@ public class HTTPServer implements Runnable {
 
     }
 
-    /**
-     * @return future that completes once the channel is shut down
-     */
     public void run() {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
