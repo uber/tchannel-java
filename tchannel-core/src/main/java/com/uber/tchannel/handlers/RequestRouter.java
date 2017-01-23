@@ -255,7 +255,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 request.release();
                 topChannel.getTracingContext().clear();
             }
-        });
+        }, listeningExecutorService); // invoke the callback on another thread, not the one that has resolved the future
         return responseFuture;
     }
 
