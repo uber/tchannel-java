@@ -39,6 +39,7 @@ import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.ResponseMessage;
 import com.uber.tchannel.tracing.Tracing;
+import com.uber.tchannel.tracing.TracingContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -229,8 +230,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             span = null;
         }
         final SettableFuture<Response> responseFuture = SettableFuture.create();
-        ListenableFuture<Response> handlerResponseFuture =
-            (ListenableFuture<Response>) asyncHandler.handleAsync(request);
+        ListenableFuture<? extends Response> handlerResponseFuture = asyncHandler.handleAsync(request);
         // Add callback handlers that close out the tracing span and then proxy the response.
         Futures.addCallback(handlerResponseFuture, new FutureCallback<Response>() {
             @Override
@@ -251,11 +251,14 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             private void doRequestEndProcessing() {
                 if (span != null) {
                     span.finish();
+                    TracingContext tracingContext = topChannel.getTracingContext();
+                    if (tracingContext.hasSpan()) {
+                        tracingContext.popSpan(); // pop the span pushed by Tracing.startInboundSpan(...)
+                    }
                 }
                 request.release();
-                topChannel.getTracingContext().clear();
             }
-        }, listeningExecutorService); // invoke the callback on another thread, not the one that has resolved the future
+        }, listeningExecutorService); // execute the callback asynchronously, not on the thread that resolves the future
         return responseFuture;
     }
 
