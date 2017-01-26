@@ -251,14 +251,13 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             private void doRequestEndProcessing() {
                 if (span != null) {
                     span.finish();
-                    TracingContext tracingContext = topChannel.getTracingContext();
-                    if (tracingContext.hasSpan()) {
-                        tracingContext.popSpan(); // pop the span pushed by Tracing.startInboundSpan(...)
-                    }
                 }
                 request.release();
             }
         }, listeningExecutorService); // execute the callback asynchronously, not on the thread that resolves the future
+        if (span != null) { // if we pushed something on tracing context stack in Tracing.startInboundSpan(...)
+            topChannel.getTracingContext().popSpan(); // pop it
+        }
         return responseFuture;
     }
 
