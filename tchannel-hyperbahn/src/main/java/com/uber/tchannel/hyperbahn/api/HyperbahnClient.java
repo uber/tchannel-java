@@ -207,6 +207,9 @@ public final class HyperbahnClient {
 
             List<InetSocketAddress> routers = new ArrayList<>();
             for (String hostPort : hostPorts) {
+                if (hostPort == null) {
+                    continue;
+                }
                 String[] hostPortPair = hostPort.split(Pattern.quote(":"));
                 String host = hostPortPair[0];
                 int port = Integer.parseInt(hostPortPair[1]);
