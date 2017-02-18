@@ -87,11 +87,8 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
     }
 
     private boolean hasMore(Frame frame) {
-        if (frame instanceof CallFrame) {
-            return ((CallFrame) frame).moreFragmentsFollow();
-        }
+        return frame instanceof CallFrame && ((CallFrame) frame).moreFragmentsFollow();
 
-        return false;
     }
 
     private TChannelMessage decodeCallFrame(ChannelHandlerContext ctx, CallFrame frame) {

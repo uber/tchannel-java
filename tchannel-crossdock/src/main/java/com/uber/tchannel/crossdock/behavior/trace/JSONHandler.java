@@ -56,8 +56,7 @@ class JSONHandler extends JSONRequestHandler<Request,Response> {
             if (jsonResponse.isError()) {
                 throw new Exception("Error response: " + jsonResponse.getError());
             }
-            Response response = jsonResponse.getBody(Response.class);
-            return response;
+            return jsonResponse.getBody(Response.class);
         } finally {
             jsonResponse.release();
         }

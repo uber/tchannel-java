@@ -76,15 +76,14 @@ public final class MessageCodec {
     }
 
     public static TFrame encode(ByteBufAllocator allocator, Frame msg) {
-        ByteBuf buffer = null;
+        ByteBuf buffer;
         if (msg instanceof CallFrame) {
             buffer = ((CallFrame)msg).getPayload();
         } else {
             buffer = msg.encodeHeader(allocator);
         }
 
-        TFrame frame = new TFrame(buffer.writerIndex(), msg.getType(), msg.getId(), buffer);
-        return frame;
+        return new TFrame(buffer.writerIndex(), msg.getType(), msg.getId(), buffer);
     }
 
     public static Frame decode(TFrame tFrame) throws TChannelError {

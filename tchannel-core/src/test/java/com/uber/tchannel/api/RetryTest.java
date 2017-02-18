@@ -66,7 +66,7 @@ public class RetryTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server")
+        server.makeSubChannel("server")
             .register("echo", new EchoHandler());
         server.listen();
 
@@ -111,11 +111,8 @@ public class RetryTest extends BaseTest {
         InetAddress host = InetAddress.getByName("127.0.0.1");
 
         // create server
-        final TChannel server = new TChannel.Builder("server")
-            .setServerHost(host)
-            .build();
-        final SubChannel subServer = server.makeSubChannel("server")
-            .register("echo", new EchoHandler());
+        final TChannel server = new TChannel.Builder("server").setServerHost(host).build();
+        server.makeSubChannel("server").register("echo", new EchoHandler());
         server.listen();
 
         final int port = server.getListeningPort();
@@ -160,12 +157,9 @@ public class RetryTest extends BaseTest {
         InetAddress host = InetAddress.getByName("127.0.0.1");
 
         // create server
-        final TChannel server = new TChannel.Builder("server")
-            .setServerHost(host)
-            .build();
+        final TChannel server = new TChannel.Builder("server").setServerHost(host).build();
         EchoHandler handler = new EchoHandler(4);
-        final SubChannel subServer = server.makeSubChannel("server")
-            .register("echo", handler);
+        server.makeSubChannel("server").register("echo", handler);
         server.listen();
 
         final int port = server.getListeningPort();
@@ -208,12 +202,9 @@ public class RetryTest extends BaseTest {
         InetAddress host = InetAddress.getByName("127.0.0.1");
 
         // create server
-        final TChannel server = new TChannel.Builder("server")
-            .setServerHost(host)
-            .build();
+        final TChannel server = new TChannel.Builder("server").setServerHost(host).build();
         EchoHandler handler = new EchoHandler(4);
-        final SubChannel subServer = server.makeSubChannel("server")
-            .register("echo", handler);
+        server.makeSubChannel("server").register("echo", handler);
         server.listen();
 
         final int port = server.getListeningPort();
@@ -257,12 +248,9 @@ public class RetryTest extends BaseTest {
         InetAddress host = InetAddress.getByName("127.0.0.1");
 
         // create server
-        final TChannel server = new TChannel.Builder("server")
-            .setServerHost(host)
-            .build();
+        final TChannel server = new TChannel.Builder("server").setServerHost(host).build();
         EchoHandler handler = new EchoHandler(5);
-        final SubChannel subServer = server.makeSubChannel("server")
-            .register("echo", handler);
+        server.makeSubChannel("server").register("echo", handler);
         server.listen();
 
         final int port = server.getListeningPort();
@@ -343,12 +331,9 @@ public class RetryTest extends BaseTest {
         InetAddress host = InetAddress.getByName("127.0.0.1");
 
         // create server
-        final TChannel server = new TChannel.Builder("server")
-            .setServerHost(host)
-            .build();
+        final TChannel server = new TChannel.Builder("server").setServerHost(host).build();
         EchoHandler handler = new EchoHandler(5);
-        final SubChannel subServer = server.makeSubChannel("server")
-            .register("echo", handler);
+        server.makeSubChannel("server").register("echo", handler);
         server.listen();
 
         final int port = server.getListeningPort();

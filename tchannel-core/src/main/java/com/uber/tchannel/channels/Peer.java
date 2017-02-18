@@ -22,21 +22,21 @@
 
 package com.uber.tchannel.channels;
 
-import java.net.SocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.HashMap;
-
 import com.uber.tchannel.api.errors.TChannelConnectionFailure;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelId;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelId;
+
+import java.net.SocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Peer manages connections to/from the same host_port. It provides a way to choose connections based on
@@ -92,8 +92,7 @@ public class Peer {
     }
 
     public Connection remove(Channel channel) {
-        Connection conn = connections.remove(channel.id());
-        return conn;
+        return connections.remove(channel.id());
     }
 
     public Connection connect(Bootstrap bootstrap, Connection.Direction preferredDirection) {
@@ -126,7 +125,7 @@ public class Peer {
 
     public Connection getConnection(ConnectionState preferedState, Connection.Direction preferredDirection) {
         Connection conn = null;
-        Connection next = null;
+        Connection next;
         for (ChannelId id : connections.keySet()) {
             next = connections.get(id);
             if (next.satisfy(preferedState)) {
@@ -169,7 +168,8 @@ public class Peer {
             Connection conn = connections.get(id);
             if (conn == null) {
                 continue;
-            } else if (conn.direction == Connection.Direction.OUT) {
+            }
+            if (conn.direction == Connection.Direction.OUT) {
                 out++;
             } else {
                 in++;

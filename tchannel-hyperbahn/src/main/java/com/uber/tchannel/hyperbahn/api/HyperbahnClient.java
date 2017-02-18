@@ -22,6 +22,19 @@
 
 package com.uber.tchannel.hyperbahn.api;
 
+import com.google.gson.Gson;
+import com.uber.tchannel.api.SubChannel;
+import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
+import com.uber.tchannel.api.handlers.TFutureCallback;
+import com.uber.tchannel.channels.Connection;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -32,19 +45,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
-
-import com.google.gson.Gson;
-import com.uber.tchannel.api.TFuture;
-import com.uber.tchannel.api.handlers.TFutureCallback;
-import com.uber.tchannel.messages.JsonRequest;
-import com.uber.tchannel.messages.JsonResponse;
-import com.uber.tchannel.api.SubChannel;
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.channels.Connection;
-import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
-import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class HyperbahnClient {
     private static final Logger logger = LoggerFactory.getLogger(HyperbahnClient.class);
@@ -57,7 +57,6 @@ public final class HyperbahnClient {
     private final TChannel tchannel;
     private final SubChannel hyperbahnChannel;
     private final List<InetSocketAddress> routers;
-    private final long advertiseTimeout;
     private final long advertiseInterval;
 
     private final Timer advertiseTimer = new Timer(true);
@@ -68,7 +67,6 @@ public final class HyperbahnClient {
         this.service = builder.service;
         this.tchannel = builder.channel;
         this.routers = builder.routers;
-        this.advertiseTimeout = builder.advertiseTimeout;
         this.advertiseInterval = builder.advertiseInterval;
         this.hyperbahnChannel = makeClientChannel(HYPERBAHN_SERVICE_NAME);
     }

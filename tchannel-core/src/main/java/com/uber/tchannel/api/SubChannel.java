@@ -139,7 +139,7 @@ public final class SubChannel {
 
         int start = new Random().nextInt(peers.size());
         int i = start;
-        boolean stop = false;
+        boolean stop;
         do {
             i = (i + 1) % peers.size();
             SubPeer peer = peers.get(i);

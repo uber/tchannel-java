@@ -79,7 +79,6 @@ public final class TChannel {
     private final int port;
     private String listeningHost = "0.0.0.0";
     private int listeningPort;
-    private ExecutorService exectorService;
     private final long initTimeout;
     private final int resetOnTimeoutLimit;
     private final int clientMaxPendingRequests;
@@ -92,7 +91,6 @@ public final class TChannel {
 
     private TChannel(Builder builder) {
         this.service = builder.service;
-        this.exectorService = builder.executorService;
         this.serverBootstrap = builder.serverBootstrap(this);
         this.bossGroup = builder.bossGroup;
         this.childGroup = builder.childGroup;
