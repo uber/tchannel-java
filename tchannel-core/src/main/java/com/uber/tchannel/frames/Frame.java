@@ -48,45 +48,31 @@ public abstract class Frame {
             throw new TChannelProtocol("Cannot read the frame type");
         }
 
-        Frame frame = null;
         switch (type) {
             case CallRequest:
-                frame = new CallRequestFrame(tFrame.id);
-                break;
+                return new CallRequestFrame(tFrame.id);
             case CallRequestContinue:
-                frame = new CallRequestContinueFrame(tFrame.id);
-                break;
+                return new CallRequestContinueFrame(tFrame.id);
             case CallResponse:
-                frame = new CallResponseFrame(tFrame.id);
-                break;
+                return new CallResponseFrame(tFrame.id);
             case CallResponseContinue:
-                frame = new CallResponseContinueFrame(tFrame.id);
-                break;
+                return new CallResponseContinueFrame(tFrame.id);
             case Cancel:
-                frame = new CancelFrame(tFrame.id);
-                break;
+                return new CancelFrame(tFrame.id);
             case Claim:
-                frame = new ClaimFrame(tFrame.id);
-                break;
+                return new ClaimFrame(tFrame.id);
             case Error:
-                frame = new ErrorFrame(tFrame.id);
-                break;
+                return new ErrorFrame(tFrame.id);
             case InitRequest:
-                frame = new InitRequestFrame(tFrame.id);
-                break;
+                return new InitRequestFrame(tFrame.id);
             case InitResponse:
-                frame = new InitResponseFrame(tFrame.id);
-                break;
+                return new InitResponseFrame(tFrame.id);
             case PingRequest:
-                frame = new PingRequestFrame(tFrame.id);
-                break;
+                return new PingRequestFrame(tFrame.id);
             case PingResponse:
-                frame = new PingResponseFrame(tFrame.id);
-                break;
+                return new PingResponseFrame(tFrame.id);
             default:
                 throw new TChannelCodec(String.format("Unknown FrameType: %s", type));
         }
-
-        return frame;
     }
 }

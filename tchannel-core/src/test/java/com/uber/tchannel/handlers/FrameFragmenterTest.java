@@ -106,7 +106,7 @@ public class FrameFragmenterTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server")
+        server.makeSubChannel("server")
             .register("echo", new EchoHandler());
         server.listen();
 

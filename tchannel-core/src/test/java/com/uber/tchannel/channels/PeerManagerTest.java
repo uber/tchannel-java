@@ -26,6 +26,8 @@ import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
+import com.uber.tchannel.api.handlers.RequestHandler;
+import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
@@ -33,10 +35,6 @@ import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
 import java.net.InetAddress;
-
-import com.uber.tchannel.api.handlers.RequestHandler;
-import com.uber.tchannel.messages.RawRequest;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Map;
@@ -56,7 +54,7 @@ public class PeerManagerTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server")
+        server.makeSubChannel("server")
             .register("echo", new EchoHandler());
         server.listen();
 
@@ -153,7 +151,7 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        future = subClient.send(
+        future = subClient2.send(
             req,
             host,
             port
@@ -194,7 +192,7 @@ public class PeerManagerTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server")
+        server.makeSubChannel("server")
             .register("echo", new EchoHandler());
         server.listen();
 
@@ -258,7 +256,7 @@ public class PeerManagerTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server", Connection.Direction.IN)
+        server.makeSubChannel("server", Connection.Direction.IN)
             .register("echo", new EchoHandler());
         server.listen();
 
@@ -322,7 +320,7 @@ public class PeerManagerTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server", Connection.Direction.OUT)
+        server.makeSubChannel("server", Connection.Direction.OUT)
             .register("echo", new EchoHandler());
         server.listen();
 
@@ -387,7 +385,7 @@ public class PeerManagerTest extends BaseTest {
             .setServerHost(host)
             .build();
         final EchoHandler echo1 = new EchoHandler();
-        final SubChannel subServer1 = server1.makeSubChannel("server", Connection.Direction.OUT)
+        server1.makeSubChannel("server", Connection.Direction.OUT)
             .register("echo", echo1);
         server1.listen();
         final InetSocketAddress serverAddress1 = new InetSocketAddress("127.0.0.1", server1.getListeningPort());
@@ -396,7 +394,7 @@ public class PeerManagerTest extends BaseTest {
             .setServerHost(host)
             .build();
         final EchoHandler echo2 = new EchoHandler();
-        final SubChannel subServer2 = server2.makeSubChannel("server", Connection.Direction.OUT)
+        server2.makeSubChannel("server", Connection.Direction.OUT)
             .register("echo", echo2);
         server2.listen();
         final InetSocketAddress serverAddress2 = new InetSocketAddress("127.0.0.1", server2.getListeningPort());

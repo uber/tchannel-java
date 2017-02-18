@@ -41,8 +41,7 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
 
     @Override
     public String decodeEndpoint(ByteBuf arg1) {
-        String endpoint = arg1.toString(CharsetUtil.UTF_8);
-        return endpoint;
+        return arg1.toString(CharsetUtil.UTF_8);
     }
 
     @Override

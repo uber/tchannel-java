@@ -39,7 +39,6 @@ import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.ResponseMessage;
 import com.uber.tchannel.tracing.Tracing;
-import com.uber.tchannel.tracing.TracingContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -164,7 +163,6 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 sendError(ErrorType.UnexpectedError,
                     "Failed to handle the request: " + throwable.getMessage(),
                     request, ctx);
-                return;
             }
         });
     }

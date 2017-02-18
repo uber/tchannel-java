@@ -138,7 +138,6 @@ public class RequestTest extends BaseTest {
     public void requestTimeout() throws Exception {
 
         final String requestBody = "Hello, World!";
-        final int responseBody = 10;
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
             .setServerHost(InetAddress.getByName("127.0.0.1"))

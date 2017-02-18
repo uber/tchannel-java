@@ -275,7 +275,7 @@ public final class CodecUtils {
 
     public static void readArgs(List<ByteBuf> args, ByteBuf buffer) {
 
-        ByteBuf arg = null;
+        ByteBuf arg;
         if (args.isEmpty()) {
             args.add(Unpooled.EMPTY_BUFFER);
         }

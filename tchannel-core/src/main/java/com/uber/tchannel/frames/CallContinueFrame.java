@@ -22,49 +22,45 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
+import com.uber.tchannel.codecs.CodecUtils;
+import com.uber.tchannel.codecs.TFrame;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufHolder;
+import io.netty.buffer.ByteBufAllocator;
 
-public final class CallRequestContinueFrame extends CallContinueFrame {
+public abstract class CallContinueFrame extends CallFrame {
 
-    public CallRequestContinueFrame(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
-        this.id = id;
-        this.flags = flags;
-        this.checksumType = checksumType;
-        this.checksum = checksum;
-        this.payload = payload;
-    }
+    @Override
+    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
 
-    protected CallRequestContinueFrame(long id) {
-        this.id = id;
+        ByteBuf buffer = allocator.buffer(2, 6);
+
+        // flags:1
+        buffer.writeByte(getFlags());
+
+        // csumtype:1
+        buffer.writeByte(getChecksumType().byteValue());
+
+        // checksum -> (csum:4){0,1}
+        CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
+
+        return buffer;
     }
 
     @Override
-    public FrameType getType() {
-        return FrameType.CallRequestContinue;
-    }
+    public void decode(TFrame tFrame) {
 
-    @Override
-    public ByteBufHolder copy() {
-        return new CallRequestContinueFrame(
-                this.id,
-                this.flags,
-                this.checksumType,
-                this.checksum,
-                this.payload.copy()
-        );
-    }
+        // flags:1
+        flags = tFrame.payload.readByte();
 
-    @Override
-    public ByteBufHolder duplicate() {
-        return new CallRequestContinueFrame(
-                this.id,
-                this.flags,
-                this.checksumType,
-                this.checksum,
-                this.payload.duplicate()
-        );
-    }
+        // csumtype:1
+        checksumType = ChecksumType.fromByte(tFrame.payload.readByte());
 
-   
+        // (csum:4){0,1}
+        checksum = CodecUtils.decodeChecksum(checksumType, tFrame.payload);
+
+        // {continuation}
+        int payloadSize = tFrame.size - tFrame.payload.readerIndex();
+        payload = tFrame.payload.readSlice(payloadSize);
+    }
+    
 }

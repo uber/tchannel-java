@@ -67,7 +67,7 @@ public class ConnectionTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server")
+        server.makeSubChannel("server")
             .register("echo", new EchoHandler());
         server.listen();
 
@@ -129,7 +129,7 @@ public class ConnectionTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server")
+        server.makeSubChannel("server")
             .register("echo", new EchoHandler());
         server.listen();
 
@@ -277,7 +277,7 @@ public class ConnectionTest extends BaseTest {
         final TChannel server = new TChannel.Builder("server")
             .setServerHost(host)
             .build();
-        final SubChannel subServer = server.makeSubChannel("server")
+        server.makeSubChannel("server")
             .register("echo", new EchoHandler());
         server.listen();
 
@@ -322,7 +322,7 @@ public class ConnectionTest extends BaseTest {
             .setServerHost(host)
             .build();
         EchoHandler echoHandler = new EchoHandler(true);
-        final SubChannel subServer = server.makeSubChannel("server")
+        server.makeSubChannel("server")
             .register("echo", echoHandler);
         server.listen();
 

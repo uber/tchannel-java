@@ -22,13 +22,10 @@
 package com.uber.tchannel.frames;
 
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.codecs.CodecUtils;
-import com.uber.tchannel.codecs.TFrame;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
 
-public final class CallResponseContinueFrame extends CallFrame {
+public final class CallResponseContinueFrame extends CallContinueFrame {
 
     public CallResponseContinueFrame(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;
@@ -72,36 +69,4 @@ public final class CallResponseContinueFrame extends CallFrame {
         );
     }
 
-    @Override
-    public ByteBuf encodeHeader(ByteBufAllocator allocator) {
-        ByteBuf buffer = allocator.buffer(2, 6);
-
-        // flags:1
-        buffer.writeByte(getFlags());
-
-        // csumtype:1
-        buffer.writeByte(getChecksumType().byteValue());
-
-        // checksum -> (csum:4){0,1}
-        CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
-
-        return buffer;
-    }
-
-    @Override
-    public void decode(TFrame tFrame) {
-
-        // flags:1
-        flags = tFrame.payload.readByte();
-
-        // csumtype:1
-        checksumType = ChecksumType.fromByte(tFrame.payload.readByte());
-
-        // (csum:4){0,1}
-        checksum = CodecUtils.decodeChecksum(checksumType, tFrame.payload);
-
-        // {continuation}
-        int payloadSize = tFrame.size - tFrame.payload.readerIndex();
-        payload = tFrame.payload.readSlice(payloadSize);
-    }
 }

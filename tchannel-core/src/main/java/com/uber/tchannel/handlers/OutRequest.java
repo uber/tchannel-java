@@ -71,15 +71,8 @@ public final class OutRequest<V extends Response> {
         }
 
         // if it is the first attempt
-        if (count == 0) {
-            return true;
-        }
+        return count == 0 || shouldRetryOnError();
 
-        if (!shouldRetryOnError()) {
-            return false;
-        }
-
-        return true;
     }
 
     public Timeout getTimeout() {

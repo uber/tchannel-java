@@ -23,7 +23,6 @@
 package com.uber.tchannel.channels;
 
 import com.uber.tchannel.api.SubChannel;
-import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.handlers.OutRequest;
 
 import java.net.SocketAddress;
@@ -37,7 +36,6 @@ public class SubPeer {
     private static final double SCORE_FUZZ = 0.5;
 
     private final SocketAddress remoteAddress;
-    private final SubChannel subChannel;
     private final PeerManager peerManager;
 
     private double score = 0;
@@ -46,7 +44,6 @@ public class SubPeer {
 
     public SubPeer(SocketAddress remoteAddress, SubChannel subChannel) {
         this.remoteAddress = remoteAddress;
-        this.subChannel = subChannel;
         this.peerManager = subChannel.getPeerManager();
         this.direction = subChannel.getPreferredDirection();
     }
@@ -68,10 +65,9 @@ public class SubPeer {
         }
 
         Peer peer = getPeer();
-        boolean flag = false;
         if (peer == null) {
             score = SCORE_UNCONNECTED;
-            return flag;
+            return false;
         }
 
         connection = peer.getConnection(ConnectionState.IDENTIFIED, direction);
@@ -82,11 +78,11 @@ public class SubPeer {
         } else if (direction != Connection.Direction.NONE && direction != connection.direction) {
             score = SCORE_IDENTIFIED;
         } else {
-            flag = true;
             score = SCORE_PREFERRED_DIRECTION;
+            return true;
         }
 
-        return flag;
+        return false;
     }
 
     public Connection getPreferredConnection() {

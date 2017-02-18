@@ -38,14 +38,12 @@ import java.util.Map;
 public class ThriftSerializer implements Serializer.SerializerInterface {
     @Override
     public String decodeEndpoint(ByteBuf arg1) {
-        String endpoint = arg1.toString(CharsetUtil.UTF_8);
-        return endpoint;
+        return arg1.toString(CharsetUtil.UTF_8);
     }
 
     @Override
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
-        Map<String, String> headers = CodecUtils.decodeHeaders(arg2);
-        return headers;
+        return CodecUtils.decodeHeaders(arg2);
     }
 
     @Override
