@@ -27,24 +27,19 @@ import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
 import com.uber.tchannel.api.handlers.HealthCheckRequestHandler;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.Connection;
+import com.uber.tchannel.channels.Connection.Direction;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.SubPeer;
-import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.handlers.OutRequest;
 import com.uber.tchannel.handlers.ResponseRouter;
-import com.uber.tchannel.headers.ArgScheme;
-import com.uber.tchannel.headers.TransportHeaders;
-import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
-import com.uber.tchannel.messages.Serializer;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
-import com.uber.tchannel.messages.ThriftSerializer;
 import com.uber.tchannel.tracing.Tracing;
 
 import java.net.InetAddress;
@@ -55,32 +50,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static com.uber.tchannel.channels.Connection.Direction.NONE;
+import static com.uber.tchannel.errors.ErrorType.BadRequest;
+import static com.uber.tchannel.errors.ErrorType.NetworkError;
+import static com.uber.tchannel.headers.ArgScheme.RAW;
+import static com.uber.tchannel.headers.TransportHeaders.CALLER_NAME_KEY;
+
 public final class SubChannel {
 
     private final String service;
     private final TChannel topChannel;
     private final PeerManager peerManager;
     private final long initTimeout;
-    private final Connection.Direction preferredDirection;
+    private final Direction preferredDirection;
     private final List<SubPeer> peers = new ArrayList<>();
     private final Map<String, RequestHandler> requestHandlers = new HashMap<>();
 
-    private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
-        {
-            put(ArgScheme.JSON, new JSONSerializer());
-            put(ArgScheme.THRIFT, new ThriftSerializer());
-        }
-    });
-
     public SubChannel(String service, TChannel topChannel) {
-        this.service = service;
-        this.topChannel = topChannel;
-        this.peerManager = topChannel.getPeerManager();
-        this.initTimeout = topChannel.getInitTimeout();
-        this.preferredDirection = Connection.Direction.NONE;
+        this(service, topChannel, NONE);
     }
 
-    public SubChannel(String service, TChannel topChannel, Connection.Direction preferredDirection) {
+    public SubChannel(String service, TChannel topChannel, Direction preferredDirection) {
         this.service = service;
         this.topChannel = topChannel;
         this.peerManager = topChannel.getPeerManager();
@@ -118,7 +108,7 @@ public final class SubChannel {
         return requestHandlers.get(endpoint);
     }
 
-    public Connection.Direction getPreferredDirection() {
+    public Direction getPreferredDirection() {
         return preferredDirection;
     }
 
@@ -126,11 +116,9 @@ public final class SubChannel {
         for (InetSocketAddress peer : peers) {
             this.peers.add(new SubPeer(peer, this));
         }
-
         return this;
     }
 
-    private final Random random = new Random();
     public SubPeer choosePeer(OutRequest outRequest) {
         SubPeer res = null;
         if (peers.size() == 0) {
@@ -186,63 +174,42 @@ public final class SubChannel {
         return res;
     }
 
-    public <T, U> TFuture<ThriftResponse<U>> send(
-            ThriftRequest<T> request,
-            InetAddress host,
-            int port
-    ) throws TChannelError {
+    public <T, U> TFuture<ThriftResponse<U>> send(ThriftRequest<T> request, 
+                                                  InetAddress host, int port) throws TChannelError {
         // Set the "cn" header
         // TODO: should make "cn" an option
-        request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
+        request.setTransportHeader(CALLER_NAME_KEY, this.topChannel.getServiceName());
         return sendRequest(request, host, port);
     }
 
-    public <T, U> TFuture<ThriftResponse<U>> send(
-        ThriftRequest<T> request
-    ) throws TChannelError {
+    public <T, U> TFuture<ThriftResponse<U>> send(ThriftRequest<T> request) throws TChannelError {
         return send(request, null, 0);
     }
 
-    public <T, U> TFuture<JsonResponse<U>> send(
-        JsonRequest<T> request,
-        InetAddress host,
-        int port
-    ) {
+    public <T, U> TFuture<JsonResponse<U>> send(JsonRequest<T> request, InetAddress host, int port) {
         // Set the "cn" header
         // TODO: should make "cn" an option
-        request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
+        request.setTransportHeader(CALLER_NAME_KEY, this.topChannel.getServiceName());
         return sendRequest(request, host, port);
     }
 
-    public <T, U> TFuture<JsonResponse<U>> send(
-        JsonRequest<T> request
-    ) {
+    public <T, U> TFuture<JsonResponse<U>> send(JsonRequest<T> request) {
         return send(request, null, 0);
     }
 
-    public TFuture<RawResponse> send(
-        RawRequest request,
-        InetAddress host,
-        int port
-    ) {
+    public TFuture<RawResponse> send(RawRequest request, InetAddress host, int port) {
         // Set the "cn" header
         // TODO: should make "cn" an option
-        request.setTransportHeader(TransportHeaders.CALLER_NAME_KEY, this.topChannel.getServiceName());
+        request.setTransportHeader(CALLER_NAME_KEY, this.topChannel.getServiceName());
         return sendRequest(request, host, port);
     }
 
-    public TFuture<RawResponse> send(
-        RawRequest request
-    ) {
+    public TFuture<RawResponse> send(RawRequest request) {
         return send(request, null, 0);
     }
 
-    protected <V extends Response> TFuture<V> sendRequest(
-        Request request,
-        InetAddress host,
-        int port
-    ) {
-        OutRequest<V> outRequest = new OutRequest<V>(this, request);
+    protected <V extends Response> TFuture<V> sendRequest(Request request, InetAddress host, int port) {
+        OutRequest<V> outRequest = new OutRequest<>(this, request);
         if (host != null) {
             Connection conn = peerManager.findOrNew(new InetSocketAddress(host, port));
             // No retry for direct connections
@@ -251,7 +218,7 @@ public final class SubChannel {
                 outRequest.setFuture();
             }
         } else if (peers.size() == 0) {
-            outRequest.setLastError(ErrorType.BadRequest, new TChannelNoPeerAvailable());
+            outRequest.setLastError(BadRequest, new TChannelNoPeerAvailable());
             outRequest.setFuture();
         } else {
             sendOutRequest(outRequest);
@@ -260,10 +227,7 @@ public final class SubChannel {
         return outRequest.getFuture();
     }
 
-    protected boolean sendOutRequest(
-        OutRequest outRequest,
-        Connection connection
-    ) {
+    protected boolean sendOutRequest(OutRequest outRequest, Connection connection) {
         Request request = outRequest.getRequest();
 
         // The tracing span is finish()'ed via callback on outRequest.getFuture()
@@ -272,8 +236,8 @@ public final class SubChannel {
 
         // Validate if the ArgScheme is set correctly
         if (request.getArgScheme() == null) {
-            request.setArgScheme(ArgScheme.RAW);
-            outRequest.setLastError(ErrorType.BadRequest, "Expect call request to have Arg Scheme specified");
+            request.setArgScheme(RAW);
+            outRequest.setLastError(BadRequest, "Expect call request to have Arg Scheme specified");
             outRequest.setFuture();
             return false;
         }
@@ -289,15 +253,15 @@ public final class SubChannel {
         }
 
         if (connection == null) {
-            outRequest.setLastError(ErrorType.BadRequest, new TChannelNoPeerAvailable());
+            outRequest.setLastError(BadRequest, new TChannelNoPeerAvailable());
             outRequest.setFuture();
             return false;
         } else if (!connection.waitForIdentified(initTimeout)) {
             connection.clean();
             if (connection.lastError() != null) {
-                outRequest.setLastError(ErrorType.NetworkError, connection.lastError());
+                outRequest.setLastError(NetworkError, connection.lastError());
             } else {
-                outRequest.setLastError(ErrorType.NetworkError, new TChannelConnectionTimeout());
+                outRequest.setLastError(NetworkError, new TChannelConnectionTimeout());
             }
 
             return false;
