@@ -33,13 +33,13 @@ import com.uber.tchannel.messages.RawResponse;
 
 import java.net.InetAddress;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class AsyncRequest {
     public static void main(String[] args) throws Exception {
         TChannel server = createServer();
         TChannel client = createClient();
 
+        // create sub channel to talk to server
         SubChannel subChannel = client.makeSubChannel("server");
 
         final long start = System.currentTimeMillis();
@@ -85,7 +85,7 @@ public class AsyncRequest {
         client.shutdown(false);
     }
 
-    protected static TChannel createServer() throws Exception {
+    private static TChannel createServer() throws Exception {
 
         // create TChannel
         TChannel tchannel = new TChannel.Builder("server")
@@ -129,14 +129,9 @@ public class AsyncRequest {
         return tchannel;
     }
 
-    protected static TChannel createClient() throws Exception {
-
+    private static TChannel createClient() throws Exception {
         // create TChannel
-        TChannel tchannel = new TChannel.Builder("client")
+        return new TChannel.Builder("client")
             .build();
-
-        // create sub channel to talk to server
-        tchannel.makeSubChannel("server");
-        return tchannel;
     }
 }
