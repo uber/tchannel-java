@@ -22,9 +22,9 @@
 package com.uber.tchannel.api;
 
 import com.uber.tchannel.api.handlers.RequestHandler;
+import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
-import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
 import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
@@ -37,7 +37,6 @@ import com.uber.tchannel.tracing.TracingContext;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -62,7 +61,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+
+import static io.netty.buffer.PooledByteBufAllocator.DEFAULT;
+import static io.netty.channel.ChannelOption.ALLOCATOR;
+import static io.netty.channel.ChannelOption.SO_KEEPALIVE;
+import static io.netty.channel.ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK;
+import static io.netty.channel.ChannelOption.WRITE_BUFFER_LOW_WATER_MARK;
+import static java.lang.Integer.MAX_VALUE;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public final class TChannel {
 
@@ -79,7 +85,7 @@ public final class TChannel {
     private final int port;
     private String listeningHost = "0.0.0.0";
     private int listeningPort;
-    private ExecutorService exectorService;
+    private final ExecutorService executorService;
     private final long initTimeout;
     private final int resetOnTimeoutLimit;
     private final int clientMaxPendingRequests;
@@ -92,19 +98,20 @@ public final class TChannel {
 
     private TChannel(Builder builder) {
         this.service = builder.service;
-        this.exectorService = builder.executorService;
-        this.serverBootstrap = builder.serverBootstrap(this);
+        this.executorService = builder.executorService;
         this.bossGroup = builder.bossGroup;
         this.childGroup = builder.childGroup;
         this.host = builder.host;
         this.port = builder.port;
         this.initTimeout = builder.initTimeout;
         this.resetOnTimeoutLimit = builder.resetOnTimeoutLimit;
-        this.peerManager = new PeerManager(builder.bootstrap(this));
         this.timer = builder.timer;
         this.clientMaxPendingRequests = builder.clientMaxPendingRequests;
         this.tracer = builder.tracer;
         this.tracingContext = builder.tracingContext;
+
+        this.serverBootstrap = serverBootstrap();
+        this.peerManager = new PeerManager(bootstrap());
     }
 
     public String getListeningHost() {
@@ -224,19 +231,89 @@ public final class TChannel {
         this.customRequestRouter = customRequestRouter;
     }
 
+    private Bootstrap bootstrap() {
+        return new Bootstrap()
+                .group(childGroup)
+                .channel(NioSocketChannel.class)
+                .handler(channelInitializer(false, this))
+                .option(ALLOCATOR, DEFAULT)
+                .option(WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
+                .option(WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .validate();
+    }
+
+    private ServerBootstrap serverBootstrap() {
+        return new ServerBootstrap()
+                .group(bossGroup, childGroup)
+                .channel(NioServerSocketChannel.class)
+                .handler(new LoggingHandler(LogLevel.INFO))
+                .option(ChannelOption.SO_BACKLOG, 128)
+                .childHandler(channelInitializer(true, this))
+                .childOption(SO_KEEPALIVE, true)
+                .childOption(ALLOCATOR, DEFAULT)
+                .childOption(WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
+                .childOption(WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .validate();
+    }
+
+    private ChannelInitializer<SocketChannel> channelInitializer(final boolean isServer,
+                                                                 final TChannel topChannel) {
+        return new ChannelInitializer<SocketChannel>() {
+            @Override
+            protected void initChannel(SocketChannel ch) throws Exception {
+                // Translates TCP Streams to Raw Frames
+                ch.pipeline().addLast("FrameDecoder", new TChannelLengthFieldBasedFrameDecoder());
+
+                // Translates Raw Frames into TFrames
+                // ch.pipeline().addLast("TFrameCodec", new TFrameCodec());
+
+                // Translates TFrames into Messages
+                // ch.pipeline().addLast("MessageCodec", new MessageCodec());
+
+                if (isServer) {
+                    ch.pipeline().addLast("InitRequestHandler",
+                            new InitRequestHandler(topChannel.getPeerManager()));
+                } else {
+                    ch.pipeline().addLast("InitRequestInitiator",
+                            new InitRequestInitiator(topChannel.getPeerManager()));
+                }
+
+                // Ping frame is not current used
+                // Handle PingRequestFrame
+                // ch.pipeline().addLast("PingHandler", new PingHandler());
+
+                // Handles Call Request RPC
+                ch.pipeline().addLast("MessageDefragmenter", new MessageDefragmenter());
+                ch.pipeline().addLast("MessageFragmenter", new MessageFragmenter());
+
+                // Pass RequestHandlers to the RequestRouter
+                if (topChannel.getCustomRequestRouter() != null) {
+                    ch.pipeline().addLast("RequestRouter", topChannel.getCustomRequestRouter());
+                } else {
+                    ch.pipeline().addLast("RequestRouter", new RequestRouter(
+                            topChannel, topChannel.executorService));
+                }
+                ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel, timer));
+
+                // Register Channels as they are created.
+                ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(topChannel.getPeerManager()));
+            }
+        };
+    }
+
     public static class Builder {
 
-        private final HashedWheelTimer timer;
-        private static ExecutorService executorService = new ForkJoinPool();
+        private HashedWheelTimer timer;
+        private ExecutorService executorService = new ForkJoinPool();
         private EventLoopGroup bossGroup;
         private EventLoopGroup childGroup;
 
-        private final String service;
+        private String service;
         private InetAddress host;
         private int port = 0;
 
         private long initTimeout = -1;
-        private int resetOnTimeoutLimit = Integer.MAX_VALUE;
+        private int resetOnTimeoutLimit = MAX_VALUE;
         private int clientMaxPendingRequests = 100000;
 
         private Tracer tracer;
@@ -253,13 +330,13 @@ public final class TChannel {
                 logger.error("failed to get current IP");
             }
 
-            timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
+            timer = new HashedWheelTimer(10, MILLISECONDS);
             bossGroup = new NioEventLoopGroup(1);
             childGroup = new NioEventLoopGroup();
         }
 
         public Builder setExecutorService(ExecutorService executorService) {
-            Builder.executorService = executorService;
+            this.executorService = executorService;
             return this;
         }
 
@@ -312,75 +389,5 @@ public final class TChannel {
             return new TChannel(this);
         }
 
-        private Bootstrap bootstrap(TChannel topChannel) {
-            return new Bootstrap()
-                .group(this.childGroup)
-                .channel(NioSocketChannel.class)
-                .handler(this.channelInitializer(false, topChannel))
-                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
-                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
-                .validate();
-        }
-
-        private ServerBootstrap serverBootstrap(TChannel topChannel) {
-            return new ServerBootstrap()
-                .group(this.bossGroup, this.childGroup)
-                .channel(NioServerSocketChannel.class)
-                .handler(new LoggingHandler(LogLevel.INFO))
-                .option(ChannelOption.SO_BACKLOG, 128)
-                .childHandler(this.channelInitializer(true, topChannel))
-                .childOption(ChannelOption.SO_KEEPALIVE, true)
-                .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
-                .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
-                .validate();
-        }
-
-        private ChannelInitializer<SocketChannel> channelInitializer(final boolean isServer,
-                                                                     final TChannel topChannel) {
-            return new ChannelInitializer<SocketChannel>() {
-                @Override
-                protected void initChannel(SocketChannel ch) throws Exception {
-                    // Translates TCP Streams to Raw Frames
-                    ch.pipeline().addLast("FrameDecoder", new TChannelLengthFieldBasedFrameDecoder());
-
-                    // Translates Raw Frames into TFrames
-                    // ch.pipeline().addLast("TFrameCodec", new TFrameCodec());
-
-                    // Translates TFrames into Messages
-                    // ch.pipeline().addLast("MessageCodec", new MessageCodec());
-
-                    if (isServer) {
-                        ch.pipeline().addLast("InitRequestHandler",
-                            new InitRequestHandler(topChannel.getPeerManager()));
-                    } else {
-                        ch.pipeline().addLast("InitRequestInitiator",
-                            new InitRequestInitiator(topChannel.getPeerManager()));
-                    }
-
-                    // Ping frame is not current used
-                    // Handle PingRequestFrame
-                    // ch.pipeline().addLast("PingHandler", new PingHandler());
-
-                    // Handles Call Request RPC
-                    ch.pipeline().addLast("MessageDefragmenter", new MessageDefragmenter());
-                    ch.pipeline().addLast("MessageFragmenter", new MessageFragmenter());
-
-                    // Pass RequestHandlers to the RequestRouter
-                    if (topChannel.getCustomRequestRouter() != null) {
-                        ch.pipeline().addLast("RequestRouter", topChannel.getCustomRequestRouter());
-                    } else {
-                        ch.pipeline().addLast("RequestRouter", new RequestRouter(
-                                topChannel, executorService));
-                    }
-                    ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel, timer));
-
-                    // Register Channels as they are created.
-                    ch.pipeline().addLast("ChannelRegistrar", new ChannelRegistrar(topChannel.getPeerManager()));
-
-                }
-            };
-        }
     }
 }
