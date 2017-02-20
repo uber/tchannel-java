@@ -9,12 +9,6 @@
 
     <artifactId>tchannel-hyperbahn</artifactId>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
-    <packaging>jar</packaging>
-
     <dependencies>
         <dependency>
             <groupId>com.uber.tchannel</groupId>
@@ -24,8 +18,11 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.13</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
         </dependency>
     </dependencies>
 </project>
