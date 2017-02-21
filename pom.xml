@@ -156,6 +156,16 @@
                 <artifactId>jmh-generator-annprocess</artifactId>
                 <version>1.10.4</version>
             </dependency>
+            <dependency>
+                <groupId>com.uber.tchannel</groupId>
+                <artifactId>tchannel-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.uber.tchannel</groupId>
+                <artifactId>tchannel-hyperbahn</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     

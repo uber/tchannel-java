@@ -34,12 +34,10 @@
         <dependency>
             <groupId>com.uber.tchannel</groupId>
             <artifactId>tchannel-core</artifactId>
-            <version>0.6.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.uber.tchannel</groupId>
             <artifactId>tchannel-hyperbahn</artifactId>
-            <version>0.6.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
