@@ -417,8 +417,8 @@ public class PeerManagerTest extends BaseTest {
 
         Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
         Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
-        conn1.waitForIdentified(3000);
-        conn2.waitForIdentified(3000);
+        conn1.waitForIdentified(6000);
+        conn2.waitForIdentified(6000);
 
         // checking the connections
         Map<String, Integer> stats = client.getPeerManager().getStats();
