@@ -163,8 +163,8 @@ public class PeerManager {
     }
 
     public void close() {
-        for (SocketAddress addr : peers.keySet()) {
-            peers.get(addr).close();
+        for (Peer peer : peers.values()) {
+            peer.close();
         }
 
         peers.clear();
@@ -182,13 +182,13 @@ public class PeerManager {
     public Map<String, Integer> getStats() {
         int in = 0;
         int out = 0;
-        for (SocketAddress addr : peers.keySet()) {
-            Map<String, Integer> connStats = peers.get(addr).getStats();
+        for (Peer peer : peers.values()) {
+            Map<String, Integer> connStats = peer.getStats();
             in += connStats.get("connections.in");
             out += connStats.get("connections.out");
         }
 
-        Map<String, Integer> result = new HashMap<>();
+        Map<String, Integer> result = new HashMap<>(3);
         result.put("connections.in", in);
         result.put("connections.out", out);
         return result;
