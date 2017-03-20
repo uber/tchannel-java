@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.uber.jaeger.Span;
+import com.uber.jaeger.SpanContext;
 import com.uber.jaeger.Tracer;
 import com.uber.jaeger.reporters.InMemoryReporter;
 import com.uber.jaeger.samplers.ConstSampler;
@@ -223,8 +224,9 @@ public class TracingPropagationTest {
     private static TraceResponse observeSpanAndDownstream(String encodings) {
         Span span = (Span) tracingContext.currentSpan();
         TraceResponse response = new TraceResponse();
-        response.traceId = String.format("%x", span.getContext().getTraceID());
-        response.sampled = span.getContext().isSampled();
+        SpanContext context = span.context();
+        response.traceId = String.format("%x", context.getTraceID());
+        response.sampled = context.isSampled();
         response.baggage = span.getBaggageItem(BAGGAGE_KEY);
         try {
             response.downstream = callDownstream(encodings);
@@ -328,7 +330,8 @@ public class TracingPropagationTest {
     @Test
     public void testPropagation() throws Exception {
         Span span = (Span) tracer.buildSpan("root").start();
-        String traceId = String.format("%x", span.getContext().getTraceID());
+        SpanContext context = span.context();
+        String traceId = String.format("%x", context.getTraceID());
         String baggage = "Baggage-" + System.currentTimeMillis();
         span.setBaggageItem(BAGGAGE_KEY, baggage);
         if (!sampled) {

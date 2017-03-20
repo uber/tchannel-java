@@ -144,7 +144,7 @@
             <dependency>
                 <groupId>com.uber.jaeger</groupId>
                 <artifactId>jaeger-core</artifactId>
-                <version>0.13.0</version>
+                <version>0.17.0</version>
             </dependency>
             <dependency>
                 <groupId>org.openjdk.jmh</groupId>
