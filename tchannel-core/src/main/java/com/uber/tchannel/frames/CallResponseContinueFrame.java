@@ -39,37 +39,16 @@ public final class CallResponseContinueFrame extends CallFrame {
     }
 
     public CallResponseContinueFrame(long id, ChecksumType checksumType, int checksum) {
-        this.id = id;
-        this.checksumType = checksumType;
-        this.checksum = checksum;
+        this(id, (byte)0, checksumType, checksum, null);
     }
 
     protected CallResponseContinueFrame(long id) {
-        this.id = id;
+        this(id, (byte)0, null, 0, null);
     }
 
+    @Override
     public FrameType getType() {
         return FrameType.CallResponseContinue;
-    }
-
-    public ByteBufHolder copy() {
-        return new CallResponseContinueFrame(
-                this.id,
-                this.flags,
-                this.checksumType,
-                this.checksum,
-                this.payload.copy()
-        );
-    }
-
-    public ByteBufHolder duplicate() {
-        return new CallResponseContinueFrame(
-                this.id,
-                this.flags,
-                this.checksumType,
-                this.checksum,
-                this.payload.copy()
-        );
     }
 
     @Override
@@ -103,5 +82,10 @@ public final class CallResponseContinueFrame extends CallFrame {
         // {continuation}
         int payloadSize = tFrame.size - tFrame.payload.readerIndex();
         payload = tFrame.payload.readSlice(payloadSize);
+    }
+
+    @Override
+    public ByteBufHolder replace(ByteBuf payload) {
+        return new CallRequestContinueFrame(this.id, this.flags, this.checksumType, this.checksum, payload);
     }
 }

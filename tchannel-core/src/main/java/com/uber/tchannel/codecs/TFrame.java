@@ -88,47 +88,67 @@ public class TFrame implements ByteBufHolder {
         );
     }
 
+    @Override
     public ByteBuf content() {
         return this.payload;
     }
 
+    @Override
     public ByteBufHolder copy() {
-        return new TFrame(this.size, this.type, this.id, this.payload.copy());
+        return replace(this.payload.copy());
     }
 
+    @Override
     public ByteBufHolder duplicate() {
-        return new TFrame(this.size, this.type, this.id, this.payload.duplicate());
+        return replace(this.payload.duplicate());
     }
 
+    @Override
     public ByteBufHolder retain() {
         this.payload.retain();
         return this;
     }
 
+    @Override
     public ByteBufHolder retain(int i) {
         this.payload.retain(i);
         return this;
     }
 
+    @Override
     public ByteBufHolder touch() {
         this.payload.touch();
         return this;
     }
 
+    @Override
     public ByteBufHolder touch(Object o) {
         this.payload.touch(o);
         return this;
     }
 
+    @Override
     public int refCnt() {
         return this.payload.refCnt();
     }
 
+    @Override
     public boolean release() {
         return this.payload.release();
     }
 
+    @Override
     public boolean release(int i) {
         return this.payload.release(i);
+    }
+
+    @Override
+    public ByteBufHolder retainedDuplicate() {
+        return replace(this.payload.retainedDuplicate());
+    }
+
+    @Override
+    public ByteBufHolder replace(ByteBuf payload) {
+        return new TFrame(this.size, this.type, this.id, payload);
     }
 }

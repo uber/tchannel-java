@@ -28,9 +28,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.buffer.Unpooled;
-import org.omg.PortableInterceptor.ClientRequestInterceptorOperations;
-
-import java.lang.management.PlatformLoggingMXBean;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -142,4 +139,20 @@ public abstract class CallFrame extends Frame implements ByteBufHolder {
     public boolean release(int i) {
         return this.payload.release(i);
     }
+
+    @Override
+    public ByteBufHolder copy() {
+        return replace(this.payload.copy());
+    }
+
+    @Override
+    public ByteBufHolder duplicate() {
+        return replace(this.payload.duplicate());
+    }
+
+    @Override
+    public ByteBufHolder retainedDuplicate() {
+        return replace(this.payload.retainedDuplicate());
+    }
+    
 }
