@@ -43,10 +43,10 @@ import io.netty.channel.ChannelHandlerContext;
  * their current status, e.g., connected, identified, etc.
  */
 public class Peer {
-    public ConcurrentHashMap<ChannelId, Connection> connections = new ConcurrentHashMap<>();
-    public SocketAddress remoteAddress = null;
+    public final ConcurrentHashMap<ChannelId, Connection> connections = new ConcurrentHashMap<>();
+    public final SocketAddress remoteAddress;
 
-    private PeerManager manager;
+    private final PeerManager manager;
 
     public Peer(PeerManager manager, SocketAddress remoteAddress) {
         this.manager = manager;
@@ -126,9 +126,7 @@ public class Peer {
 
     public Connection getConnection(ConnectionState preferedState, Connection.Direction preferredDirection) {
         Connection conn = null;
-        Connection next = null;
-        for (ChannelId id : connections.keySet()) {
-            next = connections.get(id);
+        for (Connection next : connections.values()) {
             if (next.satisfy(preferedState)) {
                 conn = next;
                 if (preferredDirection == Connection.Direction.NONE
@@ -152,31 +150,25 @@ public class Peer {
     }
 
     public void close() {
-        for (ChannelId id : connections.keySet()) {
-            Connection conn = connections.get(id);
-            if (conn != null) {
-                conn.close();
-            }
+        for ( Connection conn : connections.values()) {
+            conn.close();
         }
-
         this.connections.clear();
+
     }
 
     public Map<String, Integer> getStats() {
         int in = 0;
         int out = 0;
-        for (ChannelId id : connections.keySet()) {
-            Connection conn = connections.get(id);
-            if (conn == null) {
-                continue;
-            } else if (conn.direction == Connection.Direction.OUT) {
+        for (Connection conn : connections.values()) {
+            if (conn.direction == Connection.Direction.OUT) {
                 out++;
             } else {
                 in++;
             }
         }
 
-        Map<String, Integer> result = new HashMap<>();
+        Map<String, Integer> result = new HashMap<>(3);
         result.put("connections.in", in);
         result.put("connections.out", out);
         return result;
