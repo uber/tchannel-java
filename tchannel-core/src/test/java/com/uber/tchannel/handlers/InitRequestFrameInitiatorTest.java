@@ -32,11 +32,14 @@ import com.uber.tchannel.frames.InitResponseFrame;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.List;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class InitRequestFrameInitiatorTest extends BaseTest {
 
@@ -49,8 +52,15 @@ public class InitRequestFrameInitiatorTest extends BaseTest {
                 new ChannelRegistrar(manager)
         );
 
-        channel.pipeline().addFirst("InitRequestInitiator", new InitRequestInitiator(manager));
-        assertEquals(4, channel.pipeline().names().size());
+        String initName = InitRequestInitiator.class.getSimpleName() + "CompletelyDifferent";
+        channel.pipeline().addFirst(initName, new InitRequestInitiator(manager));
+                List<String> handlerNames = channel.pipeline().names();
+        String firstHandlerName = handlerNames.get(0);
+        assertTrue(firstHandlerName.startsWith(initName));
+
+        for (String name: channel.pipeline().names().subList(1, handlerNames.size())){
+            assertFalse(name.startsWith(initName));
+        }
 
         TFrame frame = MessageCodec.decode((ByteBuf) channel.readOutbound());
         // Then
@@ -80,7 +90,10 @@ public class InitRequestFrameInitiatorTest extends BaseTest {
         Object obj = channel.readOutbound();
         assertNull(obj);
 
-        assertEquals(3, channel.pipeline().names().size());
+        // Assert Pipeline does not contain InitRequestHandler
+        for (String name: channel.pipeline().names()){
+            assertFalse(name.startsWith(initName));
+        }
 
     }
 }

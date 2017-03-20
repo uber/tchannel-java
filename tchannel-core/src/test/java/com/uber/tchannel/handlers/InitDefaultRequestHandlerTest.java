@@ -42,6 +42,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -60,7 +61,15 @@ public class InitDefaultRequestHandlerTest extends BaseTest {
                 new InitRequestHandler(new PeerManager(new Bootstrap()))
         );
 
-        assertEquals(3, channel.pipeline().names().size());
+        // Assert pipeline starts with InitRequestHandler
+        String initName = InitRequestHandler.class.getSimpleName();
+        List<String> handlerNames = channel.pipeline().names();
+        String firstHandlerName = handlerNames.get(0);
+        assertTrue(firstHandlerName.startsWith(initName));
+
+        for (String name: channel.pipeline().names().subList(1, handlerNames.size())){
+            assertFalse(name.startsWith(initName));
+        }
 
         InitRequestFrame initRequestFrame = new InitRequestFrame(
                 42,
@@ -91,8 +100,10 @@ public class InitDefaultRequestHandlerTest extends BaseTest {
         assertEquals(initRequestFrame.getVersion(), initResponseFrame.getVersion());
         assertEquals(initRequestFrame.getHostPort(), initResponseFrame.getHostPort());
 
-        // Assert Pipeline is empty
-        assertEquals(2, channel.pipeline().names().size());
+        // Assert Pipeline does not contain InitRequestHandler
+        for (String name: channel.pipeline().names()){
+            assertFalse(name.startsWith(initName));
+        }
 
         // Make sure Messages are still passed through
         channel.writeInbound(initRequestFrame);
