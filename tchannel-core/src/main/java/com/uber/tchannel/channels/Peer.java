@@ -150,7 +150,7 @@ public class Peer {
     }
 
     public void close() {
-        for ( Connection conn : connections.values()) {
+        for (Connection conn : connections.values()) {
             conn.close();
         }
         this.connections.clear();
