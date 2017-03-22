@@ -2,7 +2,7 @@
 set -e
 set -x
 
-THRIFT_VER=0.9.2
+THRIFT_VER=0.9.3
 mkdir -p "$THRIFT_PREFIX"
 
 wget http://archive.apache.org/dist/thrift/${THRIFT_VER}/thrift-${THRIFT_VER}.tar.gz
