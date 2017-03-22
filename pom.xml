@@ -180,6 +180,7 @@
                     <target>${maven.compiler.target}</target>
                     <testSource>${maven.compiler.source}</testSource>
                     <testTarget>${maven.compiler.target}</testTarget>
+                    <compilerArgument>-Xlint</compilerArgument>
                 </configuration>
             </plugin>
 
