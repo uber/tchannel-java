@@ -48,7 +48,7 @@ public class Tracing {
     public static final String HEADER_KEY_PREFIX = "$tracing$";
 
     public static void startOutboundSpan(
-            OutRequest outRequest,
+            OutRequest<Response> outRequest,
             Tracer tracer,
             TracingContext tracingContext
     ) {
