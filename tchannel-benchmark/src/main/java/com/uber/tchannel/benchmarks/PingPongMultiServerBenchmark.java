@@ -22,9 +22,6 @@
 
 package com.uber.tchannel.benchmarks;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
@@ -43,7 +40,6 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -57,20 +53,19 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @State(Scope.Thread)
 public class PingPongMultiServerBenchmark {
 
-    private List<TChannel> servers = new ArrayList<>();
+    private final List<TChannel> servers = new ArrayList<>();
     private TChannel client;
     private SubChannel subClient;
 
-    private int connections = 3;
+    private final int connections = 3;
 
-    private NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
-    private NioEventLoopGroup childGroup = new NioEventLoopGroup();
+    private final NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    private final NioEventLoopGroup childGroup = new NioEventLoopGroup();
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
@@ -173,6 +168,7 @@ public class PingPongMultiServerBenchmark {
 
     public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
+        @Override
         public JsonResponse<Pong> handleImpl(JsonRequest<Ping> request) {
             return new JsonResponse.Builder<Pong>(request)
                 .setBody(new Pong("pong!"))
@@ -183,8 +179,8 @@ public class PingPongMultiServerBenchmark {
     @AuxCounters
     @State(Scope.Thread)
     public static class AdditionalCounters {
-        public AtomicInteger actualQPS = new AtomicInteger(0);
-        public AtomicInteger errorQPS = new AtomicInteger(0);
+        private final AtomicInteger actualQPS = new AtomicInteger(0);
+        private final AtomicInteger errorQPS = new AtomicInteger(0);
 
         @Setup(Level.Iteration)
         public void clean() {

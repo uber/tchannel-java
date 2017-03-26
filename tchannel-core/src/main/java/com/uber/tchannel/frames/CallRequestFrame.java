@@ -30,8 +30,6 @@ import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
-
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,7 +46,7 @@ import java.util.Map;
  * <p>
  * The size of arg1 is at most 16KiB.
  */
-public final class CallRequestFrame extends CallFrame {
+public class CallRequestFrame extends CallFrame {
 
     private long ttl;
     private Trace tracing;
@@ -70,17 +68,11 @@ public final class CallRequestFrame extends CallFrame {
 
     public CallRequestFrame(long id, long ttl, Trace tracing, String service, Map<String, String> headers,
                             ChecksumType checksumType, int checksum) {
-        this.id = id;
-        this.ttl = ttl;
-        this.tracing = tracing;
-        this.service = service;
-        this.headers = headers;
-        this.checksumType = checksumType;
-        this.checksum = checksum;
+        this(id, (byte)0, ttl, tracing, service, headers, checksumType, checksum, null);
     }
 
     protected CallRequestFrame(long id) {
-        this.id = id;
+        this(id, (byte)0, 0L, null, null, null, null, 0, null);
     }
 
     @Override
@@ -106,34 +98,6 @@ public final class CallRequestFrame extends CallFrame {
 
     public ArgScheme getArgScheme() {
         return ArgScheme.toScheme(headers.get(TransportHeaders.ARG_SCHEME_KEY));
-    }
-
-    public ByteBufHolder copy() {
-        return new CallRequestFrame(
-                this.id,
-                this.flags,
-                this.ttl,
-                this.tracing,
-                this.service,
-                this.headers,
-                this.checksumType,
-                this.checksum,
-                this.payload.copy()
-        );
-    }
-
-    public ByteBufHolder duplicate() {
-        return new CallRequestFrame(
-                this.id,
-                this.flags,
-                this.ttl,
-                this.tracing,
-                this.service,
-                this.headers,
-                this.checksumType,
-                this.checksum,
-                this.payload.duplicate()
-        );
     }
 
     @Override
@@ -191,5 +155,11 @@ public final class CallRequestFrame extends CallFrame {
         // arg1~2 arg2~2 arg3~2
         int payloadSize = tFrame.size - tFrame.payload.readerIndex();
         payload = tFrame.payload.readSlice(payloadSize);
+    }
+
+    @Override
+    public ByteBufHolder replace(ByteBuf payload) {
+        return new CallRequestFrame(this.id, this.flags, this.ttl, this.tracing,
+                this.service, this.headers, this.checksumType, this.checksum, payload);
     }
 }

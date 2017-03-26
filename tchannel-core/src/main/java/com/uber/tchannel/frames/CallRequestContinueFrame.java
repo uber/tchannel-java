@@ -39,34 +39,12 @@ public final class CallRequestContinueFrame extends CallFrame {
     }
 
     protected CallRequestContinueFrame(long id) {
-        this.id = id;
+        this(id, (byte)0, null, 0, null);
     }
 
     @Override
     public FrameType getType() {
         return FrameType.CallRequestContinue;
-    }
-
-    @Override
-    public ByteBufHolder copy() {
-        return new CallRequestContinueFrame(
-                this.id,
-                this.flags,
-                this.checksumType,
-                this.checksum,
-                this.payload.copy()
-        );
-    }
-
-    @Override
-    public ByteBufHolder duplicate() {
-        return new CallRequestContinueFrame(
-                this.id,
-                this.flags,
-                this.checksumType,
-                this.checksum,
-                this.payload.duplicate()
-        );
     }
 
     @Override
@@ -101,5 +79,10 @@ public final class CallRequestContinueFrame extends CallFrame {
         // {continuation}
         int payloadSize = tFrame.size - tFrame.payload.readerIndex();
         payload = tFrame.payload.readSlice(payloadSize);
+    }
+
+    @Override
+    public ByteBufHolder replace(ByteBuf payload) {
+        return new CallRequestContinueFrame(this.id, this.flags, this.checksumType, this.checksum, payload);
     }
 }

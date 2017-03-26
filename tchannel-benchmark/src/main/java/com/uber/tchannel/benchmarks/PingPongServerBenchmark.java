@@ -39,7 +39,6 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -50,7 +49,6 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.net.InetAddress;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @State(Scope.Thread)
@@ -62,8 +60,8 @@ public class PingPongServerBenchmark {
     private int port;
     private InetAddress host;
 
-    private NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
-    private NioEventLoopGroup childGroup = new NioEventLoopGroup();
+    private final NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    private final NioEventLoopGroup childGroup = new NioEventLoopGroup();
 
     public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
@@ -178,11 +176,11 @@ public class PingPongServerBenchmark {
     @AuxCounters
     @State(Scope.Thread)
     public static class AdditionalCounters {
-        public AtomicInteger actualQPS = new AtomicInteger(0);
-        public AtomicInteger errorQPS = new AtomicInteger(0);
-        public AtomicInteger timeoutQPS = new AtomicInteger(0);
-        public AtomicInteger busyQPS = new AtomicInteger(0);
-        public AtomicInteger networkQPS = new AtomicInteger(0);
+        private final AtomicInteger actualQPS = new AtomicInteger(0);
+        private final AtomicInteger errorQPS = new AtomicInteger(0);
+        private final AtomicInteger timeoutQPS = new AtomicInteger(0);
+        private final AtomicInteger busyQPS = new AtomicInteger(0);
+        private final AtomicInteger networkQPS = new AtomicInteger(0);
 
         @Setup(Level.Iteration)
         public void clean() {

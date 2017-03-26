@@ -61,26 +61,23 @@ public final class CallResponseFrame extends CallFrame {
 
     public CallResponseFrame(long id, ResponseCode responseCode, Trace tracing, Map<String, String> headers,
                              ChecksumType checksumType, int checksum) {
-        this.id = id;
-        this.responseCode = responseCode;
-        this.tracing = tracing;
-        this.headers = headers;
-        this.checksumType = checksumType;
-        this.checksum = checksum;
+        this(id, (byte)0, responseCode, tracing, headers, checksumType, checksum, null);
     }
 
     protected CallResponseFrame(long id) {
-        this.id = id;
+        this(id,(byte)0, null, null, null, null, 0, null);
     }
 
     public boolean ok() {
         return (this.responseCode == ResponseCode.OK);
     }
 
+    @Override
     public boolean moreFragmentsFollow() {
         return ((this.flags & CallFrame.MORE_FRAGMENTS_REMAIN_MASK) == 1);
     }
 
+    @Override
     public FrameType getType() {
         return FrameType.CallResponse;
     }
@@ -93,42 +90,18 @@ public final class CallResponseFrame extends CallFrame {
         return this.headers;
     }
 
+    @Override
     public ChecksumType getChecksumType() {
         return this.checksumType;
     }
 
+    @Override
     public int getChecksum() {
         return this.checksum;
     }
 
     public ResponseCode getResponseCode() {
         return responseCode;
-    }
-
-    public ByteBufHolder copy() {
-        return new CallResponseFrame(
-                this.id,
-                this.flags,
-                this.responseCode,
-                this.tracing,
-                this.headers,
-                this.checksumType,
-                this.checksum,
-                this.payload.copy()
-        );
-    }
-
-    public ByteBufHolder duplicate() {
-        return new CallResponseFrame(
-                this.id,
-                this.flags,
-                this.responseCode,
-                this.tracing,
-                this.headers,
-                this.checksumType,
-                this.checksum,
-                this.payload.duplicate()
-        );
     }
 
     @Override
@@ -180,5 +153,11 @@ public final class CallResponseFrame extends CallFrame {
         // arg1~2 arg2~2 arg3~2
         int payloadSize = tFrame.size - tFrame.payload.readerIndex();
         payload = tFrame.payload.readSlice(payloadSize);
+    }
+
+    @Override
+    public ByteBufHolder replace(ByteBuf payload) {
+        return new CallResponseFrame(this.id, this.flags, this.responseCode, 
+                this.tracing, this.headers, this.checksumType, this.checksum, payload);
     }
 }
