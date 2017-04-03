@@ -26,7 +26,6 @@ import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelProtocol;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
 import com.uber.tchannel.frames.Frame;

@@ -27,8 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.messages.JsonResponse;

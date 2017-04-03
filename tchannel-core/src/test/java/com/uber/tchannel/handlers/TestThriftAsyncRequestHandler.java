@@ -21,11 +21,6 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.jaeger.Tracer;
-import com.uber.jaeger.reporters.InMemoryReporter;
-import com.uber.jaeger.samplers.ConstSampler;
-import com.uber.jaeger.samplers.Sampler;
-import com.uber.tchannel.tracing.TracingContext;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.BaseTest;
@@ -37,13 +32,11 @@ import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.messages.generated.Example;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 public class TestThriftAsyncRequestHandler extends BaseTest {

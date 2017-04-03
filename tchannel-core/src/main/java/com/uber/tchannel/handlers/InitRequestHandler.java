@@ -23,7 +23,6 @@ package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.codecs.MessageCodec;
-import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.frames.Frame;
 import com.uber.tchannel.frames.InitFrame;
