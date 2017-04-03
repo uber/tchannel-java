@@ -23,7 +23,6 @@
 package com.uber.tchannel.channels;
 
 import com.uber.tchannel.api.SubChannel;
-import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.handlers.OutRequest;
 
 import java.net.SocketAddress;

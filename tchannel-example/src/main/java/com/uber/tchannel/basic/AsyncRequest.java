@@ -33,7 +33,6 @@ import com.uber.tchannel.messages.RawResponse;
 
 import java.net.InetAddress;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class AsyncRequest {
     public static void main(String[] args) throws Exception {

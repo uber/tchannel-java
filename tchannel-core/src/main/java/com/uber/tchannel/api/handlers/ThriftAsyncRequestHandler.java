@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.api.handlers;
 
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
