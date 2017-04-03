@@ -29,7 +29,6 @@ import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
 import java.util.HashMap;

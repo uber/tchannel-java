@@ -23,7 +23,6 @@ package com.uber.tchannel.frames;
 
 import com.uber.tchannel.codecs.CodecUtils;
 import com.uber.tchannel.codecs.TFrame;
-import com.uber.tchannel.errors.ErrorType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
