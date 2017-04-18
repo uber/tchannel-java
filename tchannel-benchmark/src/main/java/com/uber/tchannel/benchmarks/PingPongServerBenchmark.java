@@ -75,7 +75,7 @@ public class PingPongServerBenchmark {
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
-        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
+        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
         BasicConfigurator.configure();
         LogManager.getRootLogger().setLevel(org.apache.log4j.Level.INFO);
 

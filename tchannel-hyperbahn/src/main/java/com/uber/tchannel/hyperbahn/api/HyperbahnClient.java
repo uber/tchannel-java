@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.hyperbahn.api;
 
+import com.google.common.reflect.TypeToken;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -43,6 +44,7 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import java.lang.reflect.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,6 +163,8 @@ public final class HyperbahnClient {
         private final String service;
         private final TChannel channel;
 
+        private static final Type LIST_OF_STRINGS = new TypeToken<ArrayList<String>>(){}.getType();
+
         private List<InetSocketAddress> routers;
         private long advertiseTimeout = 5000;
         private long advertiseInterval = 60 * 1000;
@@ -201,8 +205,9 @@ public final class HyperbahnClient {
         private static List<InetSocketAddress> loadRouters(String hostsFilePath) throws IOException {
 
             List<String> hostPorts;
+
             try (Reader reader = new FileReader(hostsFilePath)) {
-                hostPorts = new Gson().fromJson(reader, List.class);
+                hostPorts = new Gson().fromJson(reader, LIST_OF_STRINGS);
             }
 
             List<InetSocketAddress> routers = new ArrayList<>();

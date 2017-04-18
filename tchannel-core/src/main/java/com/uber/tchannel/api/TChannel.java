@@ -43,6 +43,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -79,14 +80,14 @@ public final class TChannel {
     private final int port;
     private String listeningHost = "0.0.0.0";
     private int listeningPort;
-    private ExecutorService exectorService;
+    private final ExecutorService exectorService;
     private final long initTimeout;
     private final int resetOnTimeoutLimit;
     private final int clientMaxPendingRequests;
     private final Tracer tracer;
     private final TracingContext tracingContext;
 
-    private Map<String, SubChannel> subChannels = new HashMap<>();
+    private final Map<String, SubChannel> subChannels = new HashMap<>();
     private RequestHandler defaultUserHandler;
     private SimpleChannelInboundHandler<Request> customRequestRouter;
 
@@ -318,8 +319,7 @@ public final class TChannel {
                 .channel(NioSocketChannel.class)
                 .handler(this.channelInitializer(false, topChannel))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
-                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 32 * 1024))
                 .validate();
         }
 
@@ -332,8 +332,7 @@ public final class TChannel {
                 .childHandler(this.channelInitializer(true, topChannel))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
-                .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 32 * 1024))
                 .validate();
         }
 
