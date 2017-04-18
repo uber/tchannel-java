@@ -41,15 +41,6 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
     <name>tchannel-benchmark</name>
 
-    <!--
-       This is the demo/sample template build script for building Java benchmarks with JMH.
-       Edit as needed.
-    -->
-
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
-
     <dependencies>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
