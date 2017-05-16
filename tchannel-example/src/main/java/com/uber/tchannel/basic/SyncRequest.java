@@ -37,6 +37,7 @@ public class SyncRequest {
         TChannel server = createServer();
         TChannel client = createClient();
 
+        // create sub channel to talk to server
         SubChannel subChannel = client.makeSubChannel("server");
 
         final long start = System.currentTimeMillis();
@@ -75,7 +76,7 @@ public class SyncRequest {
         client.shutdown(false);
     }
 
-    protected static TChannel createServer() throws Exception {
+    private static TChannel createServer() throws Exception {
 
         // create TChannel
         TChannel tchannel = new TChannel.Builder("server")
@@ -119,14 +120,9 @@ public class SyncRequest {
         return tchannel;
     }
 
-    protected static TChannel createClient() throws Exception {
-
+    private static TChannel createClient() throws Exception {
         // create TChannel
-        TChannel tchannel = new TChannel.Builder("client")
+        return new TChannel.Builder("client")
             .build();
-
-        // create sub channel to talk to server
-        tchannel.makeSubChannel("server");
-        return tchannel;
     }
 }
