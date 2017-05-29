@@ -37,13 +37,25 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Class representing the future response of a TChannel call. It is generic
+ * and wraps/contains a payload. You construct instances via the factory
+ * {@link #create(ArgScheme)}
+ * @param <V> the type of the payload
+ */
+
 public final class TFuture<V extends Response> extends AbstractFuture<V> {
 
     private static final Logger logger = LoggerFactory.getLogger(TFuture.class);
 
-    @SuppressWarnings({"rawtypes"})
-    public static TFuture create(ArgScheme argScheme) {
-        return new TFuture(argScheme);
+    /**
+     * Create future. Example usage: TFuture<RawResponse> future = TFuture.<RawResponse>create(...);
+     * @param <T>
+     * @param argScheme
+     * @return 
+     */
+    public static <T extends Response> TFuture create(ArgScheme argScheme) {
+        return new TFuture<>(argScheme);
     }
 
     private AtomicInteger listenerCount = new AtomicInteger(0);
