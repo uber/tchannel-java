@@ -43,6 +43,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -238,7 +239,9 @@ public final class TChannel {
         private long initTimeout = -1;
         private int resetOnTimeoutLimit = Integer.MAX_VALUE;
         private int clientMaxPendingRequests = 100000;
-
+        private static final int WRITE_BUFFER_LOW_WATER_MARK = 8 * 1024;
+        private static final int WRITE_BUFFER_HIGH_WATER_MARK = 32 * 1024;
+        
         private Tracer tracer;
         private TracingContext tracingContext = new TracingContext.Default();
 
@@ -318,8 +321,8 @@ public final class TChannel {
                 .channel(NioSocketChannel.class)
                 .handler(this.channelInitializer(false, topChannel))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
-                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, 
+                        new WriteBufferWaterMark(WRITE_BUFFER_LOW_WATER_MARK, WRITE_BUFFER_HIGH_WATER_MARK))
                 .validate();
         }
 
@@ -332,8 +335,8 @@ public final class TChannel {
                 .childHandler(this.channelInitializer(true, topChannel))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
-                .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
+                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, 
+                        new WriteBufferWaterMark(WRITE_BUFFER_LOW_WATER_MARK, WRITE_BUFFER_HIGH_WATER_MARK))
                 .validate();
         }
 

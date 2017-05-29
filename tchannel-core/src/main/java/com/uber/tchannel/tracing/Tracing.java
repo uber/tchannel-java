@@ -83,12 +83,12 @@ public class Tracing {
                 logger.error("Failed to inject span context into headers", e);
             }
         }
-        outRequest.getFuture().addCallback(new TFutureCallback() {
+        outRequest.getFuture().addCallback(new TFutureCallback<Response>() {
             @Override
             public void onResponse(Response response) {
                 if (response.isError()) {
                     Tags.ERROR.set(span, true);
-                    span.log(response.getError().getMessage(), null);
+                    span.log(response.getError().getMessage());
                 }
                 span.finish();
             }
