@@ -211,6 +211,9 @@
                     <target>${maven.compiler.target}</target>
                     <testSource>${maven.compiler.source}</testSource>
                     <testTarget>${maven.compiler.target}</testTarget>
+                    <compilerArgs>
+                        <arg>-Xlint</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
 
