@@ -89,7 +89,7 @@ public final class CodecUtils {
     public static Map<String, String> decodeHeaders(ByteBuf buffer) {
 
         int numHeaders = buffer.readUnsignedShort();
-        Map<String, String> headers = new HashMap<String, String>(numHeaders);
+        Map<String, String> headers = new HashMap<>(numHeaders);
 
         for (int i = 0; i < numHeaders; i++) {
             String key = CodecUtils.decodeString(buffer);
@@ -116,7 +116,7 @@ public final class CodecUtils {
     public static Map<String, String> decodeSmallHeaders(ByteBuf buffer) {
 
         short numHeaders = buffer.readUnsignedByte();
-        Map<String, String> headers = new HashMap<String, String>(numHeaders);
+        Map<String, String> headers = new HashMap<>(numHeaders);
 
         for (int i = 0; i < numHeaders; i++) {
             String key = CodecUtils.decodeSmallString(buffer);

@@ -57,7 +57,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     private AtomicInteger timeouts = new AtomicInteger(0);
 
     private final AtomicBoolean busy = new AtomicBoolean(false);
-    private final ConcurrentLinkedQueue<Long> requestQueue = new ConcurrentLinkedQueue<Long>();
+    private final ConcurrentLinkedQueue<Long> requestQueue = new ConcurrentLinkedQueue<>();
     private final Map<Long, OutRequest> requestMap = new ConcurrentHashMap<>();
     private final int maxPendingRequests;
 

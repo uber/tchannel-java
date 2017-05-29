@@ -78,7 +78,7 @@ public class PingClient {
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-client").build();
         SubChannel subChannel = tchannel.makeSubChannel("ping-server");
-        final ConcurrentHashMap<String, Integer> msgs = new ConcurrentHashMap<String, Integer>();
+        final ConcurrentHashMap<String, Integer> msgs = new ConcurrentHashMap<>();
         final CountDownLatch done = new CountDownLatch(requests);
 
         for (int i = 0; i < requests; i++) {

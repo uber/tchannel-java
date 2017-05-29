@@ -81,7 +81,7 @@ public class CodecUtilsTest extends BaseTest {
 
     @Test
     public void testEncodeDecodeHeaders() throws Exception {
-        Map<String, String> headers = new HashMap<String, String>();
+        Map<String, String> headers = new HashMap<>();
         ByteBuf buf = Unpooled.buffer();
 
         headers.put("Hello", "TChannel");
@@ -97,7 +97,7 @@ public class CodecUtilsTest extends BaseTest {
 
     @Test
     public void testEncodeDecodeSmallHeaders() throws Exception {
-        Map<String, String> headers = new HashMap<String, String>();
+        Map<String, String> headers = new HashMap<>();
         ByteBuf buf = Unpooled.buffer();
 
         headers.put("Hello", "TChannel");
