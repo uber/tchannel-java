@@ -62,7 +62,7 @@ public class JsonRequest<T> extends EncodedRequest<T> {
         }
 
         public JsonRequest<T> build() {
-            return new JsonRequest<T>(this.validate());
+            return new JsonRequest<>(this.validate());
         }
 
         @Override

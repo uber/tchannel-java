@@ -30,7 +30,7 @@ public final class OutRequest<V extends Response> {
     private final SubChannel subChannel;
     private final Request request;
     private final TFuture<V> future;
-    private final Set<SocketAddress> usedPeers = new HashSet<SocketAddress>();
+    private final Set<SocketAddress> usedPeers = new HashSet<>();
 
     private final AtomicInteger retryCount = new AtomicInteger(0);
     private int retryLimit = 0;

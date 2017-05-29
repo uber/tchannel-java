@@ -34,7 +34,7 @@ public class AdvertiseRequest {
     }
 
     public AdvertiseRequest() {
-        services = new ArrayList<Service>();
+        services = new ArrayList<>();
     }
 
     public void addService(String serviceName, int cost) {

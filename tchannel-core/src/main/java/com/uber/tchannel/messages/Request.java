@@ -47,7 +47,7 @@ public abstract class Request implements RawMessage {
 
     protected String endpoint = null;
     protected long ttl = 100;
-    protected Map<String, String> transportHeaders = new HashMap<String, String>();
+    protected Map<String, String> transportHeaders = new HashMap<>();
 
     protected final int retryLimit;
 
