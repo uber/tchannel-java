@@ -81,7 +81,7 @@ public class LargePayloadBenchmark {
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
-        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
+        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
         BasicConfigurator.configure();
         LogManager.getRootLogger().setLevel(org.apache.log4j.Level.INFO);
 
@@ -96,7 +96,6 @@ public class LargePayloadBenchmark {
         this.port = this.channel.getListeningPort();
 
         this.client = new TChannel.Builder("ping-client")
-            // .setResetOnTimeoutLimit(100)
             .setClientMaxPendingRequests(200000)
             .setBossGroup(bossGroup)
             .setChildGroup(childGroup)
@@ -130,7 +129,6 @@ public class LargePayloadBenchmark {
                     counters.actualQPS.incrementAndGet();
                     pongResponse.release();
                 } else {
-                    // System.out.println(pongResponse.getError().getMessage());
                     switch (pongResponse.getError().getErrorType()) {
                         case Busy:
                             counters.busyQPS.incrementAndGet();
@@ -159,8 +157,6 @@ public class LargePayloadBenchmark {
         @Override
         public Response handle(Request request) {
             return new RawResponse.Builder(request)
-//                .setArg2(request.getArg2().retain())
-//                .setArg3(request.getArg3().retain())
                 .build();
         }
     }
