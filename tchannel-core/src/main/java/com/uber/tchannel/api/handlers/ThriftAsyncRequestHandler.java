@@ -42,7 +42,7 @@ public abstract class ThriftAsyncRequestHandler<T, U> implements AsyncRequestHan
             return this.handleAsync(request).get();
         } catch (InterruptedException | ExecutionException ex) {
             // Cannot do much better with this exception so propogate the exception.
-            throw Throwables.propagate(ex);
+            throw new RuntimeException(ex);
         }
     }
 

@@ -62,7 +62,7 @@ public class ThriftRequest<T> extends EncodedRequest<T> {
         }
 
         public ThriftRequest<T> build() {
-            return new ThriftRequest(this.validate());
+            return new ThriftRequest<>(this.validate());
         }
 
         @Override
