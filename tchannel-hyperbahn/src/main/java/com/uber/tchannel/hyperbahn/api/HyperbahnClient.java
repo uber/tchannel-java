@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.messages.JsonRequest;
@@ -43,6 +44,7 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import java.lang.reflect.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,12 +158,15 @@ public final class HyperbahnClient {
         logger.info("HyperbahnClient shutdown complete.");
     }
 
+    private static final Type LIST_OF_STRINGS = new TypeToken<List<String>>(){}.getType();
+
     public static class Builder {
 
         private final String service;
         private final TChannel channel;
 
         private List<InetSocketAddress> routers;
+        
         private long advertiseTimeout = 5000;
         private long advertiseInterval = 60 * 1000;
 
@@ -202,7 +207,7 @@ public final class HyperbahnClient {
 
             List<String> hostPorts;
             try (Reader reader = new FileReader(hostsFilePath)) {
-                hostPorts = new Gson().fromJson(reader, List.class);
+                hostPorts = new Gson().fromJson(reader, LIST_OF_STRINGS);
             }
 
             List<InetSocketAddress> routers = new ArrayList<>();

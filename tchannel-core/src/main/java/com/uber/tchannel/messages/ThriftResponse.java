@@ -57,7 +57,7 @@ public final class ThriftResponse<T> extends EncodedResponse<T> {
         }
 
         public ThriftResponse<T> build() {
-            return new ThriftResponse(this.validate());
+            return new ThriftResponse<>(this.validate());
         }
 
         @Override

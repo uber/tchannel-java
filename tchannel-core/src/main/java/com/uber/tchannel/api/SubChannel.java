@@ -133,7 +133,7 @@ public final class SubChannel {
     private final Random random = new Random();
     public SubPeer choosePeer(OutRequest outRequest) {
         SubPeer res = null;
-        if (peers.size() == 0) {
+        if (peers.isEmpty()) {
             return null;
         }
 
@@ -250,7 +250,7 @@ public final class SubChannel {
             if (!sendOutRequest(outRequest, conn)) {
                 outRequest.setFuture();
             }
-        } else if (peers.size() == 0) {
+        } else if (peers.isEmpty()) {
             outRequest.setLastError(ErrorType.BadRequest, new TChannelNoPeerAvailable());
             outRequest.setFuture();
         } else {

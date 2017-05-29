@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.handlers;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -242,7 +243,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             @Override
             public void onFailure(Throwable e) {
                 if (span != null) {
-                    span.log("exception", e);
+                    span.log(ImmutableMap.of("exception", e));
                 }
                 doRequestEndProcessing();
                 responseFuture.setException(e);
@@ -282,7 +283,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             try {
                 return callWithoutTracing();
             } catch (Exception e) {
-                span.log("exception", e);
+                span.log(ImmutableMap.of("exception", e));
                 throw e;
             } finally {
                 span.finish();
