@@ -43,7 +43,7 @@ public final class OutRequest<V extends Response> {
     public OutRequest(SubChannel subChannel, Request request) {
         this.subChannel = subChannel;
         this.request = request;
-        this.future = TFuture.create(request.getArgScheme());
+        this.future = TFuture.<V>create(request.getArgScheme());
         this.retryLimit = request.getRetryLimit();
     }
 
