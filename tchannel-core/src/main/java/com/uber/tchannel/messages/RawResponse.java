@@ -111,6 +111,7 @@ public class RawResponse extends Response implements RawMessage {
             super(req);
         }
 
+        @Override
         public Builder setResponseCode(ResponseCode responseCode) {
             this.responseCode = responseCode;
             return this;
@@ -154,6 +155,7 @@ public class RawResponse extends Response implements RawMessage {
             return this;
         }
 
+        @Override
         public Builder validate() {
             super.validate();
 

@@ -51,6 +51,7 @@ public final class JsonResponse<T> extends EncodedResponse<T> {
             this.argScheme = ArgScheme.JSON;
         }
 
+        @Override
         public Builder<T> validate() {
             super.validate();
             return this;

@@ -55,24 +55,29 @@ public final class InitResponseFrame extends InitFrame {
         this.id = id;
     }
 
+    @Override
     public int getVersion() {
         return version;
     }
 
+    @Override
     public Map<String, String> getHeaders() {
         return headers;
     }
 
+    @Override
     public FrameType getType() {
         return FrameType.InitResponse;
     }
 
+    @Override
     public String getHostPort() {
         return this.headers.get(HOST_PORT_KEY);
     }
 
     public void setHostPort(String hostPort) { this.headers.put(HOST_PORT_KEY, hostPort); }
 
+    @Override
     public String getProcessName() {
         return this.headers.get(PROCESS_NAME_KEY);
     }

@@ -64,6 +64,7 @@ public class RequestTest extends BaseTest {
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {
+                @Override
                 public JsonResponse<Integer> handleImpl(JsonRequest<String> request) {
                     assertEquals(requestBody, request.getBody(String.class));
                     return new JsonResponse.Builder<Integer>(request)
@@ -104,6 +105,7 @@ public class RequestTest extends BaseTest {
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {
+                @Override
                 public JsonResponse<Integer> handleImpl(JsonRequest<String> request) {
                     return new JsonResponse.Builder<Integer>(request)
                         .setTransportHeaders(request.getTransportHeaders())
@@ -146,6 +148,7 @@ public class RequestTest extends BaseTest {
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {
+                @Override
                 public JsonResponse<Integer> handleImpl(JsonRequest<String> request) {
                     try {
                         sleep(150);

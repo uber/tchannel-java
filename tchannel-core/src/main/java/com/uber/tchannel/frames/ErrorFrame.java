@@ -70,6 +70,7 @@ public final class ErrorFrame extends Frame {
         this.message = message;
     }
 
+    @Override
     public FrameType getType() {
         return FrameType.Error;
     }

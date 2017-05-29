@@ -195,6 +195,7 @@ public class TracingPropagationTest {
                 Executors.newFixedThreadPool(1));
             final Span span = (Span) tracingContext.currentSpan();
             service.submit(new Callable<Object>() {
+                @Override
                 public Object call() {
                     try {
                         // continue the same span

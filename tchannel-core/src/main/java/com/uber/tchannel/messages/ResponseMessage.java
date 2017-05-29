@@ -45,6 +45,7 @@ public abstract class ResponseMessage implements TChannelMessage {
         return this.type == FrameType.Error;
     }
 
+    @Override
     public abstract void release();
 
     @Override

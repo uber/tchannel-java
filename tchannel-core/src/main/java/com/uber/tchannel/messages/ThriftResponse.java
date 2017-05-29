@@ -50,6 +50,7 @@ public final class ThriftResponse<T> extends EncodedResponse<T> {
             this.argScheme = ArgScheme.THRIFT;
         }
 
+        @Override
         public Builder<T> validate() {
             super.validate();
             return this;

@@ -55,6 +55,7 @@ public class JsonRequest<T> extends EncodedRequest<T> {
             this.argScheme = ArgScheme.JSON;
         }
 
+        @Override
         public Builder<T> validate() {
             super.validate();
             return this;
