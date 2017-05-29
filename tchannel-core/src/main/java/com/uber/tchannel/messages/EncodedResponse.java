@@ -174,6 +174,7 @@ public abstract class EncodedResponse<T> extends Response {
             return this;
         }
 
+        @Override
         public Builder<T> validate() {
             super.validate();
             this.validateHeader();

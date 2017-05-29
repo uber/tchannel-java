@@ -166,6 +166,7 @@ public class PingPongServerBenchmark {
 
     public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
+        @Override
         public JsonResponse<Pong> handleImpl(JsonRequest<Ping> request) {
             return new JsonResponse.Builder<Pong>(request)
                 .setBody(new Pong("pong!"))

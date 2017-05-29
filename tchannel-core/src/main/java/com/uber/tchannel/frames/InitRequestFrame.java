@@ -49,18 +49,22 @@ public final class InitRequestFrame extends InitFrame {
         this.id = id;
     }
 
+    @Override
     public int getVersion() {
         return this.version;
     }
 
+    @Override
     public Map<String, String> getHeaders() {
         return this.headers;
     }
 
+    @Override
     public FrameType getType() {
         return FrameType.InitRequest;
     }
 
+    @Override
     public String getHostPort() {
         return this.headers.get(HOST_PORT_KEY);
     }
@@ -69,6 +73,7 @@ public final class InitRequestFrame extends InitFrame {
         this.headers.put(HOST_PORT_KEY, hostPort);
     }
 
+    @Override
     public String getProcessName() {
         return this.headers.get(PROCESS_NAME_KEY);
     }

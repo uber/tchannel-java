@@ -147,6 +147,7 @@ public final class RawRequest extends Request {
             return this;
         }
 
+        @Override
         public Builder validate() {
             super.validate();
 

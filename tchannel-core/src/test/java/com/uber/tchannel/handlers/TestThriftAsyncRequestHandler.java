@@ -58,6 +58,7 @@ public class TestThriftAsyncRequestHandler extends BaseTest {
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new ThriftAsyncRequestHandler<Example, Example>() {
+                @Override
                 public ListenableFuture<ThriftResponse<Example>> handleImpl(ThriftRequest<Example> request) {
                     assertEquals(requestBody, request.getBody(Example.class));
                     return Futures.immediateFuture(new ThriftResponse.Builder<Example>(request)

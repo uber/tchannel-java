@@ -50,6 +50,7 @@ public final class ClaimFrame extends Frame {
         this.id = id;
     }
 
+    @Override
     public FrameType getType() {
         return FrameType.Claim;
     }

@@ -32,6 +32,7 @@ public final class PingRequestFrame extends PingFrame {
         this.id = id;
     }
 
+    @Override
     public FrameType getType() {
         return FrameType.PingRequest;
     }

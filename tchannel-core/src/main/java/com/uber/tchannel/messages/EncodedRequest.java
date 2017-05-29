@@ -54,6 +54,7 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
         super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
     }
 
+    @Override
     public Map<String, String> getHeaders() {
         if (headers == null) {
             if (arg2 != null) {
@@ -70,6 +71,7 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
         return getHeaders().get(key);
     }
 
+    @Override
     public void setHeaders(Map<String, String> headers) {
         if (arg2 != null) {
             arg2.release();
@@ -165,6 +167,7 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
             return this;
         }
 
+        @Override
         public Builder<T> validate() {
             super.validate();
             this.validateHeader();
