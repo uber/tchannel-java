@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
+
 public final class CodecUtils {
 
     public static int decodeChecksum(ChecksumType checksumType, ByteBuf buffer) {
@@ -89,7 +91,7 @@ public final class CodecUtils {
     public static Map<String, String> decodeHeaders(ByteBuf buffer) {
 
         int numHeaders = buffer.readUnsignedShort();
-        Map<String, String> headers = new HashMap<>(numHeaders);
+        Map<String, String> headers = Maps.newHashMapWithExpectedSize(numHeaders);
 
         for (int i = 0; i < numHeaders; i++) {
             String key = CodecUtils.decodeString(buffer);
@@ -116,7 +118,7 @@ public final class CodecUtils {
     public static Map<String, String> decodeSmallHeaders(ByteBuf buffer) {
 
         short numHeaders = buffer.readUnsignedByte();
-        Map<String, String> headers = new HashMap<>(numHeaders);
+        Map<String, String> headers = Maps.newHashMapWithExpectedSize(numHeaders);
 
         for (int i = 0; i < numHeaders; i++) {
             String key = CodecUtils.decodeSmallString(buffer);
