@@ -30,6 +30,7 @@ import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -37,15 +38,13 @@ public class InitResponseFrameCodecTest extends BaseTest {
 
     @Test
     public void shouldEncodeAndDecodeInitResponse() throws Exception {
-
+        Map<String, String> headers = new HashMap<>();
+        headers.put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+        headers.put(InitFrame.PROCESS_NAME_KEY, "test-process");
         InitResponseFrame initResponseFrame = new InitResponseFrame(
                 42,
                 InitRequestFrame.DEFAULT_VERSION,
-                new HashMap<String, String>() {{
-                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
-                }}
-        );
+                headers);
 
         TFrame tFrame = CodecTestUtil.encodeDecode(
             MessageCodec.encode(

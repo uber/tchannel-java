@@ -41,6 +41,7 @@ import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -234,11 +235,9 @@ public class ConnectionTest extends BaseTest {
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
-        subClient.setPeers(new ArrayList<InetSocketAddress>(){
-            {
-                add(new InetSocketAddress("127.0.0.1", 8888));
-            }
-        });
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", 8888));
+        subClient.setPeers(peers);
 
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")

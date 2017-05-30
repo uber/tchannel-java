@@ -50,11 +50,8 @@ public class HyperbahnExample {
 
         tchannel.listen();
 
-        List<InetSocketAddress> routers = new ArrayList<InetSocketAddress>() {
-            {
-                add(new InetSocketAddress("127.0.0.1", 21300));
-            }
-        };
+        List<InetSocketAddress> routers = new ArrayList<>();
+        routers.add(new InetSocketAddress("127.0.0.1", 21300));
 
         HyperbahnClient hyperbahn = new HyperbahnClient.Builder(tchannel.getServiceName(), tchannel)
                 .setRouters(routers)
