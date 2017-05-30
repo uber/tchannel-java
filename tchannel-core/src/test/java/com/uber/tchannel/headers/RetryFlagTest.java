@@ -36,11 +36,10 @@ public class RetryFlagTest extends BaseTest {
 
     @Test
     public void testToRetryFlag() throws Exception {
-        List<Character> unparsedFlags = new ArrayList<Character>() {{
-            add('t');
-            add('n');
-            add('c');
-        }};
+        List<Character> unparsedFlags = new ArrayList<>();
+        unparsedFlags.add('t');
+        unparsedFlags.add('n');
+        unparsedFlags.add('c');
 
         for (char c : unparsedFlags) {
             assertNotNull(RetryFlag.toRetryFlag(c));
@@ -52,11 +51,10 @@ public class RetryFlagTest extends BaseTest {
 
     @Test
     public void testParseFlags() throws Exception {
-        Set<RetryFlag> realFlags = new HashSet<RetryFlag>() {{
-            add(RetryFlag.NoRetry);
-            add(RetryFlag.RetryOnConnectionError);
-            add(RetryFlag.RetryOnTimeout);
-        }};
+        Set<RetryFlag> realFlags = new HashSet<>();
+        realFlags.add(RetryFlag.NoRetry);
+        realFlags.add(RetryFlag.RetryOnConnectionError);
+        realFlags.add(RetryFlag.RetryOnTimeout);
 
         Set<RetryFlag> parsedFlags = RetryFlag.parseFlags("tnc");
         assertEquals(realFlags, parsedFlags);

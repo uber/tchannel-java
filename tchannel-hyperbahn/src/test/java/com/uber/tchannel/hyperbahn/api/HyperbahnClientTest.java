@@ -54,9 +54,8 @@ public class HyperbahnClientTest extends BaseTest {
 
         TChannel tchannel = new TChannel.Builder("hyperbahn-service").build();
 
-        List<InetSocketAddress> routers = new ArrayList<InetSocketAddress>() {{
-            add(new InetSocketAddress("127.0.0.1", 8888));
-        }};
+        List<InetSocketAddress> routers = new ArrayList<>();
+        routers.add(new InetSocketAddress("127.0.0.1", 8888));
 
         HyperbahnClient hyperbahnClient = new HyperbahnClient.Builder("service", tchannel)
                 .setRouters(routers)
@@ -79,9 +78,8 @@ public class HyperbahnClientTest extends BaseTest {
 
         TChannel tchannel = new TChannel.Builder("hyperbahn-service").build();
 
-        List<InetSocketAddress> routers = new ArrayList<InetSocketAddress>() {{
-            add(new InetSocketAddress("127.0.0.1", 8888));
-        }};
+        List<InetSocketAddress> routers = new ArrayList<>();
+        routers.add(new InetSocketAddress("127.0.0.1", 8888));
 
         HyperbahnClient hyperbahnClient = new HyperbahnClient.Builder("service", tchannel)
             .setRouters(routers)
