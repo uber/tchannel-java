@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.api;
 
+import com.google.common.collect.ImmutableMap;
 import com.uber.tchannel.api.errors.TChannelConnectionTimeout;
 import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.api.errors.TChannelNoPeerAvailable;
@@ -65,12 +66,10 @@ public final class SubChannel {
     private final List<SubPeer> peers = new ArrayList<>();
     private final Map<String, RequestHandler> requestHandlers = new HashMap<>();
 
-    private final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
-        {
-            put(ArgScheme.JSON, new JSONSerializer());
-            put(ArgScheme.THRIFT, new ThriftSerializer());
-        }
-    });
+    private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
+            ImmutableMap.of(ArgScheme.JSON, new JSONSerializer(), ArgScheme.THRIFT, new ThriftSerializer());
+
+    private final Serializer serializer = new Serializer(DEFAULT_SERIALIZERS);
 
     public SubChannel(String service, TChannel topChannel) {
         this.service = service;
