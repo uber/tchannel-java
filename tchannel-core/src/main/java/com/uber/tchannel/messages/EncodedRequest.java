@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.messages;
 
+import com.google.common.collect.ImmutableMap;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.tracing.TraceableRequest;
 import com.uber.tchannel.utils.TChannelUtilities;
@@ -32,12 +33,10 @@ import java.util.Map;
 
 public abstract class EncodedRequest<T> extends Request implements TraceableRequest {
 
-    private static final Serializer serializer = new Serializer(new HashMap<ArgScheme, Serializer.SerializerInterface>() {
-        {
-            put(ArgScheme.JSON, new JSONSerializer());
-            put(ArgScheme.THRIFT, new ThriftSerializer());
-        }
-    });
+    private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
+            ImmutableMap.of(ArgScheme.JSON, new JSONSerializer(), ArgScheme.THRIFT, new ThriftSerializer());
+
+    private static final Serializer serializer = new Serializer(DEFAULT_SERIALIZERS);
 
     protected Map<String, String> headers;
     protected T body = null;
