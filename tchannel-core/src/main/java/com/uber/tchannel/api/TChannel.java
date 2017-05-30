@@ -44,6 +44,10 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.WriteBufferWaterMark;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -232,6 +236,8 @@ public final class TChannel {
         private EventLoopGroup bossGroup;
         private EventLoopGroup childGroup;
 
+        private static final boolean useEpoll = Epoll.isAvailable();
+
         private final String service;
         private InetAddress host;
         private int port = 0;
@@ -257,8 +263,8 @@ public final class TChannel {
             }
 
             timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
-            bossGroup = new NioEventLoopGroup(1);
-            childGroup = new NioEventLoopGroup();
+            bossGroup = useEpoll ? new EpollEventLoopGroup(1) : new NioEventLoopGroup(1);
+            childGroup = useEpoll ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         }
 
         public Builder setExecutorService(ExecutorService executorService) {
@@ -312,13 +318,15 @@ public final class TChannel {
         }
 
         public TChannel build() {
+            String message = useEpoll ? "Using native epoll transport" : "Using NIO transport";
+            logger.debug(message);
             return new TChannel(this);
         }
 
         private Bootstrap bootstrap(TChannel topChannel) {
             return new Bootstrap()
                 .group(this.childGroup)
-                .channel(NioSocketChannel.class)
+                .channel(useEpoll ? EpollSocketChannel.class : NioSocketChannel.class)
                 .handler(this.channelInitializer(false, topChannel))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.WRITE_BUFFER_WATER_MARK, 
@@ -329,7 +337,7 @@ public final class TChannel {
         private ServerBootstrap serverBootstrap(TChannel topChannel) {
             return new ServerBootstrap()
                 .group(this.bossGroup, this.childGroup)
-                .channel(NioServerSocketChannel.class)
+                .channel(useEpoll ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.INFO))
                 .option(ChannelOption.SO_BACKLOG, 128)
                 .childHandler(this.channelInitializer(true, topChannel))
