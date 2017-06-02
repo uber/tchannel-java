@@ -38,6 +38,7 @@ import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.messages.RawRequest;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -204,12 +205,10 @@ public class PeerManagerTest extends BaseTest {
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
             .build();
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", port));
         final SubChannel subClient = client.makeSubChannel("server")
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(new InetSocketAddress("127.0.0.1", port));
-                }
-            });
+                .setPeers(peers);
         client.listen();
 
         RawRequest req = new RawRequest.Builder("server", "echo")
@@ -268,12 +267,10 @@ public class PeerManagerTest extends BaseTest {
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
             .build();
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", port));
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.IN)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(new InetSocketAddress("127.0.0.1", port));
-                }
-            });
+            .setPeers(peers);
         client.listen();
 
         RawRequest req = new RawRequest.Builder("server", "echo")
@@ -332,12 +329,10 @@ public class PeerManagerTest extends BaseTest {
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
             .build();
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", port));
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.OUT)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(new InetSocketAddress("127.0.0.1", port));
-                }
-            });
+            .setPeers(peers);
         client.listen();
 
         RawRequest req = new RawRequest.Builder("server", "echo")
@@ -405,13 +400,11 @@ public class PeerManagerTest extends BaseTest {
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
             .build();
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(serverAddress1);
+        peers.add(serverAddress2);
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.OUT)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(serverAddress1);
-                    add(serverAddress2);
-                }
-            });
+            .setPeers(peers);
         client.listen();
         final InetSocketAddress clientAddress = new InetSocketAddress("127.0.0.1", client.getListeningPort());
 
@@ -497,13 +490,11 @@ public class PeerManagerTest extends BaseTest {
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
             .build();
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(serverAddress1);
+        peers.add(serverAddress2);
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.IN)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(serverAddress1);
-                    add(serverAddress2);
-                }
-            });
+            .setPeers(peers);
         client.listen();
         final InetSocketAddress clientAddress = new InetSocketAddress("127.0.0.1", client.getListeningPort());
 
@@ -574,5 +565,3 @@ public class PeerManagerTest extends BaseTest {
         }
     }
 }
-
-

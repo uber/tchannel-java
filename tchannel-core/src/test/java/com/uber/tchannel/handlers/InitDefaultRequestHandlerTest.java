@@ -43,6 +43,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -70,15 +71,13 @@ public class InitDefaultRequestHandlerTest extends BaseTest {
         for (String name: channel.pipeline().names().subList(1, handlerNames.size())){
             assertFalse(name.startsWith(initName));
         }
-
+        Map<String, String> headers = new HashMap<>();
+        headers.put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+        headers.put(InitFrame.PROCESS_NAME_KEY, "test-process");
         InitRequestFrame initRequestFrame = new InitRequestFrame(
                 42,
                 InitFrame.DEFAULT_VERSION,
-                new HashMap<String, String>() {{
-                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
-                }}
-        );
+                headers);
 
         channel.writeInbound(
             MessageCodec.encode(
@@ -121,14 +120,12 @@ public class InitDefaultRequestHandlerTest extends BaseTest {
         EmbeddedChannel channel = new EmbeddedChannel(
                 new InitRequestHandler(new PeerManager(new Bootstrap()))
         );
-
+        Map<String, String> headers = new HashMap<>();
+        headers.put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+        headers.put(InitFrame.PROCESS_NAME_KEY, "test-process");
         InitRequestFrame initRequestFrame = new InitRequestFrame(42,
                 InitFrame.DEFAULT_VERSION,
-                new HashMap<String, String>() {{
-                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
-                }}
-        );
+                headers);
 
         channel.writeInbound(
             MessageCodec.encode(
@@ -181,14 +178,12 @@ public class InitDefaultRequestHandlerTest extends BaseTest {
         EmbeddedChannel channel = new EmbeddedChannel(
                 new InitRequestHandler(new PeerManager(new Bootstrap()))
         );
-
+        Map<String, String> headers = new HashMap<>();
+        headers.put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
+        headers.put(InitFrame.PROCESS_NAME_KEY, "test-process");
         InitRequestFrame initRequestFrame = new InitRequestFrame(42,
                 1,
-                new HashMap<String, String>() {{
-                    put(InitFrame.HOST_PORT_KEY, "0.0.0.0:0");
-                    put(InitFrame.PROCESS_NAME_KEY, "test-process");
-                }}
-        );
+                headers);
 
         channel.writeInbound(
             MessageCodec.encode(

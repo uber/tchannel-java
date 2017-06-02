@@ -57,12 +57,11 @@ public class TestMessageMultiplexer extends BaseTest {
         Map<Long, List<CallFrame>> map = mux.getCallFrames();
         EmbeddedChannel channel = new EmbeddedChannel(mux);
         long id = 42;
-
+        Map<String, String> headers = new HashMap<>();
+        headers.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
         CallRequestFrame callRequestFrame = Fixtures.callRequest(id,
             true,
-            new HashMap<String, String>(){{
-                put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
-            }},
+            headers,
             Unpooled.wrappedBuffer(
                 // arg1 size
                 new byte[]{0x00, 0x04},
@@ -149,12 +148,11 @@ public class TestMessageMultiplexer extends BaseTest {
         Map<Long, List<CallFrame>> map = mux.getCallFrames();
         EmbeddedChannel channel = new EmbeddedChannel(mux);
         long id = 42;
-
+        Map<String, String> headers = new HashMap<>();
+        headers.put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
         CallResponseFrame callResponseFrame = Fixtures.callResponse(id,
             true,
-            new HashMap<String, String>() {{
-                put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
-            }},
+            headers,
             Unpooled.wrappedBuffer(
                 // arg1 needs to be empty
                 new byte[]{0x00, 0x00},

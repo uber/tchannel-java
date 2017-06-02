@@ -78,7 +78,7 @@ public class Peer {
         // Sending out the init request
         InitRequestFrame initRequestFrame = new InitRequestFrame(0,
             InitFrame.DEFAULT_VERSION,
-            new HashMap<String, String>() { }
+            new HashMap<String, String>()
         );
         initRequestFrame.setHostPort(this.manager.getHostPort());
         // TODO: figure out what to put here

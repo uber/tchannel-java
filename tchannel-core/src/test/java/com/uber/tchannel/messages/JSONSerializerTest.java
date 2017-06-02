@@ -52,9 +52,8 @@ public class JSONSerializerTest extends BaseTest {
     @Test
     public void testEncodeDecodeHeaders() throws Exception {
 
-        Map<String, String> headers = new HashMap<String, String>() {{
-            put("foo", "bar");
-        }};
+        Map<String, String> headers = new HashMap<>();
+        headers.put("foo", "bar");
 
         ByteBuf binaryHeaders = serializer.encodeHeaders(headers);
         Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);

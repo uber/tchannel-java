@@ -35,6 +35,7 @@ import org.junit.rules.ExpectedException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
@@ -77,15 +78,13 @@ public class RetryTest extends BaseTest {
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
-        subClient.setPeers(new ArrayList<InetSocketAddress>(){
-            {
-                add(new InetSocketAddress("127.0.0.1", 8000));
-                add(new InetSocketAddress("127.0.0.1", 8001));
-                add(new InetSocketAddress("127.0.0.1", 8002));
-                add(new InetSocketAddress("127.0.0.1", 8003));
-                add(new InetSocketAddress("127.0.0.1", port));
-            }
-        });
+        ArrayList<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", 8000));
+        peers.add(new InetSocketAddress("127.0.0.1", 8001));
+        peers.add(new InetSocketAddress("127.0.0.1", 8002));
+        peers.add(new InetSocketAddress("127.0.0.1", 8003));
+        peers.add(new InetSocketAddress("127.0.0.1", port));
+        subClient.setPeers(peers);
 
         client.listen();
 
@@ -125,15 +124,14 @@ public class RetryTest extends BaseTest {
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
-        subClient.setPeers(new ArrayList<InetSocketAddress>(){
-            {
-                add(new InetSocketAddress("127.0.0.1", 8000));
-                add(new InetSocketAddress("127.0.0.1", 8001));
-                add(new InetSocketAddress("127.0.0.1", 8002));
-                add(new InetSocketAddress("127.0.0.1", 8003));
-                add(new InetSocketAddress("127.0.0.1", port));
-            }
-        });
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", 8000));
+        peers.add(new InetSocketAddress("127.0.0.1", 8001));
+        peers.add(new InetSocketAddress("127.0.0.1", 8002));
+        peers.add(new InetSocketAddress("127.0.0.1", 8003));
+        peers.add(new InetSocketAddress("127.0.0.1", port));
+
+        subClient.setPeers(peers);
 
         client.listen();
 
@@ -176,11 +174,9 @@ public class RetryTest extends BaseTest {
             .setInitTimeout(2000)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
-        subClient.setPeers(new ArrayList<InetSocketAddress>(){
-            {
-                add(new InetSocketAddress("127.0.0.1", port));
-            }
-        });
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", port));
+        subClient.setPeers(peers);
 
         client.listen();
 
@@ -224,11 +220,9 @@ public class RetryTest extends BaseTest {
             .setInitTimeout(2000)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
-        subClient.setPeers(new ArrayList<InetSocketAddress>(){
-            {
-                add(new InetSocketAddress("127.0.0.1", port));
-            }
-        });
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", port));
+        subClient.setPeers(peers);
 
         client.listen();
 
@@ -273,11 +267,9 @@ public class RetryTest extends BaseTest {
             .setInitTimeout(2000)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
-        subClient.setPeers(new ArrayList<InetSocketAddress>(){
-            {
-                add(new InetSocketAddress("127.0.0.1", port));
-            }
-        });
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", port));
+        subClient.setPeers(peers);
 
         client.listen();
 
@@ -311,12 +303,10 @@ public class RetryTest extends BaseTest {
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
-        subClient.setPeers(new ArrayList<InetSocketAddress>(){
-            {
-                add(new InetSocketAddress("127.0.0.1", 8000));
-                add(new InetSocketAddress("127.0.0.1", 8001));
-            }
-        });
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", 8000));
+        peers.add(new InetSocketAddress("127.0.0.1", 8001));
+        subClient.setPeers(peers);
 
         client.listen();
 
@@ -359,11 +349,9 @@ public class RetryTest extends BaseTest {
             .setInitTimeout(2000)
             .build();
         final SubChannel subClient = client.makeSubChannel("server");
-        subClient.setPeers(new ArrayList<InetSocketAddress>(){
-            {
-                add(new InetSocketAddress("127.0.0.1", port));
-            }
-        });
+        List<InetSocketAddress> peers = new ArrayList<>();
+        peers.add(new InetSocketAddress("127.0.0.1", port));
+        subClient.setPeers(peers);
 
         client.listen();
 

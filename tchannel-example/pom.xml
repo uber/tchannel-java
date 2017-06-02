@@ -67,29 +67,18 @@
                 </executions>
             </plugin>
             <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
+                <groupId>org.apache.thrift.tools</groupId>
+                <artifactId>maven-thrift-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>generate-sources</id>
+                        <id>thrift-sources</id>
                         <phase>generate-sources</phase>
-                        <configuration>
-                            <tasks>
-                                <mkdir dir="${project.build.directory}/generated-sources/thrift/gen-java" />
-                                <exec executable="${thrift.executable}" failonerror="true">
-                                    <arg value="--gen" />
-                                    <arg value="java:private-members" />
-                                    <arg value="--out" />
-                                    <arg value="${project.build.directory}/generated-sources/thrift/gen-java" />
-                                    <arg value="src/main/thrift/keyvalue.thrift" />
-                                </exec>
-                                <copy todir="src/main/gen-java" overwrite="true">
-                                    <fileset dir="target/generated-sources/thrift/gen-java" />
-                                </copy>
-                            </tasks>
-                        </configuration>
                         <goals>
-                            <goal>run</goal>
+                            <goal>compile</goal>
                         </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/generated-sources/thrift/gen-java</outputDirectory>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
