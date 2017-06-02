@@ -296,9 +296,11 @@ public final class SubChannel {
             if (connection.lastError() != null) {
                 outRequest.setLastError(ErrorType.NetworkError, connection.lastError());
             } else {
-                outRequest.setLastError(ErrorType.NetworkError, new TChannelConnectionTimeout());
+                // TODO - extract the formatting and reuse all over
+                String logMessage =  String.format("%s/%s::%s", connection.getPeer().remoteAddress,
+                        request.getService(), request.getEndpoint());
+                outRequest.setLastError(ErrorType.NetworkError, new TChannelConnectionTimeout(logMessage));
             }
-
             return false;
         }
 

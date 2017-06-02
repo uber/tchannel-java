@@ -26,4 +26,8 @@ public class TChannelConnectionTimeout extends TChannelError {
     public TChannelConnectionTimeout() {
         super("Connection timeout on identification", TChannelError.ERROR_INIT_TIMEOUT);
     }
+
+    public TChannelConnectionTimeout(String message) {
+        super("Connection timeout on identification: " + message, TChannelError.ERROR_INIT_TIMEOUT);
+    }
 }
