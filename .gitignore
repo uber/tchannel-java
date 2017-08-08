@@ -1,8 +1,21 @@
-.idea/
-tchannel-core/target/
-tchannel-example/target/
-tchannel-hyperbahn/target/
+**/src/*/gen-java/
+
+# Maven
 target/
+!src/**/target/
+.flattened-pom.xml
+/release.properties
+
+# IntelliJ IDEA
+/.idea/
 *.iml
-gen-java/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Mac OS X laundry
+.DS_Store
+
 *~
