@@ -89,7 +89,10 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     public boolean set(V response) {
         // Error doesn't need to be released
         if (listenerCount.get() == 0 && !response.isError()) {
-            logger.warn("No handler is set when response is set. Resource leak may occur.");
+            logger.warn(
+                "No handler is set when response is set. Resource leak may occur.",
+                new IllegalStateException() // log the stacktrace
+            );
         }
 
         this.response = response;
