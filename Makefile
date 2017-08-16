@@ -27,3 +27,10 @@ ifdef CROSSDOCK
 else
 	mvn --show-version clean org.jacoco:jacoco-maven-plugin:prepare-agent test org.jacoco:jacoco-maven-plugin:report-aggregate
 endif
+
+codecov_ci:
+ifdef CROSSDOCK
+	true
+else
+	bash <(curl -s https://codecov.io/bash)
+endif
