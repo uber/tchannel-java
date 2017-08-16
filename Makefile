@@ -14,7 +14,7 @@ release:
 	mvn -Dbuild=release release:perform
 
 install_ci:
-ifdef CROSSDOCK
+ifeq ($(CROSSDOCK), true)
 	$(MAKE) install_docker_ci
 else
 	true
@@ -22,14 +22,14 @@ endif
 
 
 test_ci:
-ifdef CROSSDOCK
+ifeq ($(CROSSDOCK), true)
 	$(MAKE) crossdock_ci
 else
 	mvn --show-version clean org.jacoco:jacoco-maven-plugin:prepare-agent test org.jacoco:jacoco-maven-plugin:report-aggregate
 endif
 
 codecov_ci:
-ifdef CROSSDOCK
+ifeq ($(CROSSDOCK), true)
 	true
 else
 	bash <(curl -s https://codecov.io/bash)
