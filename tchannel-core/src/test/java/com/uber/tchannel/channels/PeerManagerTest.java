@@ -326,6 +326,7 @@ public class PeerManagerTest extends BaseTest {
         // create server
         final TChannel server1 = new TChannel.Builder("server")
             .setServerHost(host)
+            .setInitTimeout(2000)
             .build();
         final EchoHandler echo1 = new EchoHandler();
         final SubChannel subServer1 = server1.makeSubChannel("server", Connection.Direction.OUT)
@@ -335,6 +336,7 @@ public class PeerManagerTest extends BaseTest {
 
         final TChannel server2 = new TChannel.Builder("server")
             .setServerHost(host)
+            .setInitTimeout(2000)
             .build();
         final EchoHandler echo2 = new EchoHandler();
         final SubChannel subServer2 = server2.makeSubChannel("server", Connection.Direction.OUT)
@@ -345,6 +347,7 @@ public class PeerManagerTest extends BaseTest {
         // create client
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
+            .setInitTimeout(2000)
             .build();
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.OUT)
             .setPeers(ImmutableList.of(serverAddress1, serverAddress2));
@@ -353,8 +356,8 @@ public class PeerManagerTest extends BaseTest {
 
         Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
         Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
-        conn1.waitForIdentified(3000);
-        conn2.waitForIdentified(3000);
+        conn1.waitForIdentified(2000);
+        conn2.waitForIdentified(2000);
 
         // checking the connections
         assertStats("client", client, 1, 1);
@@ -396,6 +399,7 @@ public class PeerManagerTest extends BaseTest {
         // create server
         final TChannel server1 = new TChannel.Builder("server")
             .setServerHost(host)
+            .setInitTimeout(2000)
             .build();
         final EchoHandler echo1 = new EchoHandler();
         final SubChannel subServer1 = server1.makeSubChannel("server", Connection.Direction.OUT)
@@ -405,6 +409,7 @@ public class PeerManagerTest extends BaseTest {
 
         final TChannel server2 = new TChannel.Builder("server")
             .setServerHost(host)
+            .setInitTimeout(2000)
             .build();
         final EchoHandler echo2 = new EchoHandler();
         final SubChannel subServer2 = server2.makeSubChannel("server", Connection.Direction.OUT)
@@ -415,6 +420,7 @@ public class PeerManagerTest extends BaseTest {
         // create client
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
+            .setInitTimeout(2000)
             .build();
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.IN)
             .setPeers(ImmutableList.of(serverAddress1, serverAddress2));
@@ -423,8 +429,8 @@ public class PeerManagerTest extends BaseTest {
 
         Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
         Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
-        conn1.waitForIdentified(20000); // FIXME set back to 2000
-        conn2.waitForIdentified(20000);
+        conn1.waitForIdentified(2000);
+        conn2.waitForIdentified(2000);
 
         // checking the connections
         assertStats("client", client, 1, 1);
