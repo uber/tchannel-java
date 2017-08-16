@@ -262,7 +262,7 @@ public final class TChannel {
                 logger.error("failed to get current IP");
             }
 
-            timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS);
+            timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS); // FIXME this is premature and may leak timer
             bossGroup = useEpoll ? new EpollEventLoopGroup(1) : new NioEventLoopGroup(1);
             childGroup = useEpoll ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         }
