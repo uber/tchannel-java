@@ -18,11 +18,10 @@ env:
 matrix:
   include:
     - jdk: openjdk7
-      env: CROSSDOCK=false
+      env: CODECOV=true
     - jdk: openjdk7
       env: CROSSDOCK=true
     - jdk: oraclejdk8
-      env: CROSSDOCK=false
 
 cache:
   directories:
@@ -46,7 +45,7 @@ after_failure:
   - make crossdock_logs_ci
 
 after_success:
-  - make codecov_ci
+  - '[ "$CODECOV" == "true" ] && bash <(curl -s https://codecov.io/bash) || true'
   - export REPO=tchannelhub/xdock-java
   - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
   - export TAG=`if [ "$BRANCH" == "master" ]; then echo "latest"; else echo $BRANCH; fi`

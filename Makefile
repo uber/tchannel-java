@@ -27,10 +27,3 @@ ifeq ($(CROSSDOCK), true)
 else
 	mvn --show-version clean org.jacoco:jacoco-maven-plugin:prepare-agent test org.jacoco:jacoco-maven-plugin:report-aggregate
 endif
-
-codecov_ci:
-ifeq ($(CROSSDOCK), true)
-	true
-else
-	bash <(curl -s https://codecov.io/bash)
-endif
