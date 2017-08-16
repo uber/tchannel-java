@@ -20,7 +20,7 @@ env:
 matrix:
   include:
     env:
-     -
+     - CROSSDOCK=
      - CROSSDOCK=true
 
 cache:

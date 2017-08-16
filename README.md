@@ -1,4 +1,6 @@
-# TChannel for JVM [![Build Status](https://travis-ci.org/uber/tchannel-java.svg?branch=master)](https://travis-ci.org/uber/tchannel-java)
+# TChannel for JVM
+[![Build Status](https://travis-ci.org/uber/tchannel-java.svg)](https://travis-ci.org/uber/tchannel-java)
+[![codecov.io](https://codecov.io/github/uber/tchannel-java/coverage.svg)](https://codecov.io/github/uber/tchannel-java)
 
 The Java implementation of the [TChannel](https://github.com/uber/tchannel) protocol.
 
