@@ -22,10 +22,14 @@
 
 package com.uber.tchannel.channels;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
+import com.uber.tchannel.api.handlers.RequestHandler;
+import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
@@ -33,17 +37,11 @@ import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
 import java.net.InetAddress;
-
-import com.uber.tchannel.api.handlers.RequestHandler;
-import com.uber.tchannel.messages.RawRequest;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class PeerManagerTest extends BaseTest {
 
@@ -87,24 +85,15 @@ public class PeerManagerTest extends BaseTest {
         }
 
         // checking the connections
-        Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
-
-        stats = server.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 1);
+        assertStats("server", server, 1, 0);
 
         client.shutdown();
         server.shutdown();
 
-        stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 0);
+        assertStats("server", server, 0, 0);
 
-        stats = server.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -165,24 +154,15 @@ public class PeerManagerTest extends BaseTest {
         }
 
         // checking the connections
-        Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
-
-        stats = server.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 1);
+        assertStats("server", server, 1, 0);
 
         client.shutdown();
         server.shutdown();
 
-        stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 0);
+        assertStats("server", server, 0, 0);
 
-        stats = server.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -229,24 +209,15 @@ public class PeerManagerTest extends BaseTest {
         }
 
         // checking the connections
-        Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
-
-        stats = server.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 1);
+        assertStats("server", server, 1, 0);
 
         client.shutdown();
         server.shutdown();
 
-        stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 0);
+        assertStats("server", server, 0, 0);
 
-        stats = server.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -293,24 +264,15 @@ public class PeerManagerTest extends BaseTest {
         }
 
         // checking the connections
-        Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
-
-        stats = server.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 1);
+        assertStats("server", server, 1, 0);
 
         client.shutdown();
         server.shutdown();
 
-        stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 0);
+        assertStats("server", server, 0, 0);
 
-        stats = server.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -357,24 +319,15 @@ public class PeerManagerTest extends BaseTest {
         }
 
         // checking the connections
-        Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
-
-        stats = server.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 1);
+        assertStats("server", server, 1, 0);
 
         client.shutdown();
         server.shutdown();
 
-        stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 0);
+        assertStats("server", server, 0, 0);
 
-        stats = server.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -421,17 +374,9 @@ public class PeerManagerTest extends BaseTest {
         conn2.waitForIdentified(3000);
 
         // checking the connections
-        Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals("client connections.in", 1, (int)stats.get("connections.in"));
-        assertEquals("client connections.out", 1, (int)stats.get("connections.out"));
-
-        stats = server1.getPeerManager().getStats();
-        assertEquals("server1 connections.in", 1, (int)stats.get("connections.in"));
-        assertEquals("server1 connections.out", 0, (int)stats.get("connections.out"));
-
-        stats = server2.getPeerManager().getStats();
-        assertEquals("server2 connections.in", 0, (int)stats.get("connections.in"));
-        assertEquals("server2 connections.out", 1, (int)stats.get("connections.out"));
+        assertStats("client", client, 1, 1);
+        assertStats("server1", server1, 1, 0);
+        assertStats("server2", server2, 0, 1);
 
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")
@@ -440,9 +385,7 @@ public class PeerManagerTest extends BaseTest {
             .setTimeout(2000)
             .build();
 
-        TFuture<RawResponse> future = subClient.send(
-            req
-        );
+        TFuture<RawResponse> future = subClient.send(req);
 
         try (RawResponse res = future.get()) {
             assertEquals("title", res.getArg2().toString(CharsetUtil.UTF_8));
@@ -456,17 +399,10 @@ public class PeerManagerTest extends BaseTest {
         server1.shutdown();
         server2.shutdown();
 
-        stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 0);
+        assertStats("server1", server1, 0, 0);
+        assertStats("server2", server2, 0, 0);
 
-        stats = server1.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
-
-        stats = server2.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
     }
 
     @Test
@@ -498,12 +434,7 @@ public class PeerManagerTest extends BaseTest {
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.IN)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(serverAddress1);
-                    add(serverAddress2);
-                }
-            });
+            .setPeers(ImmutableList.of(serverAddress1, serverAddress2));
         client.listen();
         final InetSocketAddress clientAddress = new InetSocketAddress("127.0.0.1", client.getListeningPort());
 
@@ -513,17 +444,9 @@ public class PeerManagerTest extends BaseTest {
         conn2.waitForIdentified(2000);
 
         // checking the connections
-        Map<String, Integer> stats = client.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
-
-        stats = server1.getPeerManager().getStats();
-        assertEquals(1, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
-
-        stats = server2.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(1, (int)stats.get("connections.out"));
+        assertStats("client", client, 1, 1);
+        assertStats("server1", server1, 1, 0);
+        assertStats("server2", server2, 0, 1);
 
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")
@@ -548,17 +471,21 @@ public class PeerManagerTest extends BaseTest {
         server1.shutdown();
         server2.shutdown();
 
-        stats = client.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+        assertStats("client", client, 0, 0);
+        assertStats("server1", server1, 0, 0);
+        assertStats("server2", server2, 0, 0);
 
-        stats = server1.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+    }
 
-        stats = server2.getPeerManager().getStats();
-        assertEquals(0, (int)stats.get("connections.in"));
-        assertEquals(0, (int)stats.get("connections.out"));
+    private void assertStats(String label, TChannel channel, int in, int out) {
+        assertEquals(
+            label,
+            ImmutableMap.of(
+                "connections.in", in,
+                "connections.out", out
+            ),
+            channel.getPeerManager().getStats()
+        );
     }
 
     protected static class EchoHandler implements RequestHandler {
@@ -573,6 +500,5 @@ public class PeerManagerTest extends BaseTest {
                 .build();
         }
     }
+
 }
-
-
