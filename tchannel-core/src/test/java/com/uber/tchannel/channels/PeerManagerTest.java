@@ -48,7 +48,7 @@ public class PeerManagerTest extends BaseTest {
     @Test
     public void testPeerAndConnections() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -99,7 +99,7 @@ public class PeerManagerTest extends BaseTest {
     @Test
     public void testConnectionPooling() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -168,7 +168,7 @@ public class PeerManagerTest extends BaseTest {
     @Test
     public void testWithPeerSelection() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -185,11 +185,7 @@ public class PeerManagerTest extends BaseTest {
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server")
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(new InetSocketAddress("127.0.0.1", port));
-                }
-            });
+            .setPeers(ImmutableList.of(new InetSocketAddress(host, port)));
         client.listen();
 
         RawRequest req = new RawRequest.Builder("server", "echo")
@@ -223,7 +219,7 @@ public class PeerManagerTest extends BaseTest {
     @Test
     public void testPreferIncoming() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -240,11 +236,7 @@ public class PeerManagerTest extends BaseTest {
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.IN)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(new InetSocketAddress("127.0.0.1", port));
-                }
-            });
+            .setPeers(ImmutableList.of(new InetSocketAddress(host, port)));
         client.listen();
 
         RawRequest req = new RawRequest.Builder("server", "echo")
@@ -278,7 +270,7 @@ public class PeerManagerTest extends BaseTest {
     @Test
     public void testPreferOutgoing() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -295,11 +287,7 @@ public class PeerManagerTest extends BaseTest {
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.OUT)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(new InetSocketAddress("127.0.0.1", port));
-                }
-            });
+            .setPeers(ImmutableList.of(new InetSocketAddress(host, port)));
         client.listen();
 
         RawRequest req = new RawRequest.Builder("server", "echo")
@@ -333,7 +321,7 @@ public class PeerManagerTest extends BaseTest {
     @Test
     public void testChooseOutgoing() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server1 = new TChannel.Builder("server")
@@ -343,7 +331,7 @@ public class PeerManagerTest extends BaseTest {
         final SubChannel subServer1 = server1.makeSubChannel("server", Connection.Direction.OUT)
             .register("echo", echo1);
         server1.listen();
-        final InetSocketAddress serverAddress1 = new InetSocketAddress("127.0.0.1", server1.getListeningPort());
+        final InetSocketAddress serverAddress1 = new InetSocketAddress(host, server1.getListeningPort());
 
         final TChannel server2 = new TChannel.Builder("server")
             .setServerHost(host)
@@ -352,21 +340,16 @@ public class PeerManagerTest extends BaseTest {
         final SubChannel subServer2 = server2.makeSubChannel("server", Connection.Direction.OUT)
             .register("echo", echo2);
         server2.listen();
-        final InetSocketAddress serverAddress2 = new InetSocketAddress("127.0.0.1", server2.getListeningPort());
+        final InetSocketAddress serverAddress2 = new InetSocketAddress(host, server2.getListeningPort());
 
         // create client
         final TChannel client = new TChannel.Builder("client")
             .setServerHost(host)
             .build();
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.OUT)
-            .setPeers(new ArrayList<InetSocketAddress>() {
-                {
-                    add(serverAddress1);
-                    add(serverAddress2);
-                }
-            });
+            .setPeers(ImmutableList.of(serverAddress1, serverAddress2));
         client.listen();
-        final InetSocketAddress clientAddress = new InetSocketAddress("127.0.0.1", client.getListeningPort());
+        final InetSocketAddress clientAddress = new InetSocketAddress(host, client.getListeningPort());
 
         Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
         Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
@@ -408,7 +391,7 @@ public class PeerManagerTest extends BaseTest {
     @Test
     public void testChooseIncoming() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server1 = new TChannel.Builder("server")
@@ -418,7 +401,7 @@ public class PeerManagerTest extends BaseTest {
         final SubChannel subServer1 = server1.makeSubChannel("server", Connection.Direction.OUT)
             .register("echo", echo1);
         server1.listen();
-        final InetSocketAddress serverAddress1 = new InetSocketAddress("127.0.0.1", server1.getListeningPort());
+        final InetSocketAddress serverAddress1 = new InetSocketAddress(host, server1.getListeningPort());
 
         final TChannel server2 = new TChannel.Builder("server")
             .setServerHost(host)
@@ -427,7 +410,7 @@ public class PeerManagerTest extends BaseTest {
         final SubChannel subServer2 = server2.makeSubChannel("server", Connection.Direction.OUT)
             .register("echo", echo2);
         server2.listen();
-        final InetSocketAddress serverAddress2 = new InetSocketAddress("127.0.0.1", server2.getListeningPort());
+        final InetSocketAddress serverAddress2 = new InetSocketAddress(host, server2.getListeningPort());
 
         // create client
         final TChannel client = new TChannel.Builder("client")
@@ -436,12 +419,12 @@ public class PeerManagerTest extends BaseTest {
         final SubChannel subClient = client.makeSubChannel("server", Connection.Direction.IN)
             .setPeers(ImmutableList.of(serverAddress1, serverAddress2));
         client.listen();
-        final InetSocketAddress clientAddress = new InetSocketAddress("127.0.0.1", client.getListeningPort());
+        final InetSocketAddress clientAddress = new InetSocketAddress(host, client.getListeningPort());
 
         Connection conn1 = subClient.getPeerManager().connectTo(serverAddress1);
         Connection conn2 = server2.getPeerManager().connectTo(clientAddress);
-        conn1.waitForIdentified(2000);
-        conn2.waitForIdentified(2000);
+        conn1.waitForIdentified(20000); // FIXME set back to 2000
+        conn2.waitForIdentified(20000);
 
         // checking the connections
         assertStats("client", client, 1, 1);
@@ -479,7 +462,7 @@ public class PeerManagerTest extends BaseTest {
 
     private void assertStats(String label, TChannel channel, int in, int out) {
         assertEquals(
-            label,
+            label + " stats",
             ImmutableMap.of(
                 "connections.in", in,
                 "connections.out", out

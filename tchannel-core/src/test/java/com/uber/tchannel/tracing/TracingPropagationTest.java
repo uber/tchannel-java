@@ -115,7 +115,7 @@ public class TracingPropagationTest {
         tracingContext = new TracingContext.ThreadLocal();
 
         tchannel = new TChannel.Builder("tchannel-name")
-                .setServerHost(InetAddress.getByName("127.0.0.1"))
+                .setServerHost(InetAddress.getByName(null))
                 .setTracer(tracer)
                 .setTracingContext(tracingContext)
                 .build();

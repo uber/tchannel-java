@@ -60,7 +60,7 @@ public class RequestTest extends BaseTest {
         final int responseBody = 10;
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
-            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setServerHost(InetAddress.getByName(null))
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {
@@ -101,7 +101,7 @@ public class RequestTest extends BaseTest {
         final String requestBody = "Hello, World!";
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
-            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setServerHost(InetAddress.getByName(null))
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")
             .register("endpoint", new JSONRequestHandler<String, Integer>() {
@@ -143,7 +143,7 @@ public class RequestTest extends BaseTest {
         final int responseBody = 10;
 
         TChannel tchannel = new TChannel.Builder("tchannel-name")
-            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setServerHost(InetAddress.getByName(null))
             .setInitTimeout(2000)
             .build();
         SubChannel subChannel = tchannel.makeSubChannel("tchannel-name")

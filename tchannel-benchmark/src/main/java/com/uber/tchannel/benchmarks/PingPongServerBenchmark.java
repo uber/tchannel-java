@@ -79,7 +79,7 @@ public class PingPongServerBenchmark {
         BasicConfigurator.configure();
         LogManager.getRootLogger().setLevel(org.apache.log4j.Level.INFO);
 
-        this.host = InetAddress.getByName("127.0.0.1");
+        this.host = InetAddress.getByName(null);
         this.channel = new TChannel.Builder("ping-server")
             .setServerHost(host)
             .setBossGroup(bossGroup)

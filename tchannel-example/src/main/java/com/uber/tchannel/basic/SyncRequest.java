@@ -48,7 +48,7 @@ public class SyncRequest {
                 .setBody("Ping!")
                 .build();
             TFuture<RawResponse> future = subChannel.send(request,
-                InetAddress.getByName("127.0.0.1"),
+                InetAddress.getByName(null),
                 8888
             );
 
@@ -79,7 +79,7 @@ public class SyncRequest {
 
         // create TChannel
         TChannel tchannel = new TChannel.Builder("server")
-            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setServerHost(InetAddress.getByName(null))
             .setServerPort(8888)
             .build();
 

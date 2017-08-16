@@ -60,7 +60,7 @@ public class RetryTest extends BaseTest {
     @Test
     public void retryOnConnectionFailure() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -108,7 +108,7 @@ public class RetryTest extends BaseTest {
     @Test
     public void retryOnConnectionFailureWithFlag() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -157,7 +157,7 @@ public class RetryTest extends BaseTest {
     @Test
     public void retryOnTimeout() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -205,7 +205,7 @@ public class RetryTest extends BaseTest {
     @Test
     public void retryOnTimeoutWithFlag() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -254,7 +254,7 @@ public class RetryTest extends BaseTest {
     @Test
     public void retryOnTimeoutFails() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -304,7 +304,7 @@ public class RetryTest extends BaseTest {
     @Test
     public void retryOnConnectionFailureRespectFlag() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create client
         final TChannel client = new TChannel.Builder("client")
@@ -340,7 +340,7 @@ public class RetryTest extends BaseTest {
     @Test
     public void retryOnTimeoutRespectFlag() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")

@@ -21,7 +21,7 @@ import java.net.InetAddress;
 public class XlangTestServer {
     public static void main(String[] args) throws Exception {
         TChannel tchannel = new TChannel.Builder("test_as_raw")
-            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setServerHost(InetAddress.getByName(null))
             .setServerPort(8888)
             .build();
         tchannel.makeSubChannel("test_as_raw").register("streaming_echo", new EchoHandler());

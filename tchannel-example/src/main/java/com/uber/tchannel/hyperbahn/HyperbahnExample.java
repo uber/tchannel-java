@@ -44,7 +44,7 @@ import com.uber.tchannel.ping.PingRequestHandler;
 public class HyperbahnExample {
     public static void main(String[] args) throws Exception {
         TChannel tchannel = new TChannel.Builder("javaServer")
-                .setServerHost(InetAddress.getByName("127.0.0.1"))
+                .setServerHost(InetAddress.getByName(null))
                 .setServerPort(8888)
                 .build();
 

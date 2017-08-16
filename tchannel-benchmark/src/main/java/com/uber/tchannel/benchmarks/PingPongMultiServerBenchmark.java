@@ -108,7 +108,7 @@ public class PingPongMultiServerBenchmark {
     protected void createServers() throws Exception {
         for (int i = 0; i < connections; i++) {
             TChannel server = new TChannel.Builder("ping-server")
-                .setServerHost(InetAddress.getByName("127.0.0.1"))
+                .setServerHost(InetAddress.getByName(null))
                 .setBossGroup(bossGroup)
                 .setChildGroup(childGroup)
                 .build();

@@ -75,13 +75,19 @@
     </modules>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <argLine>-Dio.netty.leakDetectionLevel=paranoid</argLine>
+
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <thrift.executable>thrift</thrift.executable>
 
-        <slf4j.version>1.7.25</slf4j.version>
         <jmh.version>1.19</jmh.version>
+        <slf4j.version>1.7.25</slf4j.version>
+
     </properties>
 
     <distributionManagement>

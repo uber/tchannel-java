@@ -61,7 +61,7 @@ public class ConnectionTest extends BaseTest {
     @Test
     public void testConnectionClientReset() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -123,7 +123,7 @@ public class ConnectionTest extends BaseTest {
     @Test
     public void testConnectionServerReset() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -185,7 +185,7 @@ public class ConnectionTest extends BaseTest {
     @Test
     public void testConnectionFailure() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create client
         final TChannel client = new TChannel.Builder("client")
@@ -227,7 +227,7 @@ public class ConnectionTest extends BaseTest {
     @Test
     public void testPeerConnectionFailure() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create client
         final TChannel client = new TChannel.Builder("client")
@@ -271,7 +271,7 @@ public class ConnectionTest extends BaseTest {
     @Test
     public void testCleanupDuringTimeout() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")
@@ -315,7 +315,7 @@ public class ConnectionTest extends BaseTest {
     @Test
     public void testResetOnTimeout() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")

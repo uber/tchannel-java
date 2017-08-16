@@ -41,7 +41,7 @@ public class HealthCheckTest extends BaseTest {
     @Test
     public void testHealthCheck() throws Exception {
 
-        InetAddress host = InetAddress.getByName("127.0.0.1");
+        InetAddress host = InetAddress.getByName(null);
 
         // create server
         final TChannel server = new TChannel.Builder("server")

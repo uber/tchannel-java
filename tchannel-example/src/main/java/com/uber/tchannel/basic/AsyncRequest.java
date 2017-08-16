@@ -69,7 +69,7 @@ public class AsyncRequest {
                 .setBody("Ping!")
                 .build();
             TFuture<RawResponse> future = subChannel.send(request,
-                InetAddress.getByName("127.0.0.1"),
+                InetAddress.getByName(null),
                 8888
             );
 
@@ -88,7 +88,7 @@ public class AsyncRequest {
 
         // create TChannel
         TChannel tchannel = new TChannel.Builder("server")
-            .setServerHost(InetAddress.getByName("127.0.0.1"))
+            .setServerHost(InetAddress.getByName(null))
             .setServerPort(8888)
             .build();
 

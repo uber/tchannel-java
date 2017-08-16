@@ -99,7 +99,7 @@ public class HyperbahnClientTest extends BaseTest {
 
     public static TChannel createMockHyperbahn(AdvertiseResponseHandler adHandler) throws Exception {
         final TChannel server = new TChannel.Builder("hyperbahn")
-                .setServerHost(InetAddress.getByName("127.0.0.1"))
+                .setServerHost(InetAddress.getByName(null))
                 .setServerPort(8888)
                 .build();
 
