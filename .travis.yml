@@ -21,6 +21,11 @@ matrix:
     env: CROSSDOCK=true
     jdk: openjdk7
 
+cache:
+  directories:
+    - $HOME/.m2/repository
+    - $HOME/.m2/wrapper
+
 before_install:
 - sudo rm -rf /usr/local/bin/thrift
 - sudo cp build/travis/thrift /usr/local/bin/
@@ -30,6 +35,9 @@ install:
 
 script:
 - make test_ci
+
+before_cache:
+  - rm -rf $HOME/.m2/repository/com/uber/tchannel
 
 after_failure:
 - make crossdock_logs_ci
@@ -44,3 +52,4 @@ after_success:
 - $DOCKER tag $REPO:$COMMIT $REPO:$TAG
 - $DOCKER tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
 - $DOCKER push $REPO
+- bash <(curl -s https://codecov.io/bash)
