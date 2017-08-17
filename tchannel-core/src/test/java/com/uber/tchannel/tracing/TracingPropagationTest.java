@@ -335,7 +335,7 @@ public class TracingPropagationTest {
         String baggage = "Baggage-" + System.currentTimeMillis();
         span.setBaggageItem(BAGGAGE_KEY, baggage);
         if (!sampled) {
-            Tags.SAMPLING_PRIORITY.set(span, (short) 0);
+            Tags.SAMPLING_PRIORITY.set(span, 0);
         }
         tracingContext.pushSpan(span);
 
