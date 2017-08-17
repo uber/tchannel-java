@@ -1,0 +1,3 @@
+coverage:
+  range: 50..99
+  round: nearest
