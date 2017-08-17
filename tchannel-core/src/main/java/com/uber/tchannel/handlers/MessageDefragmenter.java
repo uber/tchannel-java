@@ -132,7 +132,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
 
         List<CallFrame> frames = callFrames.get(frame.getId());
         if (frames == null) {
-            throw new TChannelProtocol("Call continue frame recieved before call frame");
+            throw new TChannelProtocol("Call continue frame recieved before call frame"); // FIXME typo
         }
 
         frames.add(frame);

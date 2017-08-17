@@ -95,7 +95,7 @@ public class Connection {
         }
     }
 
-    public synchronized void setIndentified(Map<String, String> headers) {
+    public synchronized void setIndentified(Map<String, String> headers) { // FIXME typo
         String hostPort = headers.get(InitFrame.HOST_PORT_KEY);
         if (hostPort == null) {
             // TODO: handle protocol error

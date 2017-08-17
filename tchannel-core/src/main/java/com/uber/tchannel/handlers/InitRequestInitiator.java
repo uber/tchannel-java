@@ -72,7 +72,7 @@ public class InitRequestInitiator extends SimpleChannelInboundHandler<ByteBuf> {
 
                 // This will lead to a connection reset
                 throw new TChannelProtocol(
-                    "Frame recieved before Init Response"
+                    "Frame recieved before Init Response" // FIXME typo
                 );
         }
     }

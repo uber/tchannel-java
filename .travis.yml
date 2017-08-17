@@ -21,7 +21,7 @@ matrix:
       env: CODECOV=true
     - jdk: openjdk7
       env: CROSSDOCK=true
-    - jdk: oraclejdk8
+#   - jdk: oraclejdk8
 
 cache:
   directories:
