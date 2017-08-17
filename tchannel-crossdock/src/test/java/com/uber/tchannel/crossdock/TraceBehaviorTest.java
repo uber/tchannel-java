@@ -122,7 +122,7 @@ public class TraceBehaviorTest {
         Span span = tracer.buildSpan("root").start();
         span.setBaggageItem(BAGGAGE_KEY, baggage);
         if (sampled) {
-            Tags.SAMPLING_PRIORITY.set(span, (short) 1);
+            Tags.SAMPLING_PRIORITY.set(span, 1);
         }
         tchannel.getTracingContext().pushSpan(span);
 
