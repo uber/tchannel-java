@@ -43,7 +43,7 @@ public class Server {
         logger.info("TChannel created at {}:{}", tchannel.getHost(), tchannel.getPort());
     }
 
-    private class JSONEchoHandler extends JSONRequestHandler<String, String> {
+    private static class JSONEchoHandler extends JSONRequestHandler<String, String> {
         @Override
         public JsonResponse<String> handleImpl(JsonRequest<String> request) {
             return new JsonResponse.Builder<String>(request)
@@ -65,7 +65,7 @@ public class Server {
         tchannel.shutdown(false);
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws UnknownHostException, InterruptedException {
         org.apache.log4j.BasicConfigurator.configure();
 
         InMemoryReporter reporter = new InMemoryReporter();
@@ -76,9 +76,10 @@ public class Server {
         Thread httpThread = new Thread(httpServer);
         httpThread.setDaemon(true);
         httpThread.start();
-        
+
         Server server = new Server("0.0.0.0", tracer);
         server.start().sync();
         server.shutdown();
     }
+
 }

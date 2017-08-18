@@ -11,19 +11,25 @@
     <artifactId>tchannel-hyperbahn</artifactId>
 
     <dependencies>
+
         <dependency>
             <groupId>com.uber.tchannel</groupId>
             <artifactId>tchannel-core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
+
     </dependencies>
+
 </project>
