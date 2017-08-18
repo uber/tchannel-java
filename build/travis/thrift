@@ -22,4 +22,5 @@ set -e
 ${THRIFT} $args
 
 # docker command runs as root, but we need normal permissions
-sudo chmod -R 0777 ${pwd}/target/generated-sources/thrift/gen-java
+[ -d "${pwd}/target/generated-sources/thrift" ] && sudo chmod -R 0777 "${pwd}/target/generated-sources/thrift"
+[ -d "${pwd}/target/generated-test-sources/thrift" ] && sudo chmod -R 0777 "${pwd}/target/generated-test-sources/thrift"
