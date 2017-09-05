@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
@@ -45,7 +44,7 @@ import java.util.Random;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.*;
 
-public class FrameFragmenterTest extends BaseTest {
+public class FrameFragmenterTest {
 
     private static final int BUFFER_SIZE = 100000;
 

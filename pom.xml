@@ -28,6 +28,8 @@
     <version>0.7.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>${project.artifactId}</name><!-- Nexus "pom-staging" rule requires this (redundant) element -->
+
     <description>Network multiplexing and framing protocol for RPC</description>
     <url>https://github.com/uber/tchannel-java</url>
 
@@ -130,6 +132,12 @@
                 <groupId>org.apache.thrift</groupId>
                 <artifactId>libthrift</artifactId>
                 <version>0.9.3</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -138,7 +146,7 @@
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
+                <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
@@ -187,6 +195,74 @@
                 </configuration>
             </plugin>
 
+            <plugin><!-- enforce some requirements across all poms (that inherit from this one) -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+
+                    <execution>
+                        <id>enforce-at-validate-phase</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+
+                                <!-- http://maven.apache.org/enforcer/enforcer-rules/reactorModuleConvergence.html -->
+                                <reactorModuleConvergence/>
+
+                                <!-- http://maven.apache.org/enforcer/enforcer-rules/requireJavaVersion.html -->
+                                <requireJavaVersion>
+                                    <version>[${maven.compiler.source},)</version>
+                                </requireJavaVersion>
+
+                                <!-- http://maven.apache.org/enforcer/enforcer-rules/requireMavenVersion.html -->
+                                <requireMavenVersion>
+                                    <version>3.0</version>
+                                </requireMavenVersion>
+
+                            </rules>
+                        </configuration>
+                    </execution>
+
+                    <execution><!-- these rules require test scope resolution to work correctly (on current reactor build) -->
+                        <id>enforce-at-test-compile-phase</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+
+                                <!-- http://maven.apache.org/enforcer/enforcer-rules/bannedDependencies.html -->
+                                <bannedDependencies>
+                                    <!--
+                                        ban various logging implementations except slf4j-simple (should be used in tests only)
+                                        if a dependency pulls some of these in - they must be added to the dependency's
+                                        exclusion list
+                                    -->
+                                    <excludes>
+                                        <exclude>commons-logging</exclude>
+                                        <exclude>log4j</exclude>
+                                        <exclude>ch.qos.logback</exclude>
+                                        <exclude>org.slf4j:slf4j-*</exclude><!-- exclude all slf4j adaptors, except included -->
+                                    </excludes>
+                                    <includes>
+                                        <include>org.slf4j:slf4j-api</include><!-- allow slf4j api -->
+                                        <include>org.slf4j:slf4j-simple</include><!-- allow slf4j-simple -->
+                                    </includes>
+                                </bannedDependencies>
+
+                                <!-- http://maven.apache.org/enforcer/enforcer-rules/requireUpperBoundDeps.html -->
+                                <requireUpperBoundDeps/>
+
+                            </rules>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+
             <!-- Versioning -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -199,61 +275,7 @@
         </plugins>
 
         <pluginManagement>
-            <plugins>
-
-                <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.7</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>2.5.3</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.6</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>3.0.1</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.10.4</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.0.0</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-shade-plugin</artifactId>
-                    <version>2.4.3</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.6.1</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>versions-maven-plugin</artifactId>
-                    <version>2.3</version>
-                </plugin>
+            <plugins><!-- please keep the list sorted by groupId and artifactId -->
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -263,8 +285,26 @@
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.6.1</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>2.8.2</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>1.4.1</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.6</version>
                 </plugin>
 
                 <plugin>
@@ -281,14 +321,38 @@
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.10.4</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.3</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.0.2</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>2.4.3</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
                     <version>3.6</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.0.1</version>
                 </plugin>
 
                 <plugin>
@@ -307,6 +371,18 @@
                 </plugin>
 
                 <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>2.3</version>
+                </plugin>
+
+                <plugin>
                     <!-- mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test org.jacoco:jacoco-maven-plugin:report -->
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
@@ -315,6 +391,12 @@
                         <excludes><!-- use "binary class name" with a `*` suffix, see https://github.com/jacoco/jacoco/issues/34 -->
                         </excludes>
                     </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>1.6.7</version>
                 </plugin>
 
             </plugins>
@@ -338,7 +420,27 @@
             <build>
                 <plugins>
 
-                    <!-- TODO enforcer plugin with java 7 only configuration -->
+                    <plugin><!-- enforce some requirements across all poms (that inherit from this one) -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-at-validate-phase</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <!-- http://maven.apache.org/enforcer/enforcer-rules/requireJavaVersion.html -->
+                                        <requireJavaVersion>
+                                            <!-- require java 7 for release builds -->
+                                            <version>[${maven.compiler.source},${maven.compiler.source}.999)</version>
+                                        </requireJavaVersion>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
 
                     <!--
                     http://central.sonatype.org/pages/apache-maven.html

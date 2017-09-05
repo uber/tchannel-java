@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.api;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.messages.JsonRequest;
 import org.junit.Test;
 
@@ -30,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class RequestBuilderTest extends BaseTest {
+public class RequestBuilderTest {
 
     @Test
     public void testSetTTL() throws Exception {

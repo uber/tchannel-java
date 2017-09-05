@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.CallFrame;
@@ -45,7 +44,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TestMessageMultiplexer extends BaseTest {
+public class TestMessageMultiplexer {
 
     @Rule
     public final ExpectedException expectedAssertionError = ExpectedException.none();

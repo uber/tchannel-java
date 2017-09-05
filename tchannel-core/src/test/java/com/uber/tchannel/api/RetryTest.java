@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.api;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.RawRequest;
@@ -41,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class RetryTest extends BaseTest {
+public class RetryTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

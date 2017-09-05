@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.messages;
 
-import com.uber.tchannel.BaseTest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -35,7 +34,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class JSONSerializerTest extends BaseTest {
+public class JSONSerializerTest {
 
     private Serializer.SerializerInterface serializer;
 

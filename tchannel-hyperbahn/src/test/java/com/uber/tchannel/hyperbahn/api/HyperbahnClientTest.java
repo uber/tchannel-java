@@ -45,7 +45,7 @@ import static org.junit.Assert.assertNotNull;
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertTrue;
 
-public class HyperbahnClientTest extends BaseTest {
+public class HyperbahnClientTest {
 
     @Test
     public void testAdvertise() throws Exception {

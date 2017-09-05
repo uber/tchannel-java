@@ -22,7 +22,6 @@ package com.uber.tchannel.codecs;
  * THE SOFTWARE.
  */
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import com.uber.tchannel.frames.InitResponseFrame;
@@ -33,7 +32,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
-public class InitResponseFrameCodecTest extends BaseTest {
+public class InitResponseFrameCodecTest {
 
     @Test
     public void shouldEncodeAndDecodeInitResponse() throws Exception {

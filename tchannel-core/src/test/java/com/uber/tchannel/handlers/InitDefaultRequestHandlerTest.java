@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.codecs.MessageCodec;
@@ -48,7 +47,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
-public class InitDefaultRequestHandlerTest extends BaseTest {
+public class InitDefaultRequestHandlerTest {
 
     @Rule
     public final ExpectedException expectedClosedChannelException = ExpectedException.none();

@@ -3,6 +3,7 @@ target/
 !src/**/target/
 .flattened-pom.xml
 /release.properties
+pom.xml.releaseBackup
 
 # IntelliJ IDEA
 /.idea/

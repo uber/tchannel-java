@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.channels;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
@@ -34,9 +33,6 @@ import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import io.netty.util.CharsetUtil;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -51,12 +47,7 @@ import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ConnectionTest extends BaseTest {
-
-    @BeforeClass
-    public static void setup() {
-        LogManager.getRootLogger().setLevel(Level.FATAL);
-    }
+public class ConnectionTest {
 
     @Test
     public void testConnectionClientReset() throws Exception {

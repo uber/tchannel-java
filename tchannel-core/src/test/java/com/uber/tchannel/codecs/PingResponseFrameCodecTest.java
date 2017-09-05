@@ -22,14 +22,13 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.frames.PingResponseFrame;
 import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class PingResponseFrameCodecTest extends BaseTest {
+public class PingResponseFrameCodecTest {
 
     @Test
     public void testEncodeDecodePingResponse() throws Exception {

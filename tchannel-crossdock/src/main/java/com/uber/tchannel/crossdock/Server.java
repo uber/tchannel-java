@@ -66,8 +66,6 @@ public class Server {
     }
 
     public static void main(String[] args) throws UnknownHostException, InterruptedException {
-        org.apache.log4j.BasicConfigurator.configure();
-
         InMemoryReporter reporter = new InMemoryReporter();
         Sampler sampler = new ConstSampler(true);
         Tracer tracer = new Tracer.Builder(SERVER_NAME, reporter, sampler).build();

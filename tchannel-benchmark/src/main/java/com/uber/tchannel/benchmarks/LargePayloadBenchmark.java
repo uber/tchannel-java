@@ -34,10 +34,6 @@ import com.uber.tchannel.messages.Response;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.Slf4JLoggerFactory;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.LogManager;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -81,10 +77,6 @@ public class LargePayloadBenchmark {
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
-        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
-        BasicConfigurator.configure();
-        LogManager.getRootLogger().setLevel(org.apache.log4j.Level.INFO);
-
         this.host = InetAddress.getByName(null);
         this.channel = new TChannel.Builder("ping-server")
             .setServerHost(host)

@@ -24,7 +24,6 @@ package com.uber.tchannel.channels;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
@@ -43,7 +42,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class PeerManagerTest extends BaseTest {
+public class PeerManagerTest {
 
     @Test
     public void testPeerAndConnections() throws Exception {

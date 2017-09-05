@@ -25,7 +25,6 @@ import com.uber.jaeger.Tracer;
 import com.uber.jaeger.reporters.InMemoryReporter;
 import com.uber.jaeger.samplers.ConstSampler;
 import com.uber.jaeger.samplers.Sampler;
-import com.uber.tchannel.BaseTest;
 import io.opentracing.Span;
 import org.junit.After;
 import org.junit.Before;
@@ -37,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TracingContextTest extends BaseTest {
+public class TracingContextTest {
     private Tracer tracer;
     private InMemoryReporter reporter;
     private TracingContext tracingContext;

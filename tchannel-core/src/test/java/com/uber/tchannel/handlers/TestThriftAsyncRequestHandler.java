@@ -23,7 +23,6 @@ package com.uber.tchannel.handlers;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.handlers.ThriftAsyncRequestHandler;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
@@ -39,7 +38,7 @@ import java.net.InetAddress;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class TestThriftAsyncRequestHandler extends BaseTest {
+public class TestThriftAsyncRequestHandler {
 
     @Test
     public void fullRequestResponse() throws Exception {

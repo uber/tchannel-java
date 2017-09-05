@@ -18,7 +18,6 @@ import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -73,11 +72,6 @@ public class TraceBehaviorTest {
             }
         }
         return data;
-    }
-
-    @BeforeClass
-    public static void setUpLogging() {
-        org.apache.log4j.BasicConfigurator.configure();
     }
 
     @Before

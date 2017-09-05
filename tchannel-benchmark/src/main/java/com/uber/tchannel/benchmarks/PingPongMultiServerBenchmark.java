@@ -31,10 +31,6 @@ import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.Slf4JLoggerFactory;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.LogManager;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -79,10 +75,6 @@ public class PingPongMultiServerBenchmark {
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
-        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
-        BasicConfigurator.configure();
-        LogManager.getRootLogger().setLevel(org.apache.log4j.Level.INFO);
-
         createServers();
         this.client = new TChannel.Builder("ping-client")
             .setClientMaxPendingRequests(150000)

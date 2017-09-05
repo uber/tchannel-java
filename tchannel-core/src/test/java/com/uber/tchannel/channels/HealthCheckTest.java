@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.channels;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
@@ -37,7 +36,7 @@ import java.net.InetAddress;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class HealthCheckTest extends BaseTest {
+public class HealthCheckTest {
     @Test
     public void testHealthCheck() throws Exception {
 

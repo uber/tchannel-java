@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.codecs;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.frames.CallResponseContinueFrame;
 import io.netty.buffer.ByteBufAllocator;
@@ -32,7 +31,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class CallResponseFrameContinueCodecTest extends BaseTest {
+public class CallResponseFrameContinueCodecTest {
 
     @Test
     public void testEncode() throws Exception {

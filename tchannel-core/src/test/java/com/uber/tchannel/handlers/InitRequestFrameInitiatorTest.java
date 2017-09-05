@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.MessageCodec;
@@ -41,7 +40,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class InitRequestFrameInitiatorTest extends BaseTest {
+public class InitRequestFrameInitiatorTest {
 
     @Test
     public void testValidInitResponse() throws Exception {

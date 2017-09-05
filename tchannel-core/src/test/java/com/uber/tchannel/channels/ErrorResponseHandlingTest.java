@@ -21,7 +21,6 @@
  */
 package com.uber.tchannel.channels;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
@@ -38,7 +37,7 @@ import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
 
-public class ErrorResponseHandlingTest extends BaseTest {
+public class ErrorResponseHandlingTest {
 
     @Test
     public void testBadRequestErrorOnInvalidArgScheme() throws Exception {

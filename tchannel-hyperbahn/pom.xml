@@ -9,6 +9,7 @@
     </parent>
 
     <artifactId>tchannel-hyperbahn</artifactId>
+    <name>${project.artifactId}</name><!-- Nexus "pom-staging" rule requires this (redundant) element -->
 
     <dependencies>
 
@@ -20,7 +21,7 @@
 
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
+            <artifactId>slf4j-simple</artifactId>
             <scope>test</scope>
         </dependency>
 

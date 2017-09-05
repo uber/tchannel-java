@@ -22,7 +22,6 @@
 
 package com.uber.tchannel.api;
 
-import com.uber.tchannel.BaseTest;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.JsonRequest;
@@ -39,7 +38,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class RequestTest extends BaseTest {
+public class RequestTest {
 
 
     @Test
