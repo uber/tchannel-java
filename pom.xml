@@ -83,8 +83,6 @@
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <thrift.executable>thrift</thrift.executable>
-
         <jmh.version>1.19</jmh.version>
         <slf4j.version>1.7.25</slf4j.version>
 

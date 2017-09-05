@@ -7,9 +7,12 @@ THRIFT_VER=0.9.3
 THRIFT_IMG=thrift:${THRIFT_VER}
 THRIFT="docker run -v ${pwd}:/data ${THRIFT_IMG} thrift"
 
-# the thrift file name is relative to the module directory
+# FIXME parse $@ (-out dir, else -o dir, else $pwd/gen-*) for output directory
+
+# the thrift file name is the last argument
 for last; do true; done
 
+# FIXME directory/file names might be relative to $pwd
 args=$(echo $@ | sed "s|${pwd}|/data|g" | sed "s|${last}|/data/${last}|g")
 
 echo Running Docker-based Thrift in pwd=${pwd}
@@ -21,6 +24,7 @@ set -e
 
 ${THRIFT} $args
 
-# docker command runs as root, but we need normal permissions
-[ -d "${pwd}/target/generated-sources/thrift" ] && sudo chmod -R 0777 "${pwd}/target/generated-sources/thrift" || true
-[ -d "${pwd}/target/generated-test-sources/thrift" ] && sudo chmod -R 0777 "${pwd}/target/generated-test-sources/thrift" || true
+# docker command runs as root, but we need normal permissions # TODO extract output dir form $@
+# FIXME change the owner/permissions on the (parsed) output directory instead of these fixed ones
+[ ! -d "${pwd}/target/generated-sources/thrift" ] || sudo chmod -R 0777 "${pwd}/target/generated-sources/thrift"
+[ ! -d "${pwd}/target/generated-test-sources/thrift" ] || sudo chmod -R 0777 "${pwd}/target/generated-test-sources/thrift"

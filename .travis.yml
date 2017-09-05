@@ -28,7 +28,7 @@ cache:
     - $HOME/.m2/repository
     - $HOME/.m2/wrapper
 
-before_install:
+before_install: # FIXME prefix $PATH with `build/travis/thrift` instead
   - sudo rm -rf /usr/local/bin/thrift
   - sudo cp build/travis/thrift /usr/local/bin/
 
