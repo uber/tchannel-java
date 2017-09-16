@@ -1,0 +1,16 @@
+# http://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = unset
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+trim_trailing_whitespace = true
+
+# https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties#ideas-for-domain-specific-properties
+continuation_indent_size = 4
+#curly_bracket_next_line = true
+#spaces_around_operators = true

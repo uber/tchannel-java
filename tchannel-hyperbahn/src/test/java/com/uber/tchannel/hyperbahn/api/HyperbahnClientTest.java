@@ -24,6 +24,7 @@ package com.uber.tchannel.hyperbahn.api;
 
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
+import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import io.netty.channel.ChannelFuture;
@@ -87,13 +88,17 @@ public class HyperbahnClientTest {
             .setRouters(routers)
             .setAdvertiseInterval(100)
             .build();
-        hyperbahnClient.advertise();
+        hyperbahnClient.advertise().addCallback(new TFutureCallback<JsonResponse<AdvertiseResponse>>() {
+            @Override
+            public void onResponse(JsonResponse<AdvertiseResponse> response) {
+                response.release();
+            }
+        });
 
         sleep(500);
         assertTrue(responseHandler.requestsReceived >= 3);
-        hyperbahnClient.stopAdvertising();
+        hyperbahnClient.shutdown();
 
-        tchannel.shutdown();
         server.shutdown();
     }
 

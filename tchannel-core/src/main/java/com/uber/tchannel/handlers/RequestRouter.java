@@ -45,6 +45,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 import io.opentracing.Span;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     private final ListeningExecutorService listeningExecutorService;
 
     private final AtomicBoolean busy = new AtomicBoolean(false);
+
     private final ConcurrentLinkedQueue<Response> responseQueue = new ConcurrentLinkedQueue<>();
 
     public RequestRouter(TChannel topChannel, ExecutorService executorService) {
@@ -87,37 +89,27 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
         // There is nothing to do if the connection is already destroyed.
         if (!ctx.channel().isActive()) {
-            logger.warn("drop request when channel is inActive");
             request.release();
+            logger.warn("drop request when channel is inActive");
             return;
         }
 
-        final ArgScheme argScheme = ArgScheme.toScheme(
-                request.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
-        );
-
-        if (argScheme == null) {
-            sendError(ErrorType.BadRequest,
-                "Expected incoming call to have \"as\" header set",
-                request, ctx);
+        if (request.getArgScheme() == null) {
+            sendError(ErrorType.BadRequest, "Expected incoming call to have \"as\" header set", request, ctx);
             return;
         }
 
         final String service = request.getService();
         if (service == null || service.isEmpty()) {
-            sendError(ErrorType.BadRequest,
-                "Expected incoming call to have serviceName",
-                request, ctx);
+            sendError(ErrorType.BadRequest, "Expected incoming call to have serviceName", request, ctx);
             return;
         }
 
         // Get the endpoint. The assumption over here is that endpoints are
         // always going to to utf-8 encoded.
-        String endpoint = request.getArg1().toString(CharsetUtil.UTF_8);
+        String endpoint = request.getEndpoint();
         if (endpoint == null || endpoint.isEmpty()) {
-            sendError(ErrorType.BadRequest,
-                "Expected incoming call to have endpoint",
-                request, ctx);
+            sendError(ErrorType.BadRequest, "Expected incoming call to have endpoint", request, ctx);
             return;
         }
 
@@ -126,47 +118,49 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         if (handler == null) {
             handler = topChannel.getDefaultUserHandler();
         }
-
         if (handler == null) {
-            sendError(ErrorType.BadRequest,
-                "No handler function for service:endpoint=" + service + ":" + endpoint,
-                request, ctx);
+            sendError(
+                ErrorType.BadRequest,
+                "No handler function for service:endpoint=" + service + ':' + endpoint,
+                request,
+                ctx
+            );
             return;
         }
 
-        ListenableFuture<Response> responseFuture;
-        // In case of an AsyncRequestHandler no need to submit a task on the executor. It does
-        // require a down-cast to AsyncRequestHandler.
-        if (handler instanceof AsyncRequestHandler) {
-            AsyncRequestHandler asyncHandler = (AsyncRequestHandler) handler;
-            responseFuture = sendRequestToAsyncHandler(asyncHandler, request);
-        } else {
-            // Handle the request in a separate thread and get a future to it
-            responseFuture = listeningExecutorService.submit(
-                new CallableHandler(handler, topChannel, request));
+        ListenableFuture<? extends Response> responseFuture;
+        try {
+            // In case of an AsyncRequestHandler there's no need to submit a task on the executor.
+            // It does require a down-cast to AsyncRequestHandler.
+            responseFuture = handler instanceof AsyncRequestHandler
+                ? sendRequestToAsyncHandler((AsyncRequestHandler) handler, request)
+                : listeningExecutorService.submit(new CallableHandler(handler, topChannel, request));
+        } catch (Throwable re) {
+            request.release();
+            responseFuture = Futures.immediateFailedFuture(re);
         }
 
         Futures.addCallback(responseFuture, new FutureCallback<Response>() {
+
             @Override
             public void onSuccess(Response response) {
-                if (!ctx.channel().isActive()) {
+                if (ctx.channel().isActive()) {
+                    responseQueue.offer(response);
+                    sendResponse(ctx);
+                } else {
                     response.release();
-                    return;
                 }
-
-                responseQueue.offer(response);
-                sendResponse(ctx);
             }
 
             @Override
-            public void onFailure(Throwable throwable) {
+            public void onFailure(@NotNull Throwable throwable) {
                 logger.error("Failed to handle the request due to exception.", throwable);
-                sendError(ErrorType.UnexpectedError,
-                    "Failed to handle the request: " + throwable.getMessage(),
-                    request, ctx);
-                return;
+                sendError(
+                    ErrorType.UnexpectedError, "Failed to handle the request: " + throwable.getMessage(), request, ctx
+                );
             }
-        });
+
+        }, listeningExecutorService);
     }
 
     @Override
@@ -209,91 +203,91 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
-
         // clean up the queue
         while (!responseQueue.isEmpty()) {
-            ResponseMessage res = responseQueue.poll();
-            res.release();
+            responseQueue.poll().release();
         }
     }
 
-    private ListenableFuture<Response> sendRequestToAsyncHandler(
-            final AsyncRequestHandler asyncHandler, final Request request) {
+    private ListenableFuture<? extends Response> sendRequestToAsyncHandler(
+        final AsyncRequestHandler asyncHandler, final Request request
+    ) {
         // span used to trace this request
-        final Span span;
         // Tracer and TracingContext are only present when the channel is created with them
         // therefore can be null.
-        if (topChannel.getTracer() != null) {
-            span = Tracing.startInboundSpan(request, topChannel.getTracer(),
-                topChannel.getTracingContext());
-        } else {
-            span = null;
-        }
-        final SettableFuture<Response> responseFuture = SettableFuture.create();
-        ListenableFuture<? extends Response> handlerResponseFuture = asyncHandler.handleAsync(request);
+        final Span span = topChannel.getTracer() == null
+            ? null
+            : Tracing.startInboundSpan(request, topChannel.getTracer(), topChannel.getTracingContext());
+
+        ListenableFuture<? extends Response> responseFuture = asyncHandler.handleAsync(request);
+
         // Add callback handlers that close out the tracing span and then proxy the response.
-        Futures.addCallback(handlerResponseFuture, new FutureCallback<Response>() {
+        Futures.addCallback(responseFuture, new FutureCallback<Response>() {
             @Override
             public void onSuccess(Response response) {
-                doRequestEndProcessing();
-                responseFuture.set(response);
+                closeRequestAndSpan();
             }
 
             @Override
-            public void onFailure(Throwable e) {
+            public void onFailure(@NotNull Throwable e) {
                 if (span != null) {
                     span.log(ImmutableMap.of("exception", e));
                 }
-                doRequestEndProcessing();
-                responseFuture.setException(e);
+                closeRequestAndSpan();
             }
 
-            private void doRequestEndProcessing() {
+            private void closeRequestAndSpan() {
+                request.release();
                 if (span != null) {
                     span.finish();
                 }
-                request.release();
             }
         }, listeningExecutorService); // execute the callback asynchronously, not on the thread that resolves the future
+
         if (span != null) { // if we pushed something on tracing context stack in Tracing.startInboundSpan(...)
-            topChannel.getTracingContext().popSpan(); // pop it
+            topChannel.getTracingContext().popSpan(); // then pop it
         }
+
         return responseFuture;
     }
 
-    private class CallableHandler implements Callable<Response> {
+    private static class CallableHandler implements Callable<Response> {
+
         private final Request request;
         private final TChannel topChannel;
         private final RequestHandler handler;
 
-        public CallableHandler(RequestHandler handler, TChannel topChannel, Request request) {
+        CallableHandler(RequestHandler handler, TChannel topChannel, Request request) {
             this.handler = handler;
             this.topChannel = topChannel;
             this.request = request;
         }
 
         @Override
-        public Response call() throws Exception {
+        public Response call() {
             if (topChannel.getTracer() == null) {
                 return callWithoutTracing();
             }
-            Span span = Tracing.startInboundSpan(request,
-                    topChannel.getTracer(), topChannel.getTracingContext());
+            Span span = Tracing.startInboundSpan(request, topChannel.getTracer(), topChannel.getTracingContext());
             try {
                 return callWithoutTracing();
-            } catch (Exception e) {
-                span.log(ImmutableMap.of("exception", e));
-                throw e;
+            } catch (Throwable t) {
+                span.log(ImmutableMap.of("exception", t));
+                throw t;
             } finally {
                 span.finish();
                 topChannel.getTracingContext().clear();
             }
         }
 
-        private Response callWithoutTracing() throws Exception {
-            Response response = handler.handle(request);
-            request.release();
-            return response;
+        private Response callWithoutTracing() {
+            try {
+                return handler.handle(request);
+            } finally {
+                request.release();
+            }
         }
+
     }
+
 }

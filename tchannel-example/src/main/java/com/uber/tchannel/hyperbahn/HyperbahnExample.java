@@ -74,6 +74,7 @@ public class HyperbahnExample {
                 } else {
                     System.out.println("Error happened: " + response.getError().getMessage());
                 }
+                response.release();
             }
         });
 
