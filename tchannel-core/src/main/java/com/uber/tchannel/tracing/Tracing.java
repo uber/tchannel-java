@@ -67,7 +67,7 @@ public class Tracing {
                 .withTag(Tags.PEER_SERVICE.getKey(), request.getService())
                 .withTag("as", request.getArgScheme().name());
 
-        final Span span = builder.start();
+        final Span span = builder.startManual();
 
         // TODO if tracer is Zipkin compatible, inject Trace fields
         // if request has headers, inject tracing context
@@ -129,7 +129,7 @@ public class Tracing {
         if (parentContext != null) {
             builder.asChildOf(parentContext);
         }
-        Span span = builder.start();
+        Span span = builder.startManual();
         tracingContext.clear();
         tracingContext.pushSpan(span);
         return span;

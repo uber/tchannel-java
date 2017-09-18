@@ -225,7 +225,7 @@ public class TracingPropagationTest {
         Span span = (Span) tracingContext.currentSpan();
         TraceResponse response = new TraceResponse();
         SpanContext context = span.context();
-        response.traceId = String.format("%x", context.getTraceID());
+        response.traceId = String.format("%x", context.getTraceId());
         response.sampled = context.isSampled();
         response.baggage = span.getBaggageItem(BAGGAGE_KEY);
         try {
@@ -329,9 +329,9 @@ public class TracingPropagationTest {
 
     @Test
     public void testPropagation() throws Exception {
-        Span span = (Span) tracer.buildSpan("root").start();
+        Span span = (Span) tracer.buildSpan("root").startManual();
         SpanContext context = span.context();
-        String traceId = String.format("%x", context.getTraceID());
+        String traceId = String.format("%x", context.getTraceId());
         String baggage = "Baggage-" + System.currentTimeMillis();
         span.setBaggageItem(BAGGAGE_KEY, baggage);
         if (!sampled) {
