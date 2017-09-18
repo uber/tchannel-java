@@ -25,9 +25,9 @@ import java.util.Map;
 
 public abstract class InitFrame extends Frame {
 
-    public final static int DEFAULT_VERSION = 2;
-    public final static String HOST_PORT_KEY = "host_port";
-    public final static String PROCESS_NAME_KEY = "process_name";
+    public static final int DEFAULT_VERSION = 2;
+    public static final String HOST_PORT_KEY = "host_port";
+    public static final String PROCESS_NAME_KEY = "process_name";
 
     /**
      * version is a 16 bit number. The currently specified protocol version is 2.

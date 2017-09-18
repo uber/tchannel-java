@@ -33,7 +33,7 @@ import java.net.InetAddress;
 
 public class PingServer {
 
-    private int port;
+    private final int port;
 
     public PingServer(int port) {
         this.port = port;
@@ -60,7 +60,7 @@ public class PingServer {
         System.out.println("Stopping server...");
     }
 
-    public void run() throws Exception {
+    public void run() throws InterruptedException {
         TChannel tchannel = new TChannel.Builder("ping-server")
                 .setServerHost(InetAddress.getLoopbackAddress())
                 .setServerPort(port)
@@ -70,4 +70,5 @@ public class PingServer {
 
         tchannel.listen().channel().closeFuture().sync();
     }
+
 }

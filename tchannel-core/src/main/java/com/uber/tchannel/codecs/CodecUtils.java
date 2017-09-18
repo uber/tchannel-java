@@ -28,12 +28,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public final class CodecUtils {
+
+    private CodecUtils() {}
 
     public static int decodeChecksum(ChecksumType checksumType, ByteBuf buffer) {
         switch (checksumType) {
@@ -102,7 +105,7 @@ public final class CodecUtils {
 
     }
 
-    public static void encodeHeaders(Map<String, String> headers, ByteBuf buffer) {
+    public static void encodeHeaders(@NotNull Map<String, String> headers, @NotNull ByteBuf buffer) {
 
         buffer.writeShort(headers.size());
 
@@ -244,6 +247,7 @@ public final class CodecUtils {
         return payload;
     }
 
+    @SuppressWarnings("ObjectEquality")
     public static ByteBuf compose(ByteBuf first, ByteBuf second) {
         if (first == Unpooled.EMPTY_BUFFER) {
             return second;
@@ -273,14 +277,14 @@ public final class CodecUtils {
         return arg;
     }
 
-    public static void readArgs(List<ByteBuf> args, ByteBuf buffer) {
+    public static void readArgs(@NotNull List<ByteBuf> args, ByteBuf buffer) {
 
-        ByteBuf arg = null;
         if (args.isEmpty()) {
             args.add(Unpooled.EMPTY_BUFFER);
         }
 
         boolean first = true;
+        ByteBuf arg;
         while (true) {
             arg = readArg(buffer);
             if (arg == null) {
@@ -294,4 +298,5 @@ public final class CodecUtils {
             }
         }
     }
+
 }

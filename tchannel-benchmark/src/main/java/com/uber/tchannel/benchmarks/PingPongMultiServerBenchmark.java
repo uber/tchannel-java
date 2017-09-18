@@ -142,7 +142,7 @@ public class PingPongMultiServerBenchmark {
         }
     }
 
-    public class Ping {
+    public static class Ping {
         private final String request;
 
         public Ping(String request) {
@@ -150,7 +150,7 @@ public class PingPongMultiServerBenchmark {
         }
     }
 
-    public class Pong {
+    public static class Pong {
         private final String response;
 
         public Pong(String response) {
@@ -158,7 +158,7 @@ public class PingPongMultiServerBenchmark {
         }
     }
 
-    public class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
+    public static class PingDefaultRequestHandler extends JSONRequestHandler<Ping, Pong> {
 
         @Override
         public JsonResponse<Pong> handleImpl(JsonRequest<Ping> request) {

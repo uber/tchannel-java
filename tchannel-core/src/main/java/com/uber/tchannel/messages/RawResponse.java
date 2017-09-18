@@ -43,7 +43,7 @@ import java.util.Map;
  * The `raw` encoding is intended for any custom encodings you want to do that
  * are not part of TChannel but are application specific.
  */
-public class RawResponse extends Response implements RawMessage {
+public class RawResponse extends Response {
 
     private String header = null;
     private String body = null;
@@ -150,7 +150,7 @@ public class RawResponse extends Response implements RawMessage {
         }
 
         public final Builder setBody(String body) {
-            setArg3(Unpooled.wrappedBuffer(((String) body).getBytes()));
+            setArg3(Unpooled.wrappedBuffer(body.getBytes()));
             this.body = body;
             return this;
         }

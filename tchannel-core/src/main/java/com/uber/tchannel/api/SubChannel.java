@@ -47,6 +47,8 @@ import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.messages.ThriftSerializer;
 import com.uber.tchannel.tracing.Tracing;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -100,6 +102,7 @@ public final class SubChannel {
         return this;
     }
 
+    /** @deprecated typo - use {@link #registerHealthHandler}. */
     @Deprecated
     public SubChannel registerHealthHanlder() {
         return registerHealthHandler();
@@ -129,8 +132,7 @@ public final class SubChannel {
         return this;
     }
 
-    private final Random random = new Random();
-    public SubPeer choosePeer(OutRequest outRequest) {
+    public @Nullable SubPeer choosePeer(@NotNull OutRequest outRequest) {
         SubPeer res = null;
         if (peers.isEmpty()) {
             return null;
@@ -143,9 +145,7 @@ public final class SubChannel {
             i = (i + 1) % peers.size();
             SubPeer peer = peers.get(i);
             stop = peer.updateScore(outRequest);
-            if (stop || res == null) {
-                res = peer;
-            } else if (peer.getScore() > res.getScore()) {
+            if (stop || res == null || peer.getScore() > res.getScore()) {
                 res = peer;
             }
         } while (!stop && i != start);
@@ -154,7 +154,7 @@ public final class SubChannel {
         return res;
     }
 
-    public Connection connect(OutRequest outRequest) {
+    public @Nullable Connection connect(@NotNull OutRequest outRequest) {
         SubPeer peer = choosePeer(outRequest);
         if (peer == null) {
             return null;

@@ -30,6 +30,7 @@ import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.messages.Response;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,16 +51,13 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     private static final Logger logger = LoggerFactory.getLogger(TFuture.class);
 
     /**
-     * Create future. Example usage: TFuture<RawResponse> future = TFuture.<RawResponse>create(...);
-     * @param <T>
-     * @param argScheme
-     * @return 
+     * Create future. Example usage: {@code TFuture<RawResponse> future = TFuture.create(...); }.
      */
-    public static <T extends Response> TFuture create(ArgScheme argScheme) {
+    public static @NotNull <T extends Response> TFuture<T> create(ArgScheme argScheme) {
         return new TFuture<>(argScheme);
     }
 
-    private AtomicInteger listenerCount = new AtomicInteger(0);
+    private final AtomicInteger listenerCount = new AtomicInteger(0);
     private V response = null;
     private ArgScheme argScheme = null;
 
@@ -76,7 +74,7 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
             }
 
             @Override
-            public void onFailure(Throwable throwable) {
+            public void onFailure(@NotNull Throwable throwable) {
                 callback.onResponse(
                     (V) Response.build(
                         argScheme, 0, ErrorType.UnexpectedError, throwable.getMessage()
@@ -84,7 +82,7 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                 );
             }
            // TODO: use proper executor, for now directExecutor provides
-           // same behaviour and removes usage of deprecated method
+           // legacy behaviour and removes usage of deprecated method
         }, MoreExecutors.directExecutor());
     }
 

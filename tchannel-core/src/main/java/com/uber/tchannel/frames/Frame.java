@@ -48,7 +48,7 @@ public abstract class Frame {
             throw new TChannelProtocol("Cannot read the frame type");
         }
 
-        Frame frame = null;
+        final Frame frame;
         switch (type) {
             case CallRequest:
                 frame = new CallRequestFrame(tFrame.id);

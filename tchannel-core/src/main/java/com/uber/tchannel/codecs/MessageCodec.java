@@ -40,11 +40,14 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class MessageCodec {
+
+    private MessageCodec() {}
 
     public static ChannelFuture write(ChannelHandlerContext ctx, Frame frame) {
         ChannelFuture f = ctx.writeAndFlush(
@@ -75,16 +78,9 @@ public final class MessageCodec {
         return encode(PooledByteBufAllocator.DEFAULT, msg);
     }
 
-    public static TFrame encode(ByteBufAllocator allocator, Frame msg) {
-        ByteBuf buffer = null;
-        if (msg instanceof CallFrame) {
-            buffer = ((CallFrame)msg).getPayload();
-        } else {
-            buffer = msg.encodeHeader(allocator);
-        }
-
-        TFrame frame = new TFrame(buffer.writerIndex(), msg.getType(), msg.getId(), buffer);
-        return frame;
+    public static @NotNull TFrame encode(ByteBufAllocator allocator, @NotNull Frame msg) {
+        ByteBuf buffer = msg instanceof CallFrame ? ((CallFrame) msg).getPayload() : msg.encodeHeader(allocator);
+        return new TFrame(buffer.writerIndex(), msg.getType(), msg.getId(), buffer);
     }
 
     public static Frame decode(TFrame tFrame) throws TChannelError {

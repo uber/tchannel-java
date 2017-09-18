@@ -27,6 +27,9 @@ import io.netty.buffer.ByteBuf;
 import java.util.zip.Adler32;
 
 public final class Checksums {
+
+    private Checksums() {}
+
     public static boolean verifyChecksum(CallFrame msg) {
         return (calculateChecksum(msg) == msg.getChecksum());
     }

@@ -76,9 +76,10 @@ public class Peer {
         Connection conn = add(channel, Connection.Direction.OUT);
 
         // Sending out the init request
-        InitRequestFrame initRequestFrame = new InitRequestFrame(0,
+        InitRequestFrame initRequestFrame = new InitRequestFrame(
+            0,
             InitFrame.DEFAULT_VERSION,
-            new HashMap<String, String>() { }
+            new HashMap<String, String>()
         );
         initRequestFrame.setHostPort(this.manager.getHostPort());
         // TODO: figure out what to put here
@@ -92,8 +93,7 @@ public class Peer {
     }
 
     public Connection remove(Channel channel) {
-        Connection conn = connections.remove(channel.id());
-        return conn;
+        return connections.remove(channel.id());
     }
 
     public Connection connect(Bootstrap bootstrap, Connection.Direction preferredDirection) {

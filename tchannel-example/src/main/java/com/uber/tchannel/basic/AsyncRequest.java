@@ -34,7 +34,10 @@ import com.uber.tchannel.messages.RawResponse;
 import java.net.InetAddress;
 import java.util.concurrent.CountDownLatch;
 
-public class AsyncRequest {
+public final class AsyncRequest {
+
+    private AsyncRequest() {}
+
     public static void main(String[] args) throws Exception {
         TChannel server = createServer();
         TChannel client = createClient();
@@ -138,4 +141,5 @@ public class AsyncRequest {
         tchannel.makeSubChannel("server");
         return tchannel;
     }
+
 }

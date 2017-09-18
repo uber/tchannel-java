@@ -49,7 +49,7 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
         String headerJSON = arg2.toString(CharsetUtil.UTF_8);
         Map<String, String> headers = null;
-        if (headerJSON != null && !headerJSON.isEmpty() && !headerJSON.equals("\"\"")) {
+        if (headerJSON != null && !headerJSON.isEmpty() && !"\"\"".equals(headerJSON)) {
             headers = new Gson().fromJson(headerJSON, HEADER_TYPE);
         }
 

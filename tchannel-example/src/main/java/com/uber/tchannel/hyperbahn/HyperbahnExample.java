@@ -32,6 +32,7 @@ import com.uber.tchannel.ping.PingRequestHandler;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +42,10 @@ import java.util.concurrent.TimeUnit;
 //      3. tcurl -p 127.0.0.1:21300 javaServer ping -j -2 "{}" -3 '{"request":"hello"}' | jq .
 //      4. run health check: tcurl -p 127.0.0.1:8888 javaServer --health
 
-public class HyperbahnExample {
+public final class HyperbahnExample {
+
+    private HyperbahnExample() {}
+
     public static void main(String[] args) throws Exception {
         TChannel tchannel = new TChannel.Builder("javaServer")
                 .setServerHost(InetAddress.getByName(null))
@@ -50,12 +54,9 @@ public class HyperbahnExample {
 
         tchannel.listen();
 
-        List<InetSocketAddress> routers = new ArrayList<InetSocketAddress>() {
-            {
-                add(new InetSocketAddress("127.0.0.1", 21300));
-            }
-        };
-
+        List<InetSocketAddress> routers = Arrays.asList(
+            new InetSocketAddress("127.0.0.1", 21300)
+        );
         HyperbahnClient hyperbahn = new HyperbahnClient.Builder(tchannel.getServiceName(), tchannel)
                 .setRouters(routers)
                 .build();
@@ -86,4 +87,5 @@ public class HyperbahnExample {
         tchannel.shutdown();
         hyperbahn.shutdown();
     }
+
 }

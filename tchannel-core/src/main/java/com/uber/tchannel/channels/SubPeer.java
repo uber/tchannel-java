@@ -36,7 +36,6 @@ public class SubPeer {
     private static final double SCORE_FUZZ = 0.5;
 
     private final SocketAddress remoteAddress;
-    private final SubChannel subChannel;
     private final PeerManager peerManager;
 
     private double score = 0;
@@ -45,7 +44,6 @@ public class SubPeer {
 
     public SubPeer(SocketAddress remoteAddress, SubChannel subChannel) {
         this.remoteAddress = remoteAddress;
-        this.subChannel = subChannel;
         this.peerManager = subChannel.getPeerManager();
         this.direction = subChannel.getPreferredDirection();
     }

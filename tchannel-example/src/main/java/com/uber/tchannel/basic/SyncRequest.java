@@ -32,7 +32,10 @@ import com.uber.tchannel.messages.RawResponse;
 
 import java.net.InetAddress;
 
-public class SyncRequest {
+public final class SyncRequest {
+
+    private SyncRequest() {}
+
     public static void main(String[] args) throws Exception {
         TChannel server = createServer();
         TChannel client = createClient();

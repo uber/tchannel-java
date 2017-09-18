@@ -117,7 +117,7 @@ public class Connection {
     }
 
     public synchronized boolean isEphemeral() {
-        return this.remoteAddress.equals("0.0.0.0:0");
+        return "0.0.0.0:0".equals(this.remoteAddress);
     }
 
     public String getRemoteAddress() {

@@ -39,7 +39,6 @@ public final class OutRequest<V extends Response> {
 
     private ErrorResponse lastError = null;
 
-    @SuppressWarnings({"unchecked"})
     public OutRequest(SubChannel subChannel, Request request) {
         this.subChannel = subChannel;
         this.request = request;

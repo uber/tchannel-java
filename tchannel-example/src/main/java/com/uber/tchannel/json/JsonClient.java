@@ -28,9 +28,11 @@ import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.utils.TChannelUtilities;
 
-public class JsonClient {
+public final class JsonClient {
 
-    public static void main(String[] args) throws Exception {
+    private JsonClient() {}
+
+    public static void main(String[] args) throws InterruptedException, java.util.concurrent.ExecutionException {
         final TChannel tchannel = new TChannel.Builder("json-server").build();
 
         JsonRequest<RequestPojo> req = new JsonRequest.Builder<RequestPojo>(

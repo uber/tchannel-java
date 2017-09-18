@@ -30,7 +30,7 @@ public enum RetryFlag {
     RetryOnConnectionError('c'),
     RetryOnTimeout('t');
 
-    private char flag;
+    private final char flag;
 
     RetryFlag(char flag) {
         this.flag = flag;

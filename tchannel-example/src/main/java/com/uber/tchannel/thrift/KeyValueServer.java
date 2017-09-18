@@ -27,7 +27,9 @@ import com.uber.tchannel.api.TChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class KeyValueServer {
+public final class KeyValueServer {
+
+    private KeyValueServer() {}
 
     public static void main(String[] args) throws InterruptedException {
 
@@ -44,4 +46,5 @@ public class KeyValueServer {
         tchannel.listen().channel().closeFuture().sync();
         tchannel.shutdown(false);
     }
+
 }

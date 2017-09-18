@@ -33,11 +33,12 @@ import io.netty.buffer.ByteBufHolder;
 import java.util.Map;
 
 /**
- * Very similar to {@link CallRequestFrame}, differing only in: adds a responseCode field, no ttl field and no service field.
+ * Very similar to {@link CallRequestFrame}, differing only in: adds a responseCode field, no ttl field and no service
+ * field.
  * <p>
- * All common fields have identical definition to {@link CallRequestFrame}. It is not necessary for arg1 to have the same
- * value between the {@link CallRequestFrame} and the {@link CallResponseFrame}; by convention, existing implementations leave
- * arg1 at zero length for {@link CallResponseFrame} frames.
+ * All common fields have identical definition to {@link CallRequestFrame}. It is not necessary for arg1 to have the
+ * same value between the {@link CallRequestFrame} and the {@link CallResponseFrame}; by convention, existing
+ * implementations leave arg1 at zero length for {@link CallResponseFrame} frames.
  * <p>
  * The size of arg1 is at most 16KiB.
  */
@@ -73,11 +74,6 @@ public final class CallResponseFrame extends CallFrame {
     }
 
     @Override
-    public boolean moreFragmentsFollow() {
-        return ((this.flags & CallFrame.MORE_FRAGMENTS_REMAIN_MASK) == 1);
-    }
-
-    @Override
     public FrameType getType() {
         return FrameType.CallResponse;
     }
@@ -88,16 +84,6 @@ public final class CallResponseFrame extends CallFrame {
 
     public Map<String, String> getHeaders() {
         return this.headers;
-    }
-
-    @Override
-    public ChecksumType getChecksumType() {
-        return this.checksumType;
-    }
-
-    @Override
-    public int getChecksum() {
-        return this.checksum;
     }
 
     public ResponseCode getResponseCode() {
@@ -157,7 +143,7 @@ public final class CallResponseFrame extends CallFrame {
 
     @Override
     public ByteBufHolder replace(ByteBuf payload) {
-        return new CallResponseFrame(this.id, this.flags, this.responseCode, 
+        return new CallResponseFrame(this.id, this.flags, this.responseCode,
                 this.tracing, this.headers, this.checksumType, this.checksum, payload);
     }
 }

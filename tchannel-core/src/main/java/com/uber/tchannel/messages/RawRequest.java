@@ -143,7 +143,7 @@ public final class RawRequest extends Request {
         }
 
         public final Builder setBody(String body) {
-            setArg3(Unpooled.wrappedBuffer(((String) body).getBytes()));
+            setArg3(Unpooled.wrappedBuffer(body.getBytes()));
             this.body = body;
             return this;
         }

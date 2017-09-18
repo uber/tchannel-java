@@ -24,7 +24,10 @@ package com.uber.tchannel.json;
 
 import com.uber.tchannel.api.TChannel;
 
-public class JsonServer {
+public final class JsonServer {
+
+    private JsonServer() {}
+
     public static void main(String[] args) throws Exception {
         final TChannel tchannel = new TChannel.Builder("json-server")
             .setServerPort(8888)

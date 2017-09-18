@@ -42,8 +42,8 @@ import java.util.Map;
  * <p>
  * A forwarding intermediary can relay payloads without understanding the contents of the args triple.
  * <p>
- * A {@link CallRequestFrame} may be fragmented across multiple frames. If so, the first frame is a {@link CallRequestFrame},
- * and all subsequent frames are {@link CallRequestContinueFrame} frames.
+ * A {@link CallRequestFrame} may be fragmented across multiple frames. If so, the first frame is a
+ * {@link CallRequestFrame}, and all subsequent frames are {@link CallRequestContinueFrame} frames.
  * <p>
  * The size of arg1 is at most 16KiB.
  */

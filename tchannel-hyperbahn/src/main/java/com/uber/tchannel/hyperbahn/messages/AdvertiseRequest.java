@@ -51,7 +51,7 @@ public class AdvertiseRequest {
     }
 
     // Inner class representing a service object in a hyperbahn message.
-    public class Service {
+    public static class Service {
         private final String serviceName;
         private final int cost;
 
@@ -70,5 +70,5 @@ public class AdvertiseRequest {
             );
         }
     }
-}
 
+}

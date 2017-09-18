@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class Tracing {
+
     private static final Logger logger = LoggerFactory.getLogger(Tracing.class);
 
     /**
@@ -46,6 +47,8 @@ public class Tracing {
      * This string value is shared across all implementations of TChannel.
      */
     public static final String HEADER_KEY_PREFIX = "$tracing$";
+
+    private Tracing() {}
 
     public static void startOutboundSpan(
             OutRequest<Response> outRequest,
@@ -134,4 +137,5 @@ public class Tracing {
         tracingContext.pushSpan(span);
         return span;
     }
+
 }

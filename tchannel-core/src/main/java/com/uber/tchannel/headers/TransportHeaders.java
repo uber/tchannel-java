@@ -23,6 +23,7 @@
 package com.uber.tchannel.headers;
 
 public final class TransportHeaders {
+
     public static final String ARG_SCHEME_KEY = "as";
     public static final String CLAIM_AT_START_KEY = "cas";
     public static final String CLAIM_AT_FINISH_KEY = "caf";
@@ -31,4 +32,7 @@ public final class TransportHeaders {
     public static final String SPECULATIVE_EXECUTION_KEY = "se";
     public static final String FAILURE_DOMAIN_KEY = "fd";
     public static final String SHARD_KEY_KEY = "sk";
+
+    private TransportHeaders() {}
+
 }

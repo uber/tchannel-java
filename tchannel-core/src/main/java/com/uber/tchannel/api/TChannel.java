@@ -90,7 +90,7 @@ public final class TChannel {
     private final Tracer tracer;
     private final TracingContext tracingContext;
 
-    private Map<String, SubChannel> subChannels = new HashMap<>();
+    private final Map<String, SubChannel> subChannels = new HashMap<>();
     private RequestHandler defaultUserHandler;
     private SimpleChannelInboundHandler<Request> customRequestRouter;
 
@@ -143,7 +143,7 @@ public final class TChannel {
     }
 
     public boolean isListening() {
-        return !listeningHost.equals("0.0.0.0");
+        return !"0.0.0.0".equals(listeningHost);
     }
 
     public Tracer getTracer() { return tracer; }

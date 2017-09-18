@@ -32,24 +32,29 @@ import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TBinaryProtocol;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class ThriftSerializer implements Serializer.SerializerInterface {
+
+    private static final Logger logger = LoggerFactory.getLogger(ThriftSerializer.class);
+
     @Override
     public String decodeEndpoint(ByteBuf arg1) {
-        String endpoint = arg1.toString(CharsetUtil.UTF_8);
-        return endpoint;
+        return arg1.toString(CharsetUtil.UTF_8);
     }
 
     @Override
     public Map<String, String> decodeHeaders(ByteBuf arg2) {
-        Map<String, String> headers = CodecUtils.decodeHeaders(arg2);
-        return headers;
+        return CodecUtils.decodeHeaders(arg2);
     }
 
     @Override
-    public <T> T decodeBody(ByteBuf arg3, Class<T> bodyType) {
+    public <T> T decodeBody(ByteBuf arg3, @NotNull Class<T> bodyType) {
 
         try {
             // Create a new instance of type 'T'
@@ -61,11 +66,11 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
 
             // Actually deserialize the payload
             TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());
-            deserializer.deserialize((TBase) base, payloadBytes);
+            deserializer.deserialize((TBase<?, ?>) base, payloadBytes);
 
             return base;
         } catch (InstantiationException | IllegalAccessException | TException e) {
-            e.printStackTrace();
+            logger.error("Failed to decode body to {}", bodyType.getName(), e);
         }
 
         return null;
@@ -73,26 +78,27 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
     }
 
     @Override
-    public ByteBuf encodeEndpoint(String method) {
+    public ByteBuf encodeEndpoint(@NotNull String method) {
         return Unpooled.wrappedBuffer(method.getBytes());
     }
 
     @Override
-    public ByteBuf encodeHeaders(Map<String, String> applicationHeaders) {
+    public ByteBuf encodeHeaders(@NotNull Map<String, String> applicationHeaders) {
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         CodecUtils.encodeHeaders(applicationHeaders, buf);
         return buf;
     }
 
     @Override
-    public ByteBuf encodeBody(Object body) {
+    public @Nullable ByteBuf encodeBody(@NotNull Object body) {
         try {
             TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
-            byte[] payloadBytes = serializer.serialize((TBase) body);
+            byte[] payloadBytes = serializer.serialize((TBase<?, ?>) body);
             return Unpooled.wrappedBuffer(payloadBytes);
         } catch (TException e) {
-            e.printStackTrace();
+            logger.error("Failed to encode {} body", body.getClass().getName(), e);
         }
         return null;
     }
+
 }

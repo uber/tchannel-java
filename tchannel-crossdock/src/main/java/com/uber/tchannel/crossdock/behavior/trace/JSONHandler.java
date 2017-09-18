@@ -21,7 +21,7 @@ class JSONHandler extends JSONRequestHandler<Request,Response> {
 
     private final TraceBehavior behavior;
 
-    public JSONHandler(TraceBehavior behavior) {
+    JSONHandler(TraceBehavior behavior) {
         this.behavior = behavior;
     }
 

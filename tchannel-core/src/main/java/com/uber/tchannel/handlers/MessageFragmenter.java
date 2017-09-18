@@ -48,7 +48,7 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
     protected void encode(ChannelHandlerContext ctx, RawMessage msg, List<Object> out) throws Exception {
         writeFrames(ctx, msg, out);
         if (msg instanceof Response) {
-            ((Response)msg).release();
+            msg.release();
         }
     }
 

@@ -34,7 +34,9 @@ import com.uber.tchannel.utils.TChannelUtilities;
 
 import java.util.concurrent.ExecutionException;
 
-public class KeyValueClient {
+public final class KeyValueClient {
+
+    private KeyValueClient() {}
 
     public static void main(String[] args) throws Exception {
         System.out.println("Connecting to KeyValue Server…");
@@ -116,4 +118,5 @@ public class KeyValueClient {
             return value;
         }
     }
+
 }

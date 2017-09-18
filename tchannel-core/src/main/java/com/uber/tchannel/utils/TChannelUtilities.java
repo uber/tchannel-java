@@ -34,10 +34,13 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 
-public class TChannelUtilities {
+public final class TChannelUtilities {
+
     private static final Logger logger = LoggerFactory.getLogger(TChannelUtilities.class);
 
     public static final ByteBuf emptyByteBuf = Unpooled.EMPTY_BUFFER;
+
+    private TChannelUtilities() {}
 
     public static int scoreAddr(NetworkInterface iface, InetAddress addr) {
         int score = 0;
@@ -68,12 +71,12 @@ public class TChannelUtilities {
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
 
             while (networkInterfaces.hasMoreElements()) {
-                NetworkInterface iface = (NetworkInterface) networkInterfaces.nextElement();
+                NetworkInterface iface = networkInterfaces.nextElement();
 
                 Enumeration<InetAddress> addrs = iface.getInetAddresses();
 
                 while (addrs.hasMoreElements()) {
-                    InetAddress addr = (InetAddress) addrs.nextElement();
+                    InetAddress addr = addrs.nextElement();
 
                     int score = scoreAddr(iface, addr);
 

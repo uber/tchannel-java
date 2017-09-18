@@ -100,11 +100,6 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         this.id = id;
     }
 
-    @Override
-    public FrameType getType() {
-        return type;
-    }
-
     public ResponseCode getResponseCode() {
         return responseCode;
     }

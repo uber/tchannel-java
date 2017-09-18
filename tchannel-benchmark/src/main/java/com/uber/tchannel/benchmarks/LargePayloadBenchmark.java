@@ -145,7 +145,7 @@ public class LargePayloadBenchmark {
         this.channel.shutdown(false);
     }
 
-    public class PingDefaultRequestHandler implements RequestHandler {
+    public static class PingDefaultRequestHandler implements RequestHandler {
         @Override
         public Response handle(Request request) {
             return new RawResponse.Builder(request)

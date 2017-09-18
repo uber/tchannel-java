@@ -51,10 +51,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
     private final PeerManager peerManager;
     private final HashedWheelTimer timer;
-    private AtomicBoolean destroyed = new AtomicBoolean(false);
+    private final AtomicBoolean destroyed = new AtomicBoolean(false);
 
     private final int resetOnTimeoutLimit;
-    private AtomicInteger timeouts = new AtomicInteger(0);
+    private final AtomicInteger timeouts = new AtomicInteger(0);
 
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private final ConcurrentLinkedQueue<Long> requestQueue = new ConcurrentLinkedQueue<>();
