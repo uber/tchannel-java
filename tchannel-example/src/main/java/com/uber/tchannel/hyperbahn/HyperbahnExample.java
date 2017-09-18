@@ -21,19 +21,19 @@
  */
 package com.uber.tchannel.hyperbahn;
 
+import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
+import com.uber.tchannel.api.handlers.TFutureCallback;
+import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.ping.PingRequestHandler;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import com.uber.tchannel.api.TFuture;
-import com.uber.tchannel.api.handlers.TFutureCallback;
-import com.uber.tchannel.messages.JsonResponse;
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.hyperbahn.api.HyperbahnClient;
-import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
-import com.uber.tchannel.ping.PingRequestHandler;
 
 // Instructions:
 //      1. run Hyperbahn: node server.js --port 21300 2>&1 | jq .

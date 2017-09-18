@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.google.common.collect.Maps;
 import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
@@ -29,11 +30,8 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.Maps;
 
 public final class CodecUtils {
 

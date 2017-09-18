@@ -22,9 +22,9 @@
 
 package com.uber.tchannel.ping;
 
+import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
-import com.uber.tchannel.api.handlers.JSONRequestHandler;
 
 public class PingRequestHandler extends JSONRequestHandler<Ping, Pong> {
 

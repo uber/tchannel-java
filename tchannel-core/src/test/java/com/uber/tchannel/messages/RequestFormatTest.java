@@ -25,6 +25,7 @@ package com.uber.tchannel.messages;
 import com.uber.tchannel.messages.generated.Example;
 import io.netty.buffer.ByteBuf;
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 public class RequestFormatTest {

@@ -23,14 +23,13 @@ package com.uber.tchannel.handlers;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.uber.tchannel.api.handlers.ThriftAsyncRequestHandler;
+import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
-import com.uber.tchannel.api.SubChannel;
+import com.uber.tchannel.api.handlers.ThriftAsyncRequestHandler;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.messages.generated.Example;
-
 import org.junit.Test;
 
 import java.net.InetAddress;

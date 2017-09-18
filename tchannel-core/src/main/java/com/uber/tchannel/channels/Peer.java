@@ -22,21 +22,21 @@
 
 package com.uber.tchannel.channels;
 
-import java.net.SocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.HashMap;
-
 import com.uber.tchannel.api.errors.TChannelConnectionFailure;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelId;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelId;
+
+import java.net.SocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Peer manages connections to/from the same host_port. It provides a way to choose connections based on

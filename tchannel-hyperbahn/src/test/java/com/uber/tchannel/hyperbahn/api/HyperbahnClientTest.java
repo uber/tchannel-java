@@ -22,28 +22,25 @@
 
 package com.uber.tchannel.hyperbahn.api;
 
+import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.api.handlers.TFutureCallback;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import io.netty.channel.ChannelFuture;
-
 import org.junit.Test;
-
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
-import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
-import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertTrue;
 
 public class HyperbahnClientTest {

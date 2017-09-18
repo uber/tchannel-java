@@ -29,7 +29,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
-
 import static org.junit.Assert.assertEquals;
 
 public class CallResponseFrameCodecTest {

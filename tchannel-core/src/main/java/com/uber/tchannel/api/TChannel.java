@@ -22,9 +22,9 @@
 package com.uber.tchannel.api;
 
 import com.uber.tchannel.api.handlers.RequestHandler;
+import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.channels.PeerManager;
-import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
 import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;

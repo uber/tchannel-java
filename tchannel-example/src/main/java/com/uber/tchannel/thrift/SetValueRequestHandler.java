@@ -22,12 +22,12 @@
 
 package com.uber.tchannel.thrift;
 
-import java.util.Map;
-
 import com.uber.tchannel.api.handlers.ThriftRequestHandler;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.thrift.generated.KeyValue;
+
+import java.util.Map;
 
 public class SetValueRequestHandler extends ThriftRequestHandler<KeyValue.setValue_args, KeyValue.setValue_result> {
 

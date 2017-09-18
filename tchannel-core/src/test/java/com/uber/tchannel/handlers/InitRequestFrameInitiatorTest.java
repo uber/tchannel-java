@@ -22,8 +22,8 @@
 
 package com.uber.tchannel.handlers;
 
-import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.channels.ChannelRegistrar;
+import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
@@ -31,8 +31,9 @@ import com.uber.tchannel.frames.InitResponseFrame;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
-import java.util.List;
 import org.junit.Test;
+
+import java.util.List;
 
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;

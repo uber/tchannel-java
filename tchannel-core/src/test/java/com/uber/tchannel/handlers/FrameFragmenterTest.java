@@ -42,7 +42,8 @@ import java.util.Map;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class FrameFragmenterTest {
 

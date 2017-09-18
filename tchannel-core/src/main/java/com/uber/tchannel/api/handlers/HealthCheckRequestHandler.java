@@ -24,8 +24,8 @@ package com.uber.tchannel.api.handlers;
 
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
-import com.uber.tchannel.messages.generated.Meta;
 import com.uber.tchannel.messages.generated.HealthStatus;
+import com.uber.tchannel.messages.generated.Meta;
 
 public class HealthCheckRequestHandler extends ThriftRequestHandler<Meta.health_args, Meta.health_result> {
     @Override

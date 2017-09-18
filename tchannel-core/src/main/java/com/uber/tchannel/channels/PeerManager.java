@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * PeerManager manages peers, a abstract presentation of a channel to a host_port.

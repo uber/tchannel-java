@@ -25,6 +25,7 @@ package com.uber.tchannel.messages;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.headers.ArgScheme;
 import io.netty.buffer.ByteBuf;
+
 import java.util.Map;
 
 public final class ThriftResponse<T> extends EncodedResponse<T> {

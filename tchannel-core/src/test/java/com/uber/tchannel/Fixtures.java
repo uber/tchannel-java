@@ -23,10 +23,10 @@ package com.uber.tchannel;
 
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.CallRequestContinueFrame;
-import com.uber.tchannel.frames.CallResponseFrame;
+import com.uber.tchannel.frames.CallRequestFrame;
 import com.uber.tchannel.frames.CallResponseContinueFrame;
+import com.uber.tchannel.frames.CallResponseFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;

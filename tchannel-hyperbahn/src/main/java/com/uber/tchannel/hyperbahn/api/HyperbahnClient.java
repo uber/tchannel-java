@@ -22,9 +22,24 @@
 
 package com.uber.tchannel.hyperbahn.api;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.uber.tchannel.api.SubChannel;
+import com.uber.tchannel.api.TChannel;
+import com.uber.tchannel.api.TFuture;
+import com.uber.tchannel.api.handlers.TFutureCallback;
+import com.uber.tchannel.channels.Connection;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
+import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import com.uber.tchannel.messages.JsonRequest;
+import com.uber.tchannel.messages.JsonResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,21 +47,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import com.uber.tchannel.api.TFuture;
-import com.uber.tchannel.api.handlers.TFutureCallback;
-import com.uber.tchannel.messages.JsonRequest;
-import com.uber.tchannel.messages.JsonResponse;
-import com.uber.tchannel.api.SubChannel;
-import com.uber.tchannel.api.TChannel;
-import com.uber.tchannel.channels.Connection;
-import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
-import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
-import java.lang.reflect.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class HyperbahnClient {
     private static final Logger logger = LoggerFactory.getLogger(HyperbahnClient.class);
@@ -166,7 +166,7 @@ public final class HyperbahnClient {
         private final TChannel channel;
 
         private List<InetSocketAddress> routers;
-        
+
         private long advertiseTimeout = 5000;
         private long advertiseInterval = 60 * 1000;
 
