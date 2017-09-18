@@ -84,7 +84,6 @@ public final class TChannel {
     private final int port;
     private String listeningHost = "0.0.0.0";
     private int listeningPort;
-    private ExecutorService exectorService;
     private final long initTimeout;
     private final int resetOnTimeoutLimit;
     private final int clientMaxPendingRequests;
@@ -97,7 +96,6 @@ public final class TChannel {
 
     private TChannel(Builder builder) {
         this.service = builder.service;
-        this.exectorService = builder.executorService;
         this.serverBootstrap = builder.serverBootstrap(this);
         this.bossGroup = builder.bossGroup;
         this.childGroup = builder.childGroup;
@@ -247,7 +245,7 @@ public final class TChannel {
         private int clientMaxPendingRequests = 100000;
         private static final int WRITE_BUFFER_LOW_WATER_MARK = 8 * 1024;
         private static final int WRITE_BUFFER_HIGH_WATER_MARK = 32 * 1024;
-        
+
         private Tracer tracer;
         private TracingContext tracingContext = new TracingContext.Default();
 
@@ -329,7 +327,7 @@ public final class TChannel {
                 .channel(useEpoll ? EpollSocketChannel.class : NioSocketChannel.class)
                 .handler(this.channelInitializer(false, topChannel))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, 
+                .option(ChannelOption.WRITE_BUFFER_WATER_MARK,
                         new WriteBufferWaterMark(WRITE_BUFFER_LOW_WATER_MARK, WRITE_BUFFER_HIGH_WATER_MARK))
                 .validate();
         }
@@ -343,7 +341,7 @@ public final class TChannel {
                 .childHandler(this.channelInitializer(true, topChannel))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, 
+                .option(ChannelOption.WRITE_BUFFER_WATER_MARK,
                         new WriteBufferWaterMark(WRITE_BUFFER_LOW_WATER_MARK, WRITE_BUFFER_HIGH_WATER_MARK))
                 .validate();
         }
