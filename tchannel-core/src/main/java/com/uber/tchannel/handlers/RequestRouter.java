@@ -164,9 +164,8 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 sendError(ErrorType.UnexpectedError,
                     "Failed to handle the request: " + throwable.getMessage(),
                     request, ctx);
-                return;
             }
-        });
+        }, listeningExecutorService);
     }
 
     @Override
