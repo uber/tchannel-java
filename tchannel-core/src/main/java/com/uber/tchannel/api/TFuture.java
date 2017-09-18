@@ -25,6 +25,7 @@ package com.uber.tchannel.api;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
@@ -82,7 +83,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                     )
                 );
             }
-        });
+           // TODO: use proper executor, for now directExecutor provides
+           // same behaviour and removes usage of deprecated method
+        }, MoreExecutors.directExecutor());
     }
 
     @Override
