@@ -69,15 +69,15 @@ public class TracingContextTest {
     public void testTracingContext() throws Exception {
         assertFalse(tracingContext.hasSpan());
 
-        Span span = tracer.buildSpan("test").start();
+        Span span = tracer.buildSpan("test").startManual();
         tracingContext.pushSpan(span);
         assertTrue(tracingContext.hasSpan());
         assertEquals(span, tracingContext.currentSpan());
         assertEquals(span, tracingContext.popSpan());
         assertFalse(tracingContext.hasSpan());
 
-        Span span1 = tracer.buildSpan("test").start();
-        Span span2 = tracer.buildSpan("test").start();
+        Span span1 = tracer.buildSpan("test").startManual();
+        Span span2 = tracer.buildSpan("test").startManual();
         tracingContext.pushSpan(span1);
         tracingContext.pushSpan(span2);
         assertEquals(span2, tracingContext.currentSpan());
@@ -91,7 +91,7 @@ public class TracingContextTest {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                Span span = tracer.buildSpan("test").start();
+                Span span = tracer.buildSpan("test").startManual();
                 tracingContext.pushSpan(span);
                 assertTrue("Have span in worker thread", tracingContext.hasSpan());
             }

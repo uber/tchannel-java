@@ -113,7 +113,7 @@ public class TraceBehaviorTest {
         );
 
         String baggage = "luggage-" + System.currentTimeMillis();
-        Span span = tracer.buildSpan("root").start();
+        Span span = tracer.buildSpan("root").startManual();
         span.setBaggageItem(BAGGAGE_KEY, baggage);
         if (sampled) {
             Tags.SAMPLING_PRIORITY.set(span, 1);
@@ -125,7 +125,7 @@ public class TraceBehaviorTest {
         span.finish();
 
         SpanContext spanContext = (SpanContext) span.context();
-        String traceId = String.format("%x", spanContext.getTraceID());
+        String traceId = String.format("%x", spanContext.getTraceId());
 
         validate(response, traceId, baggage, 2);
         if (sampled) {
