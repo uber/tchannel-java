@@ -27,6 +27,8 @@ import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -45,16 +47,20 @@ import java.util.Map;
  */
 public class RawResponse extends Response {
 
-    private String header = null;
-    private String body = null;
+    private @Nullable String header = null;
+    private @Nullable String body = null;
 
     private RawResponse(Builder builder) {
         super(builder);
     }
 
-    protected RawResponse(long id, ResponseCode responseCode,
-                          Map<String, String> transportHeaders,
-                          ByteBuf arg2, ByteBuf arg3) {
+    protected RawResponse(
+        long id,
+        ResponseCode responseCode,
+        Map<String, String> transportHeaders,
+        ByteBuf arg2,
+        ByteBuf arg3
+    ) {
         super(id, responseCode, transportHeaders, arg2, arg3);
     }
 
@@ -62,28 +68,18 @@ public class RawResponse extends Response {
         super(error);
     }
 
-    public String getHeader() {
-        if (this.header == null) {
-            if (arg2 == null) {
-                this.header = "";
-            } else {
-                this.header = this.arg2.toString(CharsetUtil.UTF_8);
-            }
+    public @NotNull String getHeader() {
+        if (header == null) {
+            header = arg2 == null ? "" : arg2.toString(CharsetUtil.UTF_8);
         }
-
-        return this.header;
+        return header;
     }
 
-    public String getBody() {
-        if (this.body == null) {
-            if (arg3 == null) {
-                this.body = "";
-            } else {
-                this.body = this.arg3.toString(CharsetUtil.UTF_8);
-            }
+    public @NotNull String getBody() {
+        if (body == null) {
+            body = arg3 == null ? "" : arg3.toString(CharsetUtil.UTF_8);
         }
-
-        return this.body;
+        return body;
     }
 
     @Override
@@ -107,32 +103,32 @@ public class RawResponse extends Response {
         protected String header = null;
         protected String body = null;
 
-        public Builder(Request req) {
+        public Builder(@NotNull Request req) {
             super(req);
         }
 
         @Override
-        public Builder setResponseCode(ResponseCode responseCode) {
+        public @NotNull Builder setResponseCode(ResponseCode responseCode) {
             this.responseCode = responseCode;
             return this;
         }
 
         @Override
-        public Builder setArg2(ByteBuf arg2) {
+        public @NotNull Builder setArg2(ByteBuf arg2) {
             super.setArg2(arg2);
             this.header = null;
             return this;
         }
 
         @Override
-        public Builder setArg3(ByteBuf arg3) {
+        public @NotNull Builder setArg3(ByteBuf arg3) {
             super.setArg3(arg3);
             this.body = null;
             return this;
         }
 
         @Override
-        public Builder setTransportHeader(String key, String value) {
+        public @NotNull Builder setTransportHeader(String key, String value) {
             super.setTransportHeader(key, value);
             return this;
         }

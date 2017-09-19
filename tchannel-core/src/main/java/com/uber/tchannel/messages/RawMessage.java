@@ -23,17 +23,18 @@
 package com.uber.tchannel.messages;
 
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
 public interface RawMessage extends TChannelMessage {
 
-    Map<String, String> getTransportHeaders();
+    @Nullable Map<String, String> getTransportHeaders();
 
     ByteBuf getArg1();
 
-    ByteBuf getArg2();
+    @Nullable ByteBuf getArg2();
 
-    ByteBuf getArg3();
+    @Nullable ByteBuf getArg3();
 
 }

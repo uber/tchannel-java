@@ -25,6 +25,8 @@ package com.uber.tchannel.messages;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -71,11 +73,11 @@ public class Serializer {
 
     public interface SerializerInterface {
 
-        String decodeEndpoint(ByteBuf arg1);
+        @NotNull String decodeEndpoint(@NotNull ByteBuf arg1);
 
-        Map<String, String> decodeHeaders(ByteBuf arg2);
+        @NotNull Map<String, String> decodeHeaders(@NotNull ByteBuf arg2);
 
-        <T> T decodeBody(ByteBuf arg3, Class<T> bodyType);
+        @Nullable <T> T decodeBody(@NotNull ByteBuf arg3, @NotNull Class<T> bodyType);
 
         ByteBuf encodeEndpoint(String method);
 
@@ -83,4 +85,5 @@ public class Serializer {
 
         ByteBuf encodeBody(Object body);
     }
+
 }

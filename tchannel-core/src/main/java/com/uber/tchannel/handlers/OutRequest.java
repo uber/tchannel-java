@@ -13,6 +13,8 @@ import com.uber.tchannel.messages.ResponseMessage;
 import com.uber.tchannel.messages.ThriftResponse;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.Timeout;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,32 +27,32 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The logic unit for managing out requests
  */
 public final class OutRequest<V extends Response> {
+
     private static final Logger logger = LoggerFactory.getLogger(OutRequest.class);
 
-    private final SubChannel subChannel;
-    private final Request request;
-    private final TFuture<V> future;
-    private final Set<SocketAddress> usedPeers = new HashSet<>();
+    private final @NotNull SubChannel subChannel;
+    private final @NotNull Request request;
+    private final @NotNull TFuture<V> future;
+    private final @NotNull Set<SocketAddress> usedPeers = new HashSet<>();
+    private final @NotNull AtomicInteger retryCount = new AtomicInteger(0);
 
-    private final AtomicInteger retryCount = new AtomicInteger(0);
     private int retryLimit = 0;
-    private Timeout timeout = null;
-    private ChannelFuture channelFuture = null;
+    private @Nullable Timeout timeout = null;
+    private @Nullable ChannelFuture channelFuture = null;
+    private @Nullable ErrorResponse lastError = null;
 
-    private ErrorResponse lastError = null;
-
-    public OutRequest(SubChannel subChannel, Request request) {
+    public OutRequest(@NotNull SubChannel subChannel, @NotNull Request request) {
         this.subChannel = subChannel;
         this.request = request;
         this.future = TFuture.<V>create(request.getArgScheme());
         this.retryLimit = request.getRetryLimit();
     }
 
-    public Request getRequest() {
+    public @NotNull Request getRequest() {
         return request;
     }
 
-    public TFuture<V> getFuture() {
+    public @NotNull TFuture<V> getFuture() {
         return future;
     }
 
@@ -81,15 +83,15 @@ public final class OutRequest<V extends Response> {
         return true;
     }
 
-    public Timeout getTimeout() {
+    public @Nullable Timeout getTimeout() {
         return timeout;
     }
 
-    public void setTimeout(Timeout timeout) {
+    public void setTimeout(@Nullable Timeout timeout) {
         this.timeout = timeout;
     }
 
-    public ChannelFuture getChannelFuture() {
+    public @Nullable ChannelFuture getChannelFuture() {
         return channelFuture;
     }
 
@@ -127,7 +129,7 @@ public final class OutRequest<V extends Response> {
         this.usedPeers.add(address);
     }
 
-    public ErrorResponse getLastError() {
+    public @Nullable ErrorResponse getLastError() {
         return lastError;
     }
 
@@ -136,30 +138,23 @@ public final class OutRequest<V extends Response> {
     }
 
     public void setLastError(ErrorType errorType, Throwable throwable) {
-        setLastError(new ErrorResponse(
-            request.getId(),
-            errorType,
-            throwable));
+        setLastError(new ErrorResponse(request.getId(), errorType, throwable));
     }
 
     public void setLastError(ErrorType errorType, String message) {
-        setLastError(new ErrorResponse(
-            request.getId(),
-            errorType,
-            message));
+        setLastError(new ErrorResponse(request.getId(), errorType, message));
     }
 
-    public void setFuture(Response response) {
+    public void setFuture(@NotNull Response response) {
         release();
         setResponseFuture(request.getArgScheme(), response);
     }
 
     public void setFuture() {
-        Response response = Response.build(request.getArgScheme(), getLastError());
-        setFuture(response);
+        setFuture(Response.build(request.getArgScheme(), getLastError()));
     }
 
-    public void handleResponse(ResponseMessage response) {
+    public void handleResponse(@NotNull ResponseMessage response) {
         if (!response.isError()) {
             setFuture((Response) response);
             return;

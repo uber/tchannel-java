@@ -33,6 +33,7 @@ import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,15 +163,15 @@ public final class HyperbahnClient {
 
     public static class Builder {
 
-        private final String service;
-        private final TChannel channel;
+        private final @NotNull String service;
+        private final @NotNull TChannel channel;
 
         private List<InetSocketAddress> routers;
 
         private long advertiseTimeout = 5000;
         private long advertiseInterval = 60 * 1000;
 
-        public Builder(String service, TChannel channel) {
+        public Builder(@NotNull String service, @NotNull TChannel channel) {
             if (service == null) {
                 throw new NullPointerException("`service` cannot be null");
             }
@@ -203,7 +204,7 @@ public final class HyperbahnClient {
             return this;
         }
 
-        private static List<InetSocketAddress> loadRouters(String hostsFilePath) throws IOException {
+        private static @NotNull List<InetSocketAddress> loadRouters(String hostsFilePath) throws IOException {
 
             List<String> hostPorts;
             try (Reader reader = new FileReader(hostsFilePath)) {

@@ -44,17 +44,17 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
     private static final Logger logger = LoggerFactory.getLogger(ThriftSerializer.class);
 
     @Override
-    public String decodeEndpoint(ByteBuf arg1) {
+    public @NotNull String decodeEndpoint(@NotNull ByteBuf arg1) {
         return arg1.toString(CharsetUtil.UTF_8);
     }
 
     @Override
-    public Map<String, String> decodeHeaders(ByteBuf arg2) {
+    public @NotNull Map<String, String> decodeHeaders(@NotNull ByteBuf arg2) {
         return CodecUtils.decodeHeaders(arg2);
     }
 
     @Override
-    public <T> T decodeBody(ByteBuf arg3, @NotNull Class<T> bodyType) {
+    public @Nullable <T> T decodeBody(@NotNull ByteBuf arg3, @NotNull Class<T> bodyType) {
 
         try {
             // Create a new instance of type 'T'

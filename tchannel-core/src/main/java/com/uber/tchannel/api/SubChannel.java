@@ -61,27 +61,23 @@ import java.util.Random;
 public final class SubChannel {
 
     private final String service;
-    private final TChannel topChannel;
-    private final PeerManager peerManager;
+    private final @NotNull TChannel topChannel;
+    private final @NotNull PeerManager peerManager;
     private final long initTimeout;
     private final Connection.Direction preferredDirection;
-    private final List<SubPeer> peers = new ArrayList<>();
-    private final Map<String, RequestHandler> requestHandlers = new HashMap<>();
+    private final @NotNull List<SubPeer> peers = new ArrayList<>();
+    private final @NotNull Map<String, RequestHandler> requestHandlers = new HashMap<>();
 
     private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
             ImmutableMap.of(ArgScheme.JSON, new JSONSerializer(), ArgScheme.THRIFT, new ThriftSerializer());
 
     private final Serializer serializer = new Serializer(DEFAULT_SERIALIZERS);
 
-    public SubChannel(String service, TChannel topChannel) {
-        this.service = service;
-        this.topChannel = topChannel;
-        this.peerManager = topChannel.getPeerManager();
-        this.initTimeout = topChannel.getInitTimeout();
-        this.preferredDirection = Connection.Direction.NONE;
+    public SubChannel(String service, @NotNull TChannel topChannel) {
+        this(service, topChannel, Connection.Direction.NONE);
     }
 
-    public SubChannel(String service, TChannel topChannel, Connection.Direction preferredDirection) {
+    public SubChannel(String service, @NotNull TChannel topChannel, Connection.Direction preferredDirection) {
         this.service = service;
         this.topChannel = topChannel;
         this.peerManager = topChannel.getPeerManager();
@@ -93,30 +89,30 @@ public final class SubChannel {
         return this.service;
     }
 
-    public PeerManager getPeerManager() {
+    public @NotNull PeerManager getPeerManager() {
         return this.peerManager;
     }
 
-    public SubChannel register(String endpoint, RequestHandler requestHandler) {
+    public @NotNull SubChannel register(String endpoint, RequestHandler requestHandler) {
         requestHandlers.put(endpoint, requestHandler);
         return this;
     }
 
     /** @deprecated typo - use {@link #registerHealthHandler}. */
     @Deprecated
-    public SubChannel registerHealthHanlder() {
+    public @NotNull SubChannel registerHealthHanlder() {
         return registerHealthHandler();
     }
 
-    public SubChannel registerHealthHandler() {
+    public @NotNull SubChannel registerHealthHandler() {
         return registerHealthHandler(new HealthCheckRequestHandler());
     }
 
-    public SubChannel registerHealthHandler(HealthCheckRequestHandler healthHandler) {
+    public @NotNull SubChannel registerHealthHandler(HealthCheckRequestHandler healthHandler) {
         return register("Meta::health", healthHandler);
     }
 
-    public RequestHandler getRequestHandler(String endpoint) {
+    public @Nullable RequestHandler getRequestHandler(String endpoint) {
         return requestHandlers.get(endpoint);
     }
 
@@ -124,7 +120,7 @@ public final class SubChannel {
         return preferredDirection;
     }
 
-    public SubChannel setPeers(List<InetSocketAddress> peers) {
+    public @NotNull SubChannel setPeers(@NotNull List<InetSocketAddress> peers) {
         for (InetSocketAddress peer : peers) {
             this.peers.add(new SubPeer(peer, this));
         }

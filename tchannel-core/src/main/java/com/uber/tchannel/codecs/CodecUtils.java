@@ -83,14 +83,13 @@ public final class CodecUtils {
         return new String(valueBytes);
     }
 
-    public static void encodeSmallString(String value, ByteBuf buffer) {
+    public static void encodeSmallString(@NotNull String value, @NotNull ByteBuf buffer) {
         byte[] raw = value.getBytes();
         buffer.writeByte(raw.length);
         buffer.writeBytes(raw);
     }
 
-    public static Map<String, String> decodeHeaders(ByteBuf buffer) {
-
+    public static @NotNull Map<String, String> decodeHeaders(@NotNull ByteBuf buffer) {
         int numHeaders = buffer.readUnsignedShort();
         Map<String, String> headers = Maps.newHashMapWithExpectedSize(numHeaders);
 
@@ -98,11 +97,9 @@ public final class CodecUtils {
             String key = CodecUtils.decodeString(buffer);
             String value = CodecUtils.decodeString(buffer);
             headers.put(key, value);
-
         }
 
         return headers;
-
     }
 
     public static void encodeHeaders(@NotNull Map<String, String> headers, @NotNull ByteBuf buffer) {

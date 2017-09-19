@@ -24,6 +24,8 @@ package com.uber.tchannel.channels;
 
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.handlers.OutRequest;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.SocketAddress;
 
@@ -36,7 +38,7 @@ public class SubPeer {
     private static final double SCORE_FUZZ = 0.5;
 
     private final SocketAddress remoteAddress;
-    private final PeerManager peerManager;
+    private final @NotNull PeerManager peerManager;
 
     private double score = 0;
     private Connection connection = null;
@@ -48,16 +50,16 @@ public class SubPeer {
         this.direction = subChannel.getPreferredDirection();
     }
 
-    public SubPeer setPreference(Connection.Direction direction) {
+    public @NotNull SubPeer setPreference(Connection.Direction direction) {
         this.direction = direction;
         return this;
     }
 
-    public Peer getPeer() {
+    public @Nullable Peer getPeer() {
         return peerManager.getPeer(remoteAddress);
     }
 
-    public boolean updateScore(OutRequest outRequest) {
+    public boolean updateScore(@NotNull OutRequest outRequest) {
         if (outRequest.isUsedPeer(remoteAddress)) {
             // if we have used this peer, it should be given a lower score
             score = SCORE_UNCONNECTED - 0.1;

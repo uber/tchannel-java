@@ -30,6 +30,8 @@ import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,19 +51,20 @@ import java.util.Map;
  */
 public abstract class Response extends ResponseMessage implements RawMessage {
 
-    protected ByteBuf arg2;
-    protected ByteBuf arg3;
+    private static final @NotNull ByteBuf arg1 = TChannelUtilities.emptyByteBuf;
 
-    private static final ByteBuf arg1 = TChannelUtilities.emptyByteBuf;
+    protected @Nullable ByteBuf arg2;
+    protected @Nullable ByteBuf arg3;
 
     protected long id;
-    protected final ResponseCode responseCode;
-    protected final Map<String, String> transportHeaders;
+    protected final @Nullable ResponseCode responseCode;
+    protected final @Nullable Map<String, String> transportHeaders;
 
-    private final ErrorResponse error;
+    private final @Nullable ErrorResponse error;
 
-    protected Response(long id, ResponseCode responseCode, Map<String, String> transportHeaders,
-                       ByteBuf arg2, ByteBuf arg3) {
+    protected Response(
+        long id, ResponseCode responseCode, Map<String, String> transportHeaders, ByteBuf arg2, ByteBuf arg3
+    ) {
         this.id = id;
         this.responseCode = responseCode;
         this.transportHeaders = transportHeaders;
@@ -71,7 +74,7 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         this.error = null;
     }
 
-    protected Response(Builder builder) {
+    protected Response(@NotNull Builder builder) {
         this.id = builder.id;
         this.responseCode = builder.responseCode;
         this.transportHeaders = builder.transportHeaders;
@@ -81,14 +84,14 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         this.error = null;
     }
 
-    protected Response(ErrorResponse error) {
-        this.error = error;
+    protected Response(@NotNull ErrorResponse error) {
         this.id = error.getId();
         this.responseCode = null;
         this.transportHeaders = null;
         this.arg2 = null;
         this.arg3 = null;
         this.type = FrameType.Error;
+        this.error = error;
     }
 
     @Override
@@ -100,27 +103,27 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         this.id = id;
     }
 
-    public ResponseCode getResponseCode() {
+    public @Nullable ResponseCode getResponseCode() {
         return responseCode;
     }
 
     @Override
-    public Map<String, String> getTransportHeaders() {
+    public @Nullable Map<String, String> getTransportHeaders() {
         return this.transportHeaders;
     }
 
     @Override
-    public ByteBuf getArg1() {
+    public @NotNull ByteBuf getArg1() {
         return arg1;
     }
 
     @Override
-    public ByteBuf getArg2() {
+    public @Nullable ByteBuf getArg2() {
         return arg2;
     }
 
     @Override
-    public ByteBuf getArg3() {
+    public @Nullable ByteBuf getArg3() {
         return arg3;
     }
 
@@ -128,12 +131,12 @@ public abstract class Response extends ResponseMessage implements RawMessage {
     public String toString() {
         return String.format(
             "<%s id=%d transportHeaders=%s arg1=%s arg2=%s arg3=%s>",
-            this.getClass().getSimpleName(),
-            this.id,
-            this.transportHeaders,
+            getClass().getSimpleName(),
+            id,
+            transportHeaders,
             arg1.toString(CharsetUtil.UTF_8),
-            this.arg2.toString(CharsetUtil.UTF_8),
-            this.arg3.toString(CharsetUtil.UTF_8)
+            arg2 == null ? null : arg2.toString(CharsetUtil.UTF_8),
+            arg3 == null ? null : arg3.toString(CharsetUtil.UTF_8)
         );
     }
 
@@ -157,7 +160,7 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         return type == FrameType.Error || getError() != null;
     }
 
-    public ErrorResponse getError() {
+    public @Nullable ErrorResponse getError() {
         return this.error;
     }
 
@@ -166,34 +169,28 @@ public abstract class Response extends ResponseMessage implements RawMessage {
     }
 
     public int argSize() {
-        int size = 0;
-
-        if (arg2 != null) {
-            size += arg2.readableBytes();
-        }
-
-        if (arg3 != null) {
-            size += arg3.readableBytes();
-        }
-
-        return size;
+        return (arg2 == null ? 0 : arg2.readableBytes()) + (arg3 == null ? 0 : arg3.readableBytes());
     }
 
-    public static Response build(long id, ResponseCode responseCode,
-                                 Map<String, String> transportHeaders,
-                                 ByteBuf arg2, ByteBuf arg3) {
+    public static @Nullable Response build(
+        long id, ResponseCode responseCode, @NotNull Map<String, String> transportHeaders, ByteBuf arg2, ByteBuf arg3
+    ) {
         ArgScheme argScheme = ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
         if (argScheme == null) {
             return null;
         }
-
         return Response.build(argScheme, id, responseCode, transportHeaders, arg2, arg3);
     }
 
-    public static Response build(ArgScheme argScheme, long id,
-                                ResponseCode responseCode, Map<String, String> transportHeaders,
-                                ByteBuf arg2, ByteBuf arg3) {
-        Response res;
+    public static @Nullable Response build(
+        @NotNull ArgScheme argScheme,
+        long id,
+        ResponseCode responseCode,
+        Map<String, String> transportHeaders,
+        ByteBuf arg2,
+        ByteBuf arg3
+    ) {
+        final Response res;
         switch (argScheme) {
             case RAW:
                 res = new RawResponse(id, responseCode, transportHeaders, arg2, arg3);
@@ -208,7 +205,6 @@ public abstract class Response extends ResponseMessage implements RawMessage {
                 res = null;
                 break;
         }
-
         return res;
     }
 
@@ -217,8 +213,8 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         return build(argScheme, errorResponse);
     }
 
-    public static Response build(ArgScheme argScheme, ErrorResponse errorResponse) {
-        Response res;
+    public static @NotNull Response build(@NotNull ArgScheme argScheme, ErrorResponse errorResponse) {
+        final Response res;
         switch (argScheme) {
             case RAW:
                 res = new RawResponse(errorResponse);
@@ -239,60 +235,60 @@ public abstract class Response extends ResponseMessage implements RawMessage {
 
     public static class Builder {
 
-        protected Map<String, String> transportHeaders = new HashMap<>();
+        protected @NotNull Map<String, String> transportHeaders = new HashMap<>();
         protected ByteBuf arg2 = null;
         protected ByteBuf arg3 = null;
         protected ResponseCode responseCode = ResponseCode.OK;
 
         private long id = -1;
 
-        public Builder(Request req) {
+        public Builder(@NotNull Request req) {
             this.id = req.getId();
             this.transportHeaders.put(
-                TransportHeaders.ARG_SCHEME_KEY,
-                req.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY));
+                TransportHeaders.ARG_SCHEME_KEY, req.getTransportHeaders().get(TransportHeaders.ARG_SCHEME_KEY)
+            );
         }
 
-        public Builder setResponseCode(ResponseCode responseCode) {
+        public @NotNull Builder setResponseCode(ResponseCode responseCode) {
             this.responseCode = responseCode;
             return this;
         }
 
-        public Builder setArg2(ByteBuf arg2) {
+        public @NotNull Builder setArg2(ByteBuf arg2) {
             if (this.arg2 != null) {
                 this.arg2.release();
             }
-
             this.arg2 = arg2;
             return this;
         }
 
-        public Builder setArg3(ByteBuf arg3) {
+        public @NotNull Builder setArg3(ByteBuf arg3) {
             if (this.arg3 != null) {
                 this.arg3.release();
             }
-
             this.arg3 = arg3;
             return this;
         }
 
-        public Builder setTransportHeader(String key, String value) {
+        public @NotNull Builder setTransportHeader(String key, String value) {
             this.transportHeaders.put(key, value);
             return this;
         }
 
-        public Builder setTransportHeaders(Map<String, String> transportHeaders) {
+        public @NotNull Builder setTransportHeaders(Map<String, String> transportHeaders) {
             this.transportHeaders = transportHeaders;
             return this;
         }
 
-        public Builder setId(long id) {
+        public @NotNull Builder setId(long id) {
             this.id = id;
             return this;
         }
 
-        public Builder validate() {
+        public @NotNull Builder validate() {
             return this;
         }
+
     }
+
 }

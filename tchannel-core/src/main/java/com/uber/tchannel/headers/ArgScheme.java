@@ -22,6 +22,9 @@
 
 package com.uber.tchannel.headers;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 public enum ArgScheme {
     RAW("raw"),
     JSON("json"),
@@ -29,14 +32,13 @@ public enum ArgScheme {
     THRIFT("thrift"),
     STREAMING_THRIFT("sthrift");
 
-    private final String scheme;
+    private final @NotNull String scheme;
 
-    ArgScheme(String scheme) {
-
+    ArgScheme(@NotNull String scheme) {
         this.scheme = scheme;
     }
 
-    public static ArgScheme toScheme(String argScheme) {
+    public static @Nullable ArgScheme toScheme(@Nullable String argScheme) {
         if (argScheme == null) {
             return null;
         }
@@ -57,7 +59,7 @@ public enum ArgScheme {
         }
     }
 
-    public static boolean isSupported(ArgScheme scheme) {
+    public static boolean isSupported(@Nullable ArgScheme scheme) {
         if (scheme == null) {
             return false;
         }
@@ -72,7 +74,8 @@ public enum ArgScheme {
         }
     }
 
-    public String getScheme() {
+    public @NotNull String getScheme() {
         return scheme;
     }
+
 }

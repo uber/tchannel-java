@@ -27,26 +27,25 @@ import com.google.gson.reflect.TypeToken;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
 public final class JSONSerializer implements Serializer.SerializerInterface {
-    private static final Type HEADER_TYPE = (new TypeToken<Map<String, String>>() {
 
-    }).getType();
+    private static final Type HEADER_TYPE = (new TypeToken<Map<String, String>>() {}).getType();
 
     private static final Gson GSON = new Gson();
 
     @Override
-    public String decodeEndpoint(ByteBuf arg1) {
-        String endpoint = arg1.toString(CharsetUtil.UTF_8);
-        return endpoint;
+    public @NotNull String decodeEndpoint(@NotNull ByteBuf arg1) {
+        return arg1.toString(CharsetUtil.UTF_8);
     }
 
     @Override
-    public Map<String, String> decodeHeaders(ByteBuf arg2) {
+    public @NotNull Map<String, String> decodeHeaders(@NotNull ByteBuf arg2) {
         String headerJSON = arg2.toString(CharsetUtil.UTF_8);
         Map<String, String> headers = null;
         if (headerJSON != null && !headerJSON.isEmpty() && !"\"\"".equals(headerJSON)) {
@@ -57,14 +56,13 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
     }
 
     @Override
-    public <T> T decodeBody(ByteBuf arg3, Class<T> bodyType) {
+    public <T> T decodeBody(@NotNull ByteBuf arg3, @NotNull Class<T> bodyType) {
         String bodyJSON = arg3.toString(CharsetUtil.UTF_8);
         return GSON.fromJson(bodyJSON, bodyType);
     }
 
     @Override
     public ByteBuf encodeEndpoint(String method) {
-
         return Unpooled.wrappedBuffer(method.getBytes());
     }
 

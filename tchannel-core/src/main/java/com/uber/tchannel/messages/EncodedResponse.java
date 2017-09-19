@@ -27,33 +27,40 @@ import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public abstract class EncodedResponse<T> extends Response {
 
-    private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
-            ImmutableMap.of(ArgScheme.JSON, new JSONSerializer(), ArgScheme.THRIFT, new ThriftSerializer());
+    private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS = ImmutableMap.of(
+        ArgScheme.JSON, new JSONSerializer(),
+        ArgScheme.THRIFT, new ThriftSerializer()
+    );
 
     private static final Serializer serializer = new Serializer(DEFAULT_SERIALIZERS);
 
     protected Map<String, String> headers;
     protected T body = null;
 
-    protected EncodedResponse(Builder<T> builder) {
+    protected EncodedResponse(@NotNull Builder<T> builder) {
         super(builder);
         this.headers = builder.headers;
         this.body = builder.body;
     }
 
-    protected EncodedResponse(long id, ResponseCode responseCode,
-                              Map<String, String> transportHeaders,
-                              ByteBuf arg2, ByteBuf arg3) {
+    protected EncodedResponse(
+        long id,
+        ResponseCode responseCode,
+        Map<String, String> transportHeaders,
+        ByteBuf arg2,
+        ByteBuf arg3
+    ) {
         super(id, responseCode, transportHeaders, arg2, arg3);
     }
 
-    protected EncodedResponse(ErrorResponse error) {
+    protected EncodedResponse(@NotNull ErrorResponse error) {
         super(error);
     }
 
@@ -74,14 +81,9 @@ public abstract class EncodedResponse<T> extends Response {
     }
 
     public T getBody(Class<T> bodyType) {
-        if (body == null) {
-            if (arg3 == null) {
-                return null;
-            } else {
-                body = serializer.decodeBody(this, bodyType);
-            }
+        if (body == null && arg3 != null) {
+            body = serializer.decodeBody(this, bodyType);
         }
-
         return body;
     }
 
@@ -90,7 +92,6 @@ public abstract class EncodedResponse<T> extends Response {
         if (isError()) {
             return getError().toString();
         }
-
         return String.format(
                 "<%s responseCode=%s transportHeaders=%s headers=%s body=%s>",
                 this.getClass().getSimpleName(),
@@ -113,68 +114,58 @@ public abstract class EncodedResponse<T> extends Response {
         }
 
         @Override
-        public Builder<T> setArg2(ByteBuf arg2) {
+        public @NotNull Builder<T> setArg2(ByteBuf arg2) {
             if (arg2 != null && !this.headers.isEmpty()) {
                 throw new IllegalStateException("Cannot set both `arg2` and `headers`.");
             }
-
             super.setArg2(arg2);
             return this;
         }
 
         @Override
-        public Builder<T> setArg3(ByteBuf arg3) {
+        public @NotNull Builder<T> setArg3(ByteBuf arg3) {
             if (arg3 != null && this.body != null) {
                 throw new IllegalStateException("Cannot set both `arg3` and `body`.");
             }
-
             super.setArg3(arg3);
             return this;
         }
 
-        public Builder<T> setHeader(String key, String value) {
+        public @NotNull Builder<T> setHeader(String key, String value) {
             this.headers.put(key, value);
             return this;
         }
 
-        public Builder<T> setHeaders(Map<String, String> headers) {
+        public @NotNull Builder<T> setHeaders(Map<String, String> headers) {
             this.headers = headers;
             return this;
         }
 
-        public Builder<T> setBody(T body) {
+        public @NotNull Builder<T> setBody(T body) {
             this.body = body;
             return this;
         }
 
-        private Builder<T> validateHeader() {
-            if (arg2 != null) {
+        private @NotNull Builder<T> validateHeader() {
+            if (arg2 == null) {
+                arg2 = serializer.encodeHeaders(this.headers, argScheme);
+            } else {
                 headers = null;
-                return this;
             }
-
-            arg2 = serializer.encodeHeaders(this.headers, argScheme);
-
             return this;
         }
 
-        private Builder<T> validateBody() {
-            if (arg3 != null) {
-                body = null;
-                return this;
-            }
-
-            if (body == null) {
-                arg3 = TChannelUtilities.emptyByteBuf;
+        private @NotNull Builder<T> validateBody() {
+            if (arg3 == null) {
+                arg3 = body == null ? TChannelUtilities.emptyByteBuf : serializer.encodeBody(this.body, argScheme);
             } else {
-                arg3 = serializer.encodeBody(this.body, argScheme);
+                body = null;
             }
-
             return this;
         }
 
         @Override
-        public Builder<T> validate() {
+        public @NotNull Builder<T> validate() throws IllegalStateException {
             super.validate();
             this.validateHeader();
             this.validateBody();
@@ -185,5 +176,7 @@ public abstract class EncodedResponse<T> extends Response {
 
             return this;
         }
+
     }
+
 }
