@@ -76,11 +76,7 @@ public final class OutRequest<V extends Response> {
             return true;
         }
 
-        if (!shouldRetryOnError()) {
-            return false;
-        }
-
-        return true;
+        return shouldRetryOnError();
     }
 
     public @Nullable Timeout getTimeout() {

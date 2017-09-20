@@ -65,7 +65,7 @@ public final class HyperbahnClient {
 
     private final Timer advertiseTimer = new Timer(true);
 
-    private static final long requestTimeout = 1000;
+    private static final long REQUEST_TIMEOUT = 1000;
 
     private HyperbahnClient(Builder builder) {
         this.service = builder.service;
@@ -99,7 +99,7 @@ public final class HyperbahnClient {
             HYPERBAHN_ADVERTISE_ENDPOINT
         )
             .setBody(advertiseRequest)
-            .setTimeout(requestTimeout)
+            .setTimeout(REQUEST_TIMEOUT)
             .setRetryLimit(4)
             .build();
 

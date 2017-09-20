@@ -68,6 +68,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.NotNull;
 
 public final class TChannel {
 
@@ -77,7 +78,7 @@ public final class TChannel {
 
     private final String service;
     private final ServerBootstrap serverBootstrap;
-    private final PeerManager peerManager;
+    private final @NotNull PeerManager peerManager;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup childGroup;
     private final InetAddress host;
@@ -130,7 +131,7 @@ public final class TChannel {
         return this.service;
     }
 
-    public PeerManager getPeerManager() {
+    public @NotNull PeerManager getPeerManager() {
         return this.peerManager;
     }
 
