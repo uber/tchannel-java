@@ -22,10 +22,13 @@
 
 package com.uber.tchannel.channels;
 
+import com.google.common.collect.Maps;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +41,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * PeerManager manages peers, a abstract presentation of a channel to a host_port.
  */
 public class PeerManager {
+
     private static final Logger logger = LoggerFactory.getLogger(PeerManager.class);
 
     private final Bootstrap clientBootstrap;
-    private final ConcurrentHashMap<SocketAddress, Peer> peers = new ConcurrentHashMap<>();
+    private final @NotNull ConcurrentHashMap<SocketAddress, Peer> peers = new ConcurrentHashMap<>();
 
     // mapping from channel to actual remote address when client is not ephemeral
     private final ConcurrentHashMap<ChannelId, SocketAddress> channelTable = new ConcurrentHashMap<>();
@@ -52,99 +56,69 @@ public class PeerManager {
         this.clientBootstrap = clientBootstrap;
     }
 
-    public Connection findOrNew(SocketAddress address) {
-        Peer peer = peers.get(address);
-        if (peer == null) {
-            peer = new Peer(this, address);
-            peers.putIfAbsent(address, peer);
-            peer = peers.get(address);
-        }
-
-        return peer.connect(this.clientBootstrap);
+    public Connection findOrNew(@NotNull SocketAddress address) {
+        return findOrNewPeer(address).connect(this.clientBootstrap);
     }
 
-    public Peer findOrNewPeer(SocketAddress address) {
+    public Peer findOrNewPeer(@NotNull SocketAddress address) {
         Peer peer = peers.get(address);
         if (peer == null) {
-            peer = new Peer(this, address);
-            peers.putIfAbsent(address, peer);
+            peers.putIfAbsent(address, new Peer(this, address));
             peer = peers.get(address);
         }
-
         return peer;
     }
 
-    public Peer getPeer(SocketAddress address) {
+    public @Nullable Peer getPeer(@NotNull SocketAddress address) {
         return peers.get(address);
     }
 
-    public Peer getPeer(Channel channel) {
-        SocketAddress address = channel.remoteAddress();
-        return peers.get(address);
+    public @Nullable Peer getPeer(@NotNull Channel channel) {
+        return peers.get(channel.remoteAddress());
     }
 
-    public Connection connectTo(SocketAddress address) {
-        Peer peer = findOrNewPeer(address);
-        return peer.connect(this.clientBootstrap, Connection.Direction.OUT);
+    public Connection connectTo(@NotNull SocketAddress address) {
+        return findOrNewPeer(address).connect(this.clientBootstrap, Connection.Direction.OUT);
     }
 
-    public Connection get(Channel channel) {
-        SocketAddress address = channel.remoteAddress();
-        Peer peer = peers.get(address);
-        if (peer != null) {
-            return peer.getConnection(channel.id());
+    public @Nullable Connection get(@NotNull Channel channel) {
+        Peer peer = peers.get(channel.remoteAddress());
+        return peer == null ? null : peer.getConnection(channel.id());
+    }
+
+    public void add(@NotNull ChannelHandlerContext ctx) {
+        // Direction only matters for the init path when the init handler hasn't been removed
+        if (!ctx.pipeline().names().contains("InitRequestHandler")) {
+            findOrNewPeer(ctx.channel().remoteAddress()).handleActiveOutConnection(ctx);
         }
-
-        return null;
     }
 
-    public void add(ChannelHandlerContext ctx) {
-        // Direction only matters for the init path when the
-        // init handler hasn't been removed
-        Connection.Direction direction = Connection.Direction.OUT;
-        if (ctx.pipeline().names().contains("InitRequestHandler")) {
-            direction = Connection.Direction.IN;
-        }
-
-        if (direction == Connection.Direction.IN) {
-            return;
-        }
-
-        Channel channel = ctx.channel();
-        SocketAddress address = channel.remoteAddress();
-        Peer peer = findOrNewPeer(address);
-        peer.handleActiveOutConnection(ctx);
-    }
-
-    public Connection remove(Channel channel) {
-        SocketAddress address = channel.remoteAddress();
-        Peer peer = peers.get(address);
+    public @Nullable Connection remove(@NotNull Channel channel) {
+        Peer peer = peers.get(channel.remoteAddress());
         if (peer != null) {
             return peer.remove(channel);
         }
 
-        address = channelTable.remove(channel.id());
-        if (address == null) {
-            return null;
+        SocketAddress address = channelTable.remove(channel.id());
+        if (address != null) {
+            peer = peers.get(address);
+            if (peer != null) {
+                return peer.remove(channel);
+            }
         }
 
-        peer = peers.get(address);
-        if (peer != null) {
-            return peer.remove(channel);
-        }
-
-        // TODO: clean up when conneciton count drops to 0
+        // TODO: clean up when connection count drops to 0
         return null;
     }
 
-    public void setIdentified(Channel channel, Map<String, String> headers) {
+    public void setIdentified(@NotNull Channel channel, @NotNull Map<String, String> headers) {
         Connection conn = get(channel);
         if (conn == null) {
             // Handle in connection
             conn = new Connection(null, channel, Connection.Direction.IN);
         }
 
-        conn.setIndentified(headers);
+        conn.setIdentified(headers);
         if (!conn.isEphemeral() && conn.direction == Connection.Direction.IN) {
             SocketAddress address = conn.getRemoteAddressAsSocketAddress();
             channelTable.put(channel.id(), address);
@@ -154,7 +128,7 @@ public class PeerManager {
         }
     }
 
-    public void handleConnectionErrors(Channel channel, Throwable cause) {
+    public void handleConnectionErrors(@NotNull Channel channel, @NotNull Throwable cause) {
         logger.error("Resetting connection due to the error.", cause);
         Connection conn = remove(channel);
         if (conn != null) {
@@ -179,7 +153,7 @@ public class PeerManager {
     }
 
     // TODO: peer stats & reaper
-    public Map<String, Integer> getStats() {
+    public @NotNull Map<String, Integer> getStats() {
         int in = 0;
         int out = 0;
         for (Peer peer : peers.values()) {
@@ -188,9 +162,10 @@ public class PeerManager {
             out += connStats.get("connections.out");
         }
 
-        Map<String, Integer> result = new HashMap<>(3);
+        Map<String, Integer> result = Maps.newHashMapWithExpectedSize(2);
         result.put("connections.in", in);
         result.put("connections.out", out);
         return result;
     }
+
 }

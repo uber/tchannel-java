@@ -41,7 +41,7 @@ public class SubPeer {
     private final @NotNull PeerManager peerManager;
 
     private double score = 0;
-    private Connection connection = null;
+    private @Nullable Connection connection = null;
     private Connection.Direction direction = Connection.Direction.NONE;
 
     public SubPeer(SocketAddress remoteAddress, @NotNull SubChannel subChannel) {
@@ -76,7 +76,7 @@ public class SubPeer {
         connection = peer.getConnection(ConnectionState.IDENTIFIED, direction);
         if (!ConnectionState.isConnected(connection)) {
             score = SCORE_UNCONNECTED;
-        } else if (!connection.isIndentified()) {
+        } else if (!connection.isIdentified()) {
             score = SCORE_CONNECTED;
         } else if (direction != Connection.Direction.NONE && direction != connection.direction) {
             score = SCORE_IDENTIFIED;
@@ -88,7 +88,7 @@ public class SubPeer {
         return flag;
     }
 
-    public Connection getPreferredConnection() {
+    public @Nullable Connection getPreferredConnection() {
         return connection;
     }
 

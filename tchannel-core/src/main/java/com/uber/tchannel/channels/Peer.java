@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.channels;
 
+import com.google.common.collect.Maps;
 import com.uber.tchannel.api.errors.TChannelConnectionFailure;
 import com.uber.tchannel.codecs.MessageCodec;
 import com.uber.tchannel.frames.InitFrame;
@@ -32,6 +33,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.SocketAddress;
 import java.util.HashMap;
@@ -43,38 +46,31 @@ import java.util.concurrent.ConcurrentHashMap;
  * their current status, e.g., connected, identified, etc.
  */
 public class Peer {
-    public final ConcurrentHashMap<ChannelId, Connection> connections = new ConcurrentHashMap<>();
+
+    // FIXME why are these not private?
+    public final @NotNull ConcurrentHashMap<ChannelId, Connection> connections = new ConcurrentHashMap<>();
+
     public final SocketAddress remoteAddress;
 
-    private final PeerManager manager;
+    private final @NotNull PeerManager manager;
 
-    public Peer(PeerManager manager, SocketAddress remoteAddress) {
+    public Peer(@NotNull PeerManager manager, SocketAddress remoteAddress) {
         this.manager = manager;
         this.remoteAddress = remoteAddress;
     }
 
-    public Connection add(Connection connection) {
+    public @NotNull Connection add(@NotNull Connection connection) {
         Connection conn = connections.putIfAbsent(connection.channel().id(), connection);
-        if (conn != null) {
-            return conn;
-        }
-
-        return connection;
+        return conn == null ? connection : conn;
     }
 
-    public Connection add(Channel channel, Connection.Direction direction) {
+    public @NotNull Connection add(@NotNull Channel channel, Connection.Direction direction) {
         Connection conn = connections.get(channel.id());
-        if (conn != null) {
-            return conn;
-        }
-
-        return add(new Connection(this, channel, direction));
+        return conn == null ? add(new Connection(this, channel, direction)) : conn;
     }
 
-    public Connection handleActiveOutConnection(ChannelHandlerContext ctx) {
-        Channel channel = ctx.channel();
-        Connection conn = add(channel, Connection.Direction.OUT);
-
+    public @NotNull Connection handleActiveOutConnection(@NotNull ChannelHandlerContext ctx) {
+        Connection conn = add(ctx.channel(), Connection.Direction.OUT);
         // Sending out the init request
         InitRequestFrame initRequestFrame = new InitRequestFrame(
             0,
@@ -88,18 +84,17 @@ public class Peer {
         return conn;
     }
 
-    public void remove(Connection connection) {
+    public void remove(@NotNull Connection connection) {
         connections.remove(connection.channel().id());
     }
 
-    public Connection remove(Channel channel) {
+    public @Nullable Connection remove(@NotNull Channel channel) {
         return connections.remove(channel.id());
     }
 
-    public Connection connect(Bootstrap bootstrap, Connection.Direction preferredDirection) {
+    public @NotNull Connection connect(Bootstrap bootstrap, Connection.Direction preferredDirection) {
         Connection conn = getConnection(ConnectionState.IDENTIFIED, preferredDirection);
-        if (conn != null && (
-            conn.satisfy(preferredDirection) || preferredDirection == Connection.Direction.IN)) {
+        if (conn != null && (preferredDirection == Connection.Direction.IN || conn.satisfy(preferredDirection))) {
             return conn;
         }
 
@@ -112,7 +107,7 @@ public class Peer {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (!future.isSuccess()) {
-                    connection.setIndentified(new TChannelConnectionFailure(future.cause()));
+                    connection.setIdentified(new TChannelConnectionFailure(future.cause()));
                 }
             }
         });
@@ -120,32 +115,32 @@ public class Peer {
         return connection;
     }
 
-    public Connection connect(Bootstrap bootstrap) {
+    public @NotNull Connection connect(Bootstrap bootstrap) {
         return connect(bootstrap, Connection.Direction.NONE);
     }
 
-    public Connection getConnection(ConnectionState preferedState, Connection.Direction preferredDirection) {
+    public @Nullable Connection getConnection(
+        @Nullable ConnectionState preferredState, Connection.Direction preferredDirection
+    ) {
         Connection conn = null;
         for (Connection next : connections.values()) {
-            if (next.satisfy(preferedState)) {
+            if (next.satisfy(preferredState)) {
                 conn = next;
-                if (preferredDirection == Connection.Direction.NONE
-                    || conn.direction == preferredDirection) {
+                if (preferredDirection == Connection.Direction.NONE || conn.direction == preferredDirection) {
                     break;
                 }
             } else if (conn == null) {
                 conn = next;
             }
         }
-
         return conn;
     }
 
-    public Connection getConnection(ConnectionState preferedState) {
-        return getConnection(preferedState, Connection.Direction.NONE);
+    public @Nullable Connection getConnection(ConnectionState preferredState) {
+        return getConnection(preferredState, Connection.Direction.NONE);
     }
 
-    public Connection getConnection(ChannelId channelId) {
+    public @Nullable Connection getConnection(@NotNull ChannelId channelId) {
         return connections.get(channelId);
     }
 
@@ -157,7 +152,7 @@ public class Peer {
 
     }
 
-    public Map<String, Integer> getStats() {
+    public @NotNull Map<String, Integer> getStats() {
         int in = 0;
         int out = 0;
         for (Connection conn : connections.values()) {
@@ -168,9 +163,10 @@ public class Peer {
             }
         }
 
-        Map<String, Integer> result = new HashMap<>(3);
+        Map<String, Integer> result = Maps.newHashMapWithExpectedSize(2);
         result.put("connections.in", in);
         result.put("connections.out", out);
         return result;
     }
+
 }

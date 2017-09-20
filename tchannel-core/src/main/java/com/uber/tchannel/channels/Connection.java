@@ -25,6 +25,8 @@ import com.uber.tchannel.api.errors.TChannelError;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.handlers.ResponseRouter;
 import io.netty.channel.Channel;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +45,11 @@ public class Connection {
     public ConnectionState state = ConnectionState.UNCONNECTED;
 
     private Peer peer;
-    private final Channel channel;
-    private String remoteAddress = null;
-    private TChannelError lastError = null;
+    private final @NotNull Channel channel;
+    private @Nullable String remoteAddress = null;
+    private @Nullable TChannelError lastError = null;
 
-    public Connection(Peer peer, Channel channel, Direction direction) {
+    public Connection(Peer peer, @NotNull Channel channel, Direction direction) {
         this.peer = peer;
         this.channel = channel;
         this.direction = direction;
@@ -56,89 +58,98 @@ public class Connection {
         }
     }
 
-    public Channel channel() {
+    public @NotNull Channel channel() {
         return this.channel;
     }
-    public TChannelError lastError() {
+
+    public @Nullable TChannelError lastError() {
         return this.lastError;
     }
 
-    public synchronized boolean satisfy(ConnectionState preferedState) {
+    public synchronized boolean satisfy(@Nullable ConnectionState preferredState) {
         ConnectionState connState = this.state;
         if (connState == ConnectionState.DESTROYED) {
             return false;
-        } else if (preferedState == null) {
+        } else if (preferredState == null) {
             return true;
-        } else if (connState == preferedState || connState == ConnectionState.IDENTIFIED) {
+        } else if (connState == preferredState || connState == ConnectionState.IDENTIFIED) {
             return true;
-        } else if (connState == ConnectionState.CONNECTED && preferedState == ConnectionState.UNCONNECTED) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public synchronized boolean satisfy(Direction preferedDirection) {
-        Direction dir = this.direction;
-        if (preferedDirection == null || preferedDirection == Direction.NONE) {
+        } else if (connState == ConnectionState.CONNECTED && preferredState == ConnectionState.UNCONNECTED) {
             return true;
         } else {
-            return preferedDirection == dir;
+            return false;
         }
+    }
+
+    public synchronized boolean satisfy(@Nullable Direction preferredDirection) {
+        return preferredDirection == null || preferredDirection == Direction.NONE || preferredDirection == direction;
     }
 
     public synchronized void setState(ConnectionState state) {
         this.state = state;
-        if (state == ConnectionState.IDENTIFIED || (
-                state == ConnectionState.UNCONNECTED && this.lastError != null)) {
+        if (state == ConnectionState.IDENTIFIED || (state == ConnectionState.UNCONNECTED && this.lastError != null)) {
             this.notifyAll();
         }
     }
 
-    public synchronized void setIndentified(Map<String, String> headers) { // FIXME typo
+    public synchronized void setIdentified(@NotNull Map<String, String> headers) {
         String hostPort = headers.get(InitFrame.HOST_PORT_KEY);
-        if (hostPort == null) {
-            // TODO: handle protocol error
-            hostPort = "0.0.0.0:0";
-        }
-
-        this.remoteAddress = hostPort.trim();
+        // TODO: handle protocol error
+        this.remoteAddress = hostPort == null ? "0.0.0.0:0" : hostPort.trim();
         this.setState(ConnectionState.IDENTIFIED);
     }
 
-    public synchronized void setIndentified(TChannelError error) {
+    /** @deprecated typo - use {@link #setIdentified(Map)} */
+    @Deprecated
+    public synchronized void setIndentified(@NotNull Map<String, String> headers) {
+        setIdentified(headers);
+    }
+
+    public synchronized void setIdentified(TChannelError error) {
         this.remoteAddress = null;
         this.lastError = error;
         this.setState(ConnectionState.UNCONNECTED);
     }
 
-    public boolean isIndentified() {
+    /** @deprecated typo - use {@link #setIdentified(TChannelError)} */
+    @Deprecated
+    public synchronized void setIndentified(TChannelError error) {
+        setIdentified(error);
+    }
+
+    public boolean isIdentified() {
         return state == ConnectionState.IDENTIFIED;
+    }
+
+    /** @deprecated typo - use {@link #isIdentified} */
+    @Deprecated
+    public boolean isIndentified() {
+        return isIdentified();
     }
 
     public synchronized boolean isEphemeral() {
         return "0.0.0.0:0".equals(this.remoteAddress);
     }
 
-    public String getRemoteAddress() {
+    public @Nullable String getRemoteAddress() {
         return this.remoteAddress;
     }
 
-    public SocketAddress getRemoteAddressAsSocketAddress() {
+    public @NotNull SocketAddress getRemoteAddressAsSocketAddress() {
         return hostPortToSocketAddress(this.remoteAddress);
     }
 
-    public static String[] splitHostPort(String hostPort) {
+    public static @NotNull String[] splitHostPort(@NotNull String hostPort) {
         String[] strs = hostPort.split(":");
         if (strs.length != 2) {
             strs = new String[2];
-            strs[0] = "0.0.0.0:";
+            strs[0] = "0.0.0.0:"; // FIXME check the trailing colon should indeed be here
             strs[1] = "0";
         }
         return strs;
     }
 
-    public static SocketAddress hostPortToSocketAddress(String hostPort) {
+    public static @NotNull SocketAddress hostPortToSocketAddress(@NotNull String hostPort) {
         String[] strs = splitHostPort(hostPort);
         return new InetSocketAddress(strs[0], Integer.parseInt(strs[1]));
     }
@@ -184,6 +195,7 @@ public class Connection {
     public Peer getPeer() {
         return peer;
     }
+
     public void setPeer(Peer peer) {
         this.peer = peer;
     }
@@ -193,4 +205,5 @@ public class Connection {
         IN,
         OUT
     }
+
 }
