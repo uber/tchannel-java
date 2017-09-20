@@ -44,7 +44,7 @@ public class SubPeer {
     private Connection connection = null;
     private Connection.Direction direction = Connection.Direction.NONE;
 
-    public SubPeer(SocketAddress remoteAddress, SubChannel subChannel) {
+    public SubPeer(SocketAddress remoteAddress, @NotNull SubChannel subChannel) {
         this.remoteAddress = remoteAddress;
         this.peerManager = subChannel.getPeerManager();
         this.direction = subChannel.getPreferredDirection();
@@ -96,7 +96,7 @@ public class SubPeer {
         return score;
     }
 
-    public Connection connectTo() {
+    public @NotNull Connection connectTo() {
         return peerManager.connectTo(remoteAddress);
     }
 
