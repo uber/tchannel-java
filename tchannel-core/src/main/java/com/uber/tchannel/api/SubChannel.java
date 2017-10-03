@@ -255,15 +255,20 @@ public final class SubChannel {
         return outRequest.getFuture();
     }
 
-    protected boolean sendOutRequest(
-        OutRequest outRequest,
-        Connection connection
+    private boolean sendOutRequest(
+        @NotNull OutRequest outRequest,
+        @Nullable Connection connection
     ) {
         Request request = outRequest.getRequest();
 
-        // The tracing span is finish()'ed via callback on outRequest.getFuture()
-        Tracing.startOutboundSpan(
-                outRequest, topChannel.getTracer(), topChannel.getTracingContext());
+        try {
+            // the (successfully created) tracing span is finish()'ed via callback on outRequest.getFuture()
+            Tracing.startOutboundSpan(outRequest, topChannel.getTracer(), topChannel.getTracingContext());
+        } catch (RuntimeException e) {
+            outRequest.setLastError(ErrorType.BadRequest, e);
+            outRequest.setFuture();
+            return false;
+        }
 
         // Validate if the ArgScheme is set correctly
         if (request.getArgScheme() == null) {

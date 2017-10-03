@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.tracing;
 
+import com.google.common.collect.ImmutableMap;
 import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.handlers.OutRequest;
 import com.uber.tchannel.messages.Request;
@@ -31,6 +32,8 @@ import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,27 +53,42 @@ public class Tracing {
 
     private Tracing() {}
 
-    public static void startOutboundSpan(
-            OutRequest<Response> outRequest,
-            Tracer tracer,
-            TracingContext tracingContext
-    ) {
-        if (tracer == null) {
+    /**
+     * @throws RuntimeException
+     *     if the outbound request should fail immediately
+     */
+    public static <V extends Response> void startOutboundSpan(
+            @NotNull OutRequest<V> outRequest,
+            @Nullable Tracer tracer,
+            @Nullable TracingContext tracingContext
+    ) throws RuntimeException {
+        if (tracer == null || tracingContext == null) {
             return;
         }
+
         Request request = outRequest.getRequest();
+
         Tracer.SpanBuilder builder = tracer.buildSpan(request.getEndpoint());
         if (tracingContext.hasSpan()) {
-            Span parentSpan = tracingContext.currentSpan();
-            builder.asChildOf(parentSpan.context());
+            builder.asChildOf(tracingContext.currentSpan().context());
         }
         // TODO add tags for peer host:port
         builder
-                .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
-                .withTag(Tags.PEER_SERVICE.getKey(), request.getService())
-                .withTag("as", request.getArgScheme().name());
+            .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
+            .withTag(Tags.PEER_SERVICE.getKey(), request.getService())
+            .withTag("as", request.getArgScheme().name());
 
         final Span span = builder.startManual();
+
+        if (tracingContext instanceof RequestSpanInterceptor) {
+            try {
+                ((RequestSpanInterceptor) tracingContext).interceptOutbound(request, span);
+            } catch (RuntimeException e) {
+                span.log(ImmutableMap.of("exception", e));
+                span.finish();
+                throw e;
+            }
+        }
 
         // TODO if tracer is Zipkin compatible, inject Trace fields
         // if request has headers, inject tracing context
@@ -86,7 +104,7 @@ public class Tracing {
                 logger.error("Failed to inject span context into headers", e);
             }
         }
-        outRequest.getFuture().addCallback(new TFutureCallback<Response>() {
+        outRequest.getFuture().addCallback(new TFutureCallback<V>() {
             @Override
             public void onResponse(Response response) {
                 if (response.isError()) {
@@ -98,42 +116,57 @@ public class Tracing {
         });
     }
 
-    public static Span startInboundSpan(
-            Request request,
-            Tracer tracer,
-            TracingContext tracingContext
-    ) {
-        SpanContext parentContext = null;
+    /**
+     * @throws RuntimeException
+     *     if the inbound request should fail immediately
+     */
+    public static @NotNull Span startInboundSpan(
+        @NotNull Request request,
+        @NotNull Tracer tracer,
+        @NotNull TracingContext tracingContext
+    ) throws RuntimeException {
+        tracingContext.clear();
+        Tracer.SpanBuilder builder = tracer.buildSpan(request.getEndpoint());
+
         if (request instanceof TraceableRequest) {
             TraceableRequest traceableRequest = (TraceableRequest) request;
             Map<String, String> headers = traceableRequest.getHeaders();
             PrefixedHeadersCarrier carrier = new PrefixedHeadersCarrier(headers);
             try {
-                parentContext = tracer.extract(Format.Builtin.TEXT_MAP, carrier);
+                builder.asChildOf(tracer.extract(Format.Builtin.TEXT_MAP, carrier));
                 Map<String, String> nonTracingHeaders = carrier.getNonTracingHeaders();
                 if (nonTracingHeaders.size() < headers.size()) {
                     traceableRequest.setHeaders(nonTracingHeaders);
                 }
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 logger.error("Failed to extract span context from headers", e);
             }
         } else {
             // TODO if tracer is Zipkin compatible, extract parent from Trace fields
         }
-        Tracer.SpanBuilder builder = tracer.buildSpan(request.getEndpoint());
+
         builder
-                .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
-                .withTag("as", request.getArgScheme().name());
+            .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+            .withTag("as", request.getArgScheme().name());
         Map<String, String> transportHeaders = request.getTransportHeaders();
         if (transportHeaders != null && transportHeaders.containsKey("cn")) {
             builder.withTag(Tags.PEER_SERVICE.getKey(), transportHeaders.get("cn"));
         }
         // TODO add tags for peer host:port
-        if (parentContext != null) {
-            builder.asChildOf(parentContext);
-        }
+
         Span span = builder.startManual();
-        tracingContext.clear();
+
+        // invoke additional processing of the request and the span by request span interceptor(s), if any
+        if (tracingContext instanceof RequestSpanInterceptor) {
+            try {
+                ((RequestSpanInterceptor) tracingContext).interceptInbound(request, span);
+            } catch (RuntimeException e) {
+                span.log(ImmutableMap.of("exception", e));
+                span.finish();
+                throw e;
+            }
+        }
+
         tracingContext.pushSpan(span);
         return span;
     }
