@@ -41,12 +41,14 @@ import com.uber.tchannel.api.handlers.ThriftRequestHandler;
 import com.uber.tchannel.messages.JSONSerializer;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
+import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.messages.generated.Example;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.opentracing.tag.Tags;
+import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -65,6 +67,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -76,6 +79,7 @@ import static org.junit.Assert.fail;
 public class TracingPropagationTest {
 
     private static final String BAGGAGE_KEY = "baggage-key";
+    private static final String CUSTOM_BAGGAGE_PARAM_KEY = "custom-baggage-param";
 
     private static Tracer tracer;
     private static InMemoryReporter reporter;
@@ -85,21 +89,25 @@ public class TracingPropagationTest {
 
     private final String forwardEncodings;
     private final boolean sampled;
+    private final String customBaggage;
 
-    public TracingPropagationTest(String forwardEncodings, boolean sampled) {
+    public TracingPropagationTest(String forwardEncodings, boolean sampled, String customBaggage) {
         this.forwardEncodings = forwardEncodings;
         this.sampled = sampled;
+        this.customBaggage = customBaggage;
     }
 
-    @Parameters(name = "{index}: encodings({0}), sampled({1})")
+    @Parameters(name = "{index}: encodings({0}), sampled({1}), customBaggage({2})")
     public static Collection<Object[]> data() {
-        String[] encodings = new String[] { "json", "thrift", "thriftAsync" };
-        boolean[] sampling = new boolean[] { true, false };
+        String[] encodings = { "json", "thrift", "thriftAsync" };
+        boolean[] sampling = { true, false };
+        String[] customBaggageParams = { "pass", null, "failServerSide" };
         List<Object[]> data = new ArrayList<>();
         for (String encoding1 : encodings) {
             for (String encoding2 : encodings) {
                 for (boolean sampled: sampling) {
-                    data.add(new Object[] { encoding1 + "," + encoding2, sampled });
+                    for (String customBaggage : customBaggageParams)
+                    data.add(new Object[] { encoding1 + ',' + encoding2, sampled, customBaggage });
                 }
             }
         }
@@ -112,7 +120,7 @@ public class TracingPropagationTest {
         Sampler sampler = new ConstSampler(true);
         tracer = new Tracer.Builder("tchannel-name", reporter, sampler).build();
 
-        tracingContext = new TracingContext.ThreadLocal();
+        tracingContext = new CustomTracingContext();
 
         tchannel = new TChannel.Builder("tchannel-name")
                 .setServerHost(InetAddress.getByName(null))
@@ -137,7 +145,7 @@ public class TracingPropagationTest {
     @Before
     public void setUpInstance() {
         tracingContext.clear();
-        reporter.getSpans().clear(); // TODO reporter should expose clear() method
+        reporter.clear();
     }
 
     static class TraceResponse {
@@ -237,7 +245,7 @@ public class TracingPropagationTest {
     }
 
     private static TraceResponse callDownstream(String encodings) throws Exception {
-        if (encodings.length() == 0) {
+        if (encodings.isEmpty()) {
             return null;
         }
         int comma = encodings.indexOf(',');
@@ -249,14 +257,15 @@ public class TracingPropagationTest {
             encoding = encodings.substring(0, comma);
             remainingEncodings = encodings.substring(comma + 1);
         }
-        if (encoding.equals("json")) {
-            return callDownstreamJSON(remainingEncodings);
-        } else if (encoding.equals("thrift")) {
-            return callDownstreamThrift(remainingEncodings);
-        } else if (encoding.equals("thriftAsync")) {
-            return callDownstreamThriftAsync(remainingEncodings);
-        } else {
-            throw new IllegalArgumentException(encodings);
+        switch (encoding) {
+            case "json":
+                return callDownstreamJSON(remainingEncodings);
+            case "thrift":
+                return callDownstreamThrift(remainingEncodings, "Behavior::trace");
+            case "thriftAsync":
+                return callDownstreamThrift(remainingEncodings, "Behavior::asynctrace");
+            default:
+                throw new IllegalArgumentException(encodings);
         }
     }
 
@@ -273,15 +282,20 @@ public class TracingPropagationTest {
                 tchannel.getListeningPort()
         );
         JsonResponse<TraceResponse> response = responsePromise.get();
-        assertNull(response.getError());
-        TraceResponse resp = response.getBody(TraceResponse.class);
-        response.release();
-        return resp;
+        try {
+            if (response.isError()) {
+                throw new ErrorResponseException(response.getError().getMessage());
+            }
+            return response.getBody(TraceResponse.class);
+        } finally {
+            response.release();
+        }
     }
 
-    private static TraceResponse callDownstreamThrift(String remainingEncodings) throws Exception {
+    private static TraceResponse callDownstreamThrift(String remainingEncodings, String endpoint)
+        throws Exception {
         ThriftRequest<Example> request = new ThriftRequest
-                .Builder<Example>("tchannel-name", "Behavior::trace")
+                .Builder<Example>("tchannel-name", endpoint)
                 .setTimeout(1, TimeUnit.MINUTES)
                 .setBody(new Example(remainingEncodings, 0))
                 .build();
@@ -293,38 +307,19 @@ public class TracingPropagationTest {
         );
 
         ThriftResponse<Example> thriftResponse = responsePromise.get();
-        assertNull(thriftResponse.getError());
-        String json = thriftResponse.getBody(Example.class).getAString();
-        thriftResponse.release();
-        ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
-        byteBuf.writeBytes(json.getBytes());
-        TraceResponse response = new JSONSerializer().decodeBody(byteBuf, TraceResponse.class);
-        byteBuf.release();
-        return response;
-    }
-
-    private static TraceResponse callDownstreamThriftAsync(String remainingEncodings) throws Exception {
-        ThriftRequest<Example> request = new ThriftRequest
-                .Builder<Example>("tchannel-name", "Behavior::asynctrace")
-                .setTimeout(1, TimeUnit.MINUTES)
-                .setBody(new Example(remainingEncodings, 0))
-                .build();
-
-        TFuture<ThriftResponse<Example>> responsePromise = subChannel.send(
-                request,
-                tchannel.getHost(),
-                tchannel.getListeningPort()
-        );
-
-        ThriftResponse<Example> thriftResponse = responsePromise.get();
-        assertNull(thriftResponse.getError());
-        String json = thriftResponse.getBody(Example.class).getAString();
-        thriftResponse.release();
-        ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
-        byteBuf.writeBytes(json.getBytes());
-        TraceResponse response = new JSONSerializer().decodeBody(byteBuf, TraceResponse.class);
-        byteBuf.release();
-        return response;
+        try {
+            if (thriftResponse.isError()) {
+                throw new ErrorResponseException(thriftResponse.getError().getMessage());
+            }
+            String json = thriftResponse.getBody(Example.class).getAString();
+            ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
+            byteBuf.writeBytes(json.getBytes());
+            TraceResponse response = new JSONSerializer().decodeBody(byteBuf, TraceResponse.class);
+            byteBuf.release();
+            return response;
+        } finally {
+            thriftResponse.release();
+        }
     }
 
     @Test
@@ -334,23 +329,28 @@ public class TracingPropagationTest {
         String traceId = String.format("%x", context.getTraceId());
         String baggage = "Baggage-" + System.currentTimeMillis();
         span.setBaggageItem(BAGGAGE_KEY, baggage);
+        span.setBaggageItem(CUSTOM_BAGGAGE_PARAM_KEY, customBaggage);
         if (!sampled) {
             Tags.SAMPLING_PRIORITY.set(span, 0);
         }
         tracingContext.pushSpan(span);
 
-        TraceResponse response = callDownstream(forwardEncodings);
-
-        List<String> encodings = new ArrayList<>(Arrays.asList(forwardEncodings.split(",")));
-        validate(encodings, traceId, baggage, response);
-        if (sampled) {
-            for (int i = 0; i < 100; i++) {
-                if (reporter.getSpans().size() == 4) {
-                    break;
+        try {
+            TraceResponse response = callDownstream(forwardEncodings);
+            assertEquals("Only requests with 'pass' baggage should pass", "pass", customBaggage);
+            List<String> encodings = new ArrayList<>(Arrays.asList(forwardEncodings.split(",")));
+            validate(encodings, traceId, baggage, response);
+            if (sampled) {
+                for (int i = 0; i < 100; i++) {
+                    if (reporter.getSpans().size() == 4) {
+                        break;
+                    }
+                    Thread.sleep(10);
                 }
-                Thread.sleep(10);
+                assertEquals(4, reporter.getSpans().size());
             }
-            assertEquals(4, reporter.getSpans().size());
+        } catch (ErrorResponseException ignored) {
+            assertNotEquals("Requests with 'pass' baggage must pass", "pass", customBaggage);
         }
     }
 
@@ -363,4 +363,43 @@ public class TracingPropagationTest {
         assertNotNull("Expecting downstream response", response.downstream);
         validate(encodings, traceId, baggage, response.downstream);
     }
+
+    /** Custom {@link TracingContext} implementation with request span interceptors. */
+    private static class CustomTracingContext extends TracingContext.ThreadLocal implements RequestSpanInterceptor {
+
+        private static final String CUSTOM_BAGGAGE_KEY = "interceptor-test";
+
+        /** This will fail the inbound request in case custom baggage is not "pass". */
+        @Override
+        public void interceptInbound(
+            @NotNull Request request, @NotNull io.opentracing.Span span
+        ) throws RuntimeException {
+            String customBaggage = span.getBaggageItem(CUSTOM_BAGGAGE_KEY);
+            if (!"pass".equals(customBaggage)) {
+                throw new UnsupportedOperationException("Failing request on the server side");
+            }
+        }
+
+        /** This will fail the outbound request in case custom baggage is null. */
+        @Override
+        public void interceptOutbound(
+            @NotNull Request request, @NotNull io.opentracing.Span span
+        ) throws IllegalArgumentException {
+            String customBaggageParam = span.getBaggageItem(CUSTOM_BAGGAGE_PARAM_KEY);
+            if (customBaggageParam == null) {
+                throw new IllegalArgumentException("Failing request on the client side");
+            }
+            span.setBaggageItem(CUSTOM_BAGGAGE_KEY, customBaggageParam);
+        }
+
+    }
+
+    private static class ErrorResponseException extends Exception {
+
+        ErrorResponseException(String message) {
+            super(message);
+        }
+
+    }
+
 }
