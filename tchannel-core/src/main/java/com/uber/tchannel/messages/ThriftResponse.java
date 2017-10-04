@@ -50,7 +50,7 @@ public final class ThriftResponse<T> extends EncodedResponse<T> {
      */
     public static class Builder<T> extends EncodedResponse.Builder<T> {
 
-        public @NotNull Builder(@NotNull ThriftRequest<?> req) {
+        public Builder(@NotNull ThriftRequest<?> req) {
             super(req);
             this.argScheme = ArgScheme.THRIFT;
         }
