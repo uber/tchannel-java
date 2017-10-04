@@ -29,6 +29,7 @@ import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -223,7 +224,7 @@ public abstract class Request implements RawMessage {
         setTransportHeader(TransportHeaders.RETRY_FLAGS_KEY, flags);
     }
 
-    public static Request build(long id, long ttl,
+    public static @Nullable Request build(long id, long ttl,
                                 String service, Map<String, String> transportHeaders,
                                 ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         ArgScheme argScheme = ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
@@ -234,7 +235,7 @@ public abstract class Request implements RawMessage {
         return Request.build(argScheme, id, ttl, service, transportHeaders, arg1, arg2, arg3);
     }
 
-    public static Request build(ArgScheme argScheme, long id, long ttl,
+    public static @Nullable Request build(ArgScheme argScheme, long id, long ttl,
                                 String service, Map<String, String> transportHeaders,
                                 ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         Request req;
@@ -243,10 +244,10 @@ public abstract class Request implements RawMessage {
                 req = new RawRequest(id, ttl, service, transportHeaders, arg1, arg2, arg3);
                 break;
             case JSON:
-                req = new JsonRequest(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+                req = new JsonRequest<>(id, ttl, service, transportHeaders, arg1, arg2, arg3);
                 break;
             case THRIFT:
-                req = new ThriftRequest(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+                req = new ThriftRequest<>(id, ttl, service, transportHeaders, arg1, arg2, arg3);
                 break;
             default:
                 req = null;
@@ -264,8 +265,8 @@ public abstract class Request implements RawMessage {
         protected ByteBuf arg3 = null;
 
         private long id = -1;
-        private String endpoint = null;
-        private ByteBuf arg1 = null;
+        private @Nullable String endpoint = null;
+        private @Nullable ByteBuf arg1 = null;
         private final String service;
 
         /*
@@ -372,5 +373,7 @@ public abstract class Request implements RawMessage {
 
             return this;
         }
+
     }
+
 }

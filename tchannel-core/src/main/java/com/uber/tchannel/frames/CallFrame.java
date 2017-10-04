@@ -28,6 +28,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.buffer.Unpooled;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +83,7 @@ public abstract class CallFrame extends Frame implements ByteBufHolder {
         return encodePayload(allocator, args);
     }
 
-    public final ByteBuf encodePayload(ByteBufAllocator allocator, List<ByteBuf> args) {
+    public final ByteBuf encodePayload(@NotNull ByteBufAllocator allocator, @NotNull List<ByteBuf> args) {
         ByteBuf payload = CodecUtils.writeArgs(allocator, encodeHeader(allocator), args);
 
         if (args.isEmpty()) {

@@ -22,6 +22,9 @@
 
 package com.uber.tchannel.headers;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,7 +39,7 @@ public enum RetryFlag {
         this.flag = flag;
     }
 
-    public static RetryFlag toRetryFlag(char c) {
+    public static @Nullable RetryFlag toRetryFlag(char c) {
         switch (c) {
             case 'n':
                 return NoRetry;
@@ -50,7 +53,7 @@ public enum RetryFlag {
         }
     }
 
-    public static Set<RetryFlag> parseFlags(String flags) {
+    public static @NotNull Set<RetryFlag> parseFlags(@NotNull String flags) {
         Set<RetryFlag> retryFlags = new HashSet<>();
         for (char c : flags.toCharArray()) {
             retryFlags.add(toRetryFlag(c));
@@ -58,16 +61,15 @@ public enum RetryFlag {
         return retryFlags;
     }
 
-    public static String flagsToString(Set<RetryFlag> flags) {
+    public static @NotNull String flagsToString(@NotNull Set<RetryFlag> flags) {
         StringBuilder sb = new StringBuilder();
         for (RetryFlag flag : flags) {
             sb.append(flag.toString());
         }
-
         return sb.toString();
     }
 
-    public static boolean validFlags(String flags) {
+    public static boolean validFlags(@NotNull String flags) {
         switch (flags) {
             case "c":
             case "t":

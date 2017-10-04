@@ -80,7 +80,7 @@ class ThriftHandler extends ThriftRequestHandler<Call_args, Call_result> {
         return new Data(false, json, 0);
     }
 
-    private <T> T jsonToObject(String json, Class<T> objClass) {
+    private static <T> T jsonToObject(String json, Class<T> objClass) {
         ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
         byteBuf.writeBytes(json.getBytes());
         T obj = new JSONSerializer().decodeBody(byteBuf, objClass);
@@ -88,7 +88,7 @@ class ThriftHandler extends ThriftRequestHandler<Call_args, Call_result> {
         return obj;
     }
 
-    private String objectToJSON(Object obj) {
+    private static String objectToJSON(Object obj) {
         ByteBuf bytes = new JSONSerializer().encodeBody(obj);
         String json = new String(bytes.array());
         bytes.release();

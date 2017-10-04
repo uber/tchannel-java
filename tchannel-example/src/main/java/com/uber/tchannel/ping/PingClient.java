@@ -35,6 +35,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
 import java.net.InetAddress;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -108,8 +109,10 @@ public class PingClient {
         }
 
         done.await();
-        for (String msg : msgs.keySet()) {
-            System.out.println(String.format("%s\n\tcount:%d", msg, msgs.get(msg)));
+        for (Map.Entry<String, Integer> stringIntegerEntry : msgs.entrySet()) {
+            System.out.println(String.format("%s\n\tcount:%d",
+                (String) stringIntegerEntry.getKey(), stringIntegerEntry.getValue()
+            ));
         }
 
         tchannel.shutdown(false);

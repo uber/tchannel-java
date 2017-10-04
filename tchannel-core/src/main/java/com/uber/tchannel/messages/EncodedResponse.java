@@ -102,6 +102,9 @@ public abstract class EncodedResponse<T> extends Response {
         );
     }
 
+    /**
+     * @param <T> response body type
+     */
     public static class Builder<T> extends Response.Builder {
 
         private Map<String, String> headers = new HashMap<>();
@@ -109,7 +112,7 @@ public abstract class EncodedResponse<T> extends Response {
 
         protected ArgScheme argScheme;
 
-        public Builder(Request req) {
+        public Builder(@NotNull Request req) {
             super(req);
         }
 

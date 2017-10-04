@@ -55,15 +55,15 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestRouter.class);
 
-    private final TChannel topChannel;
+    private final @NotNull TChannel topChannel;
 
-    private final ListeningExecutorService listeningExecutorService;
+    private final @NotNull ListeningExecutorService listeningExecutorService;
 
-    private final AtomicBoolean busy = new AtomicBoolean(false);
+    private final @NotNull AtomicBoolean busy = new AtomicBoolean(false);
 
-    private final ConcurrentLinkedQueue<Response> responseQueue = new ConcurrentLinkedQueue<>();
+    private final @NotNull ConcurrentLinkedQueue<Response> responseQueue = new ConcurrentLinkedQueue<>();
 
-    public RequestRouter(TChannel topChannel, ExecutorService executorService) {
+    public RequestRouter(@NotNull TChannel topChannel, @NotNull ExecutorService executorService) {
         this.topChannel = topChannel;
         this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
     }

@@ -25,5 +25,6 @@ test_ci:
 ifeq ($(CROSSDOCK), true)
 	$(MAKE) crossdock_ci
 else
-	mvn --show-version clean org.jacoco:jacoco-maven-plugin:prepare-agent test org.jacoco:jacoco-maven-plugin:report-aggregate
+	mvn --show-version -Dse.eris.notnull.instrument \
+	clean org.jacoco:jacoco-maven-plugin:prepare-agent test org.jacoco:jacoco-maven-plugin:report-aggregate
 endif

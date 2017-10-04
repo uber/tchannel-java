@@ -30,7 +30,6 @@ public class JsonRequestHandler<T, U> extends JSONRequestHandler<T, U> {
 
     @Override
     public JsonResponse<U> handleImpl(JsonRequest<T> request) {
-        System.out.println(request);
         return new JsonResponse.Builder<U>(request).build();
     }
 

@@ -30,6 +30,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Maps;
 import io.opentracing.propagation.TextMap;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -68,7 +69,7 @@ class PrefixedHeadersCarrier implements TextMap {
     }
 
     @Override
-    public Iterator<Map.Entry<String, String>> iterator() {
+    public @NotNull Iterator<Map.Entry<String, String>> iterator() {
         final Iterator<Map.Entry<String, String>> iterator = headers.entrySet().iterator();
         return new AbstractIterator<Map.Entry<String, String>>() {
             @Override

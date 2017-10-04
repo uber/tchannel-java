@@ -25,6 +25,7 @@ package com.uber.tchannel.messages;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.headers.ArgScheme;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
@@ -44,69 +45,74 @@ public final class JsonResponse<T> extends EncodedResponse<T> {
         super(error);
     }
 
+    /**
+     * @param <T> response body type
+     */
     public static class Builder<T> extends EncodedResponse.Builder<T> {
 
-        public Builder(JsonRequest req) {
+        public Builder(@NotNull JsonRequest<?> req) {
             super(req);
             this.argScheme = ArgScheme.JSON;
         }
 
         @Override
-        public Builder<T> validate() {
+        public @NotNull Builder<T> validate() {
             super.validate();
             return this;
         }
 
-        public JsonResponse<T> build() {
-            return new JsonResponse(this.validate());
+        public @NotNull JsonResponse<T> build() {
+            return new JsonResponse<>(this.validate());
         }
 
         @Override
-        public Builder<T> setArg2(ByteBuf arg2) {
+        public @NotNull Builder<T> setArg2(ByteBuf arg2) {
             super.setArg2(arg2);
             return this;
         }
 
         @Override
-        public Builder<T> setArg3(ByteBuf arg3) {
+        public @NotNull Builder<T> setArg3(ByteBuf arg3) {
             super.setArg3(arg3);
             return this;
         }
 
         @Override
-        public Builder<T> setHeader(String key, String value) {
+        public @NotNull Builder<T> setHeader(String key, String value) {
             super.setHeader(key, value);
             return this;
         }
 
         @Override
-        public Builder<T> setHeaders(Map<String, String> headers) {
+        public @NotNull Builder<T> setHeaders(Map<String, String> headers) {
             super.setHeaders(headers);
             return this;
         }
 
         @Override
-        public Builder<T> setBody(T body) {
+        public @NotNull Builder<T> setBody(T body) {
             super.setBody(body);
             return this;
         }
 
         @Override
-        public Builder<T> setTransportHeader(String key, String value) {
+        public @NotNull Builder<T> setTransportHeader(String key, String value) {
             super.setTransportHeader(key, value);
             return this;
         }
 
         @Override
-        public Builder<T> setTransportHeaders(Map<String, String> transportHeaders) {
+        public @NotNull Builder<T> setTransportHeaders(@NotNull Map<String, String> transportHeaders) {
             super.setTransportHeaders(transportHeaders);
             return this;
         }
 
         @Override
-        public Builder<T> setResponseCode(ResponseCode responseCode) {
+        public @NotNull Builder<T> setResponseCode(ResponseCode responseCode) {
             super.setResponseCode(responseCode);
             return this;
         }
+
     }
+
 }

@@ -65,7 +65,7 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         this.argScheme = argScheme;
     }
 
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings("unchecked")
     public void addCallback(final TFutureCallback<V> callback) {
         Futures.addCallback(this, new FutureCallback<V>() {
             @Override

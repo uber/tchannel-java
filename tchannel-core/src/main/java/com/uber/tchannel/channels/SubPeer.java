@@ -59,7 +59,7 @@ public class SubPeer {
         return peerManager.getPeer(remoteAddress);
     }
 
-    public boolean updateScore(@NotNull OutRequest outRequest) {
+    public boolean updateScore(@NotNull OutRequest<?> outRequest) {
         if (outRequest.isUsedPeer(remoteAddress)) {
             // if we have used this peer, it should be given a lower score
             score = SCORE_UNCONNECTED - 0.1;

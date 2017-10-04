@@ -46,7 +46,7 @@ public abstract class ThriftAsyncRequestHandler<T, U> implements AsyncRequestHan
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings("unchecked")
     public ListenableFuture<? extends Response> handleAsync(Request request) {
         return handleImpl((ThriftRequest<T>)request);
     }

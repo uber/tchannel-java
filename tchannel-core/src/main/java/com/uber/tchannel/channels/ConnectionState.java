@@ -22,19 +22,23 @@
 
 package com.uber.tchannel.channels;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 public enum ConnectionState {
+
     UNCONNECTED("unconnected"),
     CONNECTED("connected"),
     IDENTIFIED("identified"),
     DESTROYED("destroyed");
 
-    private final String state;
+    private final @NotNull String state;
 
-    ConnectionState(String state) {
+    ConnectionState(@NotNull String state) {
         this.state = state;
     }
 
-    public static ConnectionState toState(String state) {
+    public static @Nullable ConnectionState toState(@Nullable String state) {
         if (state == null) {
             return null;
         }
@@ -54,19 +58,16 @@ public enum ConnectionState {
     }
 
     public static boolean isConnected(ConnectionState state) {
-        ConnectionState s = state;
-        return s == IDENTIFIED || s == CONNECTED;
+        return state == IDENTIFIED || state == CONNECTED;
     }
 
-    public static boolean isConnected(Connection conn) {
-        if (conn == null) {
-            return false;
-        }
+    public static boolean isConnected(@Nullable Connection conn) {
+        return conn != null && isConnected(conn.state);
 
-        return isConnected(conn.state);
     }
 
-    public String getState() {
+    public @NotNull String getState() {
         return state;
     }
+
 }

@@ -41,6 +41,9 @@ public class ThriftRequest<T> extends EncodedRequest<T> {
         super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
     }
 
+    /**
+     * @param <T> request body type
+     */
     public static class Builder<T> extends EncodedRequest.Builder<T> {
 
         public Builder(String service, String endpoint) {

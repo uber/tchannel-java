@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public class Tracing {
+public final class Tracing {
 
     private static final Logger logger = LoggerFactory.getLogger(Tracing.class);
 

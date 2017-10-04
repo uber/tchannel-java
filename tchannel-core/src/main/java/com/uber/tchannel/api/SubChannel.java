@@ -128,15 +128,15 @@ public final class SubChannel {
         return this;
     }
 
-    public @Nullable SubPeer choosePeer(@NotNull OutRequest outRequest) {
-        SubPeer res = null;
+    public @Nullable SubPeer choosePeer(@NotNull OutRequest<?> outRequest) {
         if (peers.isEmpty()) {
             return null;
         }
 
         int start = new Random().nextInt(peers.size());
         int i = start;
-        boolean stop = false;
+        boolean stop;
+        SubPeer res = null;
         do {
             i = (i + 1) % peers.size();
             SubPeer peer = peers.get(i);
@@ -150,7 +150,7 @@ public final class SubChannel {
         return res;
     }
 
-    public @Nullable Connection connect(@NotNull OutRequest outRequest) {
+    public @Nullable Connection connect(@NotNull OutRequest<?> outRequest) {
         SubPeer peer = choosePeer(outRequest);
         if (peer == null) {
             return null;
@@ -164,7 +164,7 @@ public final class SubChannel {
         return conn;
     }
 
-    public boolean sendOutRequest(OutRequest outRequest) {
+    public boolean sendOutRequest(OutRequest<?> outRequest) {
         boolean res = false;
         while (true) {
             if (!outRequest.shouldRetry()) {
@@ -256,7 +256,7 @@ public final class SubChannel {
     }
 
     private boolean sendOutRequest(
-        @NotNull OutRequest outRequest,
+        @NotNull OutRequest<?> outRequest,
         @Nullable Connection connection
     ) {
         Request request = outRequest.getRequest();

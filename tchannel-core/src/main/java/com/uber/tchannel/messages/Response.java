@@ -196,10 +196,10 @@ public abstract class Response extends ResponseMessage implements RawMessage {
                 res = new RawResponse(id, responseCode, transportHeaders, arg2, arg3);
                 break;
             case JSON:
-                res = new JsonResponse(id, responseCode, transportHeaders, arg2, arg3);
+                res = new JsonResponse<>(id, responseCode, transportHeaders, arg2, arg3);
                 break;
             case THRIFT:
-                res = new ThriftResponse(id, responseCode, transportHeaders, arg2, arg3);
+                res = new ThriftResponse<>(id, responseCode, transportHeaders, arg2, arg3);
                 break;
             default:
                 res = null;
@@ -208,9 +208,8 @@ public abstract class Response extends ResponseMessage implements RawMessage {
         return res;
     }
 
-    public static Response build(ArgScheme argScheme, long id, ErrorType errorType, String message) {
-        ErrorResponse errorResponse = new ErrorResponse(id, errorType, message);
-        return build(argScheme, errorResponse);
+    public static @NotNull Response build(@NotNull ArgScheme argScheme, long id, ErrorType errorType, String message) {
+        return build(argScheme, new ErrorResponse(id, errorType, message));
     }
 
     public static @NotNull Response build(@NotNull ArgScheme argScheme, ErrorResponse errorResponse) {
@@ -220,10 +219,10 @@ public abstract class Response extends ResponseMessage implements RawMessage {
                 res = new RawResponse(errorResponse);
                 break;
             case JSON:
-                res = new JsonResponse(errorResponse);
+                res = new JsonResponse<>(errorResponse);
                 break;
             case THRIFT:
-                res = new ThriftResponse(errorResponse);
+                res = new ThriftResponse<>(errorResponse);
                 break;
             default:
                 res = new RawResponse(errorResponse);
@@ -275,7 +274,7 @@ public abstract class Response extends ResponseMessage implements RawMessage {
             return this;
         }
 
-        public @NotNull Builder setTransportHeaders(Map<String, String> transportHeaders) {
+        public @NotNull Builder setTransportHeaders(@NotNull Map<String, String> transportHeaders) {
             this.transportHeaders = transportHeaders;
             return this;
         }

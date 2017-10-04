@@ -38,6 +38,7 @@ import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,10 +53,12 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
         }
     }
 
-    protected void writeFrames(ChannelHandlerContext ctx,
-                               RawMessage msg,
-                               List<Object> frames) throws Exception {
-        List<ByteBuf> args = new ArrayList<>();
+    protected void writeFrames(
+        @NotNull ChannelHandlerContext ctx,
+        @NotNull RawMessage msg,
+        @NotNull List<Object> frames
+    ) throws Exception {
+        List<ByteBuf> args = new ArrayList<>(3);
         args.add(msg.getArg1());
         args.add(msg.getArg2());
         args.add(msg.getArg3());
@@ -78,7 +81,7 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
         }
     }
 
-    protected CallFrame createFrame(RawMessage msg, int argCount) {
+    protected @NotNull CallFrame createFrame(@NotNull RawMessage msg, int argCount) {
         if (msg.getType() == FrameType.CallRequest) {
             Request request = (Request) msg;
             if (argCount == 3) {
@@ -126,4 +129,5 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
             }
         }
     }
+
 }

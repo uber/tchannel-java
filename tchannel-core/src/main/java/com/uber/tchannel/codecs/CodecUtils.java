@@ -29,6 +29,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,7 @@ public final class CodecUtils {
 
     private CodecUtils() {}
 
-    public static int decodeChecksum(ChecksumType checksumType, ByteBuf buffer) {
+    public static int decodeChecksum(@NotNull ChecksumType checksumType, ByteBuf buffer) {
         switch (checksumType) {
             case Adler32:
             case FarmhashFingerPrint32:
@@ -50,7 +51,7 @@ public final class CodecUtils {
         }
     }
 
-    public static void encodeChecksum(int checksum, ChecksumType checksumType, ByteBuf buffer) {
+    public static void encodeChecksum(int checksum, @NotNull ChecksumType checksumType, ByteBuf buffer) {
         switch (checksumType) {
             case Adler32:
             case FarmhashFingerPrint32:
@@ -63,20 +64,20 @@ public final class CodecUtils {
         }
     }
 
-    public static String decodeString(ByteBuf buffer) {
+    public static @NotNull String decodeString(@NotNull ByteBuf buffer) {
         int valueLength = buffer.readUnsignedShort();
         byte[] valueBytes = new byte[valueLength];
         buffer.readBytes(valueBytes);
         return new String(valueBytes);
     }
 
-    public static void encodeString(String value, ByteBuf buffer) {
+    public static void encodeString(@NotNull String value, @NotNull ByteBuf buffer) {
         byte[] raw = value.getBytes();
         buffer.writeShort(raw.length);
         buffer.writeBytes(raw);
     }
 
-    public static String decodeSmallString(ByteBuf buffer) {
+    public static @NotNull String decodeSmallString(@NotNull ByteBuf buffer) {
         int valueLength = buffer.readUnsignedByte();
         byte[] valueBytes = new byte[valueLength];
         buffer.readBytes(valueBytes);
@@ -113,7 +114,7 @@ public final class CodecUtils {
 
     }
 
-    public static Map<String, String> decodeSmallHeaders(ByteBuf buffer) {
+    public static @NotNull Map<String, String> decodeSmallHeaders(@NotNull ByteBuf buffer) {
 
         short numHeaders = buffer.readUnsignedByte();
         Map<String, String> headers = Maps.newHashMapWithExpectedSize(numHeaders);
@@ -128,7 +129,7 @@ public final class CodecUtils {
 
     }
 
-    public static void encodeSmallHeaders(Map<String, String> headers, ByteBuf buffer) {
+    public static void encodeSmallHeaders(@NotNull Map<String, String> headers, @NotNull ByteBuf buffer) {
 
         buffer.writeByte(headers.size());
 
@@ -138,7 +139,7 @@ public final class CodecUtils {
         }
     }
 
-    public static Trace decodeTrace(ByteBuf buffer) {
+    public static @NotNull Trace decodeTrace(@NotNull ByteBuf buffer) {
         long spanId = buffer.readLong();
         long parentId = buffer.readLong();
         long traceId = buffer.readLong();
@@ -147,25 +148,30 @@ public final class CodecUtils {
         return new Trace(spanId, parentId, traceId, traceFlags);
     }
 
-    public static void encodeTrace(Trace trace, ByteBuf buffer) {
+    public static void encodeTrace(@NotNull Trace trace, @NotNull ByteBuf buffer) {
         buffer.writeLong(trace.spanId)
                 .writeLong(trace.parentId)
                 .writeLong(trace.traceId)
                 .writeByte(trace.traceFlags);
     }
 
-    public static int writeArg(ByteBufAllocator allocator, ByteBuf arg, int writableBytes, List<ByteBuf> bufs) {
+    public static int writeArg(
+        @NotNull ByteBufAllocator allocator,
+        @NotNull ByteBuf arg,
+        int writableBytes,
+        @NotNull List<ByteBuf> bufs
+    ) {
         if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
             throw new UnsupportedOperationException("writableBytes must be larger than " + TFrame.FRAME_SIZE_LENGTH);
         }
 
         int readableBytes = arg.readableBytes();
-        int headerSize = TFrame.FRAME_SIZE_LENGTH;
-        int chunkLength = Math.min(readableBytes + headerSize, writableBytes);
         ByteBuf sizeBuf = allocator.buffer(TFrame.FRAME_SIZE_LENGTH);
         bufs.add(sizeBuf);
 
         // Write the size of the `arg`
+        int headerSize = TFrame.FRAME_SIZE_LENGTH;
+        int chunkLength = Math.min(readableBytes + headerSize, writableBytes);
         sizeBuf.writeShort(chunkLength - headerSize);
         if (readableBytes == 0) {
             return TFrame.FRAME_SIZE_LENGTH;
@@ -175,9 +181,11 @@ public final class CodecUtils {
         }
     }
 
-    public static ByteBuf writeArgs(ByteBufAllocator allocator,
-                                    ByteBuf header,
-                                    List<ByteBuf> args) {
+    public static @NotNull ByteBuf writeArgs(
+        @NotNull ByteBufAllocator allocator,
+        @NotNull ByteBuf header,
+        @NotNull List<ByteBuf> args
+    ) {
         int writableBytes = TFrame.MAX_FRAME_PAYLOAD_LENGTH - header.readableBytes();
         List<ByteBuf> bufs = new ArrayList<>(7);
         bufs.add(header);
@@ -202,7 +210,12 @@ public final class CodecUtils {
         return comp;
     }
 
-    public static ByteBuf writeArgCopy(ByteBufAllocator allocator, ByteBuf payload, ByteBuf arg, int writableBytes) {
+    public static @NotNull ByteBuf writeArgCopy(
+        ByteBufAllocator allocator,
+        @NotNull ByteBuf payload,
+        @NotNull ByteBuf arg,
+        int writableBytes
+    ) {
         if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
             throw new UnsupportedOperationException("writableBytes must be larger than " + TFrame.FRAME_SIZE_LENGTH);
         }
@@ -220,9 +233,11 @@ public final class CodecUtils {
         }
     }
 
-    public static ByteBuf writeArgsCopy(ByteBufAllocator allocator,
-                                    ByteBuf header,
-                                    List<ByteBuf> args) {
+    public static @NotNull ByteBuf writeArgsCopy(
+        @NotNull ByteBufAllocator allocator,
+        @NotNull ByteBuf header,
+        @NotNull List<ByteBuf> args
+    ) {
         ByteBuf payload = allocator.buffer(header.readableBytes(), TFrame.MAX_FRAME_PAYLOAD_LENGTH);
         payload.writeBytes(header);
         header.release();
@@ -245,7 +260,7 @@ public final class CodecUtils {
     }
 
     @SuppressWarnings("ObjectEquality")
-    public static ByteBuf compose(ByteBuf first, ByteBuf second) {
+    public static @NotNull ByteBuf compose(@NotNull ByteBuf first, @NotNull ByteBuf second) {
         if (first == Unpooled.EMPTY_BUFFER) {
             return second;
         } else if (second == Unpooled.EMPTY_BUFFER) {
@@ -255,7 +270,7 @@ public final class CodecUtils {
         }
     }
 
-    public static ByteBuf readArg(ByteBuf buffer) {
+    public static @Nullable ByteBuf readArg(@NotNull ByteBuf buffer) {
         if (buffer.readableBytes() < TFrame.FRAME_SIZE_LENGTH) {
             return null;
         }
@@ -274,16 +289,15 @@ public final class CodecUtils {
         return arg;
     }
 
-    public static void readArgs(@NotNull List<ByteBuf> args, ByteBuf buffer) {
+    public static void readArgs(@NotNull List<ByteBuf> args, @NotNull ByteBuf buffer) {
 
         if (args.isEmpty()) {
             args.add(Unpooled.EMPTY_BUFFER);
         }
 
         boolean first = true;
-        ByteBuf arg;
         while (true) {
-            arg = readArg(buffer);
+            ByteBuf arg = readArg(buffer);
             if (arg == null) {
                 return;
             } else if (first) {

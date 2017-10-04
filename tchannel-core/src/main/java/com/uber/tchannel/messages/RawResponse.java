@@ -134,25 +134,25 @@ public class RawResponse extends Response {
         }
 
         @Override
-        public Builder setTransportHeaders(Map<String, String> transportHeaders) {
+        public @NotNull Builder setTransportHeaders(@NotNull Map<String, String> transportHeaders) {
             super.setTransportHeaders(transportHeaders);
             return this;
         }
 
-        public final Builder setHeader(String header) {
+        public final @NotNull Builder setHeader(@NotNull String header) {
             this.setArg2(Unpooled.wrappedBuffer(header.getBytes()));
             this.header = header;
             return this;
         }
 
-        public final Builder setBody(String body) {
+        public final @NotNull Builder setBody(@NotNull String body) {
             setArg3(Unpooled.wrappedBuffer(body.getBytes()));
             this.body = body;
             return this;
         }
 
         @Override
-        public Builder validate() {
+        public @NotNull Builder validate() {
             super.validate();
 
             if (arg2 == null) {
@@ -166,8 +166,9 @@ public class RawResponse extends Response {
             return this;
         }
 
-        public RawResponse build() {
+        public @NotNull RawResponse build() {
             return new RawResponse(this.validate());
         }
     }
+
 }

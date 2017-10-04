@@ -24,6 +24,7 @@ package com.uber.tchannel.utils;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ public final class TChannelUtilities {
 
     private TChannelUtilities() {}
 
-    public static int scoreAddr(NetworkInterface iface, InetAddress addr) {
+    public static int scoreAddr(@NotNull NetworkInterface iface, @NotNull InetAddress addr) {
         int score = 0;
 
         if (addr instanceof Inet4Address) {
@@ -64,12 +65,12 @@ public final class TChannelUtilities {
     }
 
     public static InetAddress getCurrentIp() {
-        int bestScore = -1;
         InetAddress bestAddr = null;
 
         try {
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
 
+            int bestScore = -1;
             while (networkInterfaces.hasMoreElements()) {
                 NetworkInterface iface = networkInterfaces.nextElement();
 

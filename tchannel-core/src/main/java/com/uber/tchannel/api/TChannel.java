@@ -56,6 +56,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.HashedWheelTimer;
 import io.opentracing.Tracer;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,11 +77,11 @@ public final class TChannel {
 
     private final HashedWheelTimer timer;
 
-    private final String service;
+    private final @NotNull String service;
     private final ServerBootstrap serverBootstrap;
     private final @NotNull PeerManager peerManager;
-    private final EventLoopGroup bossGroup;
-    private final EventLoopGroup childGroup;
+    private final @NotNull EventLoopGroup bossGroup;
+    private final @NotNull EventLoopGroup childGroup;
     private final InetAddress host;
     private final int port;
     private String listeningHost = "0.0.0.0";
@@ -91,11 +92,11 @@ public final class TChannel {
     private final Tracer tracer;
     private final TracingContext tracingContext;
 
-    private final Map<String, SubChannel> subChannels = new HashMap<>();
-    private RequestHandler defaultUserHandler;
-    private SimpleChannelInboundHandler<Request> customRequestRouter;
+    private final @NotNull Map<String, SubChannel> subChannels = new HashMap<>();
+    private @Nullable RequestHandler defaultUserHandler;
+    private @Nullable SimpleChannelInboundHandler<Request> customRequestRouter;
 
-    private TChannel(Builder builder) {
+    private TChannel(@NotNull Builder builder) {
         this.service = builder.service;
         this.serverBootstrap = builder.serverBootstrap(this);
         this.bossGroup = builder.bossGroup;
@@ -127,8 +128,8 @@ public final class TChannel {
         return port;
     }
 
-    public String getServiceName() {
-        return this.service;
+    public @NotNull String getServiceName() {
+        return service;
     }
 
     public @NotNull PeerManager getPeerManager() {
@@ -151,7 +152,7 @@ public final class TChannel {
 
     public TracingContext getTracingContext() { return tracingContext; }
 
-    public ChannelFuture listen() throws InterruptedException {
+    public @NotNull ChannelFuture listen() throws InterruptedException {
         ChannelFuture f = this.serverBootstrap.bind(this.host, this.port).sync();
         InetSocketAddress localAddress = (InetSocketAddress) f.channel().localAddress();
         this.listeningPort = localAddress.getPort();
@@ -160,19 +161,17 @@ public final class TChannel {
         return f;
     }
 
-    public void setDefaultUserHandler(RequestHandler requestHandler) {
+    public void setDefaultUserHandler(@Nullable RequestHandler requestHandler) {
         this.defaultUserHandler = requestHandler;
     }
 
-    public SubChannel getSubChannel(String service) {
+    public @Nullable SubChannel getSubChannel(String service) {
         return subChannels.get(service);
     }
 
-    public SubChannel makeSubChannel(String service, Connection.Direction preferredDirection) {
+    public @NotNull SubChannel makeSubChannel(String service, Connection.Direction preferredDirection) {
         if (isListening()) {
-            logger.warn("makeSubChannel should be called before listen - service: {}",
-                service
-            );
+            logger.warn("makeSubChannel should be called before listen - service: {}", service);
         }
 
         SubChannel subChannel = getSubChannel(service);
@@ -184,15 +183,15 @@ public final class TChannel {
         return subChannel;
     }
 
-    public SubChannel makeSubChannel(String service) {
+    public @NotNull SubChannel makeSubChannel(String service) {
         return this.makeSubChannel(service, Connection.Direction.NONE);
     }
 
     public void shutdown(boolean sync) {
         timer.stop();
-        this.peerManager.close();
-        Future bg = this.bossGroup.shutdownGracefully();
-        Future cg = this.childGroup.shutdownGracefully();
+        peerManager.close();
+        Future<?> bg = bossGroup.shutdownGracefully();
+        Future<?> cg = childGroup.shutdownGracefully();
 
         try {
             if (sync) {
@@ -209,35 +208,35 @@ public final class TChannel {
     }
 
     public void shutdown() {
-        this.shutdown(true);
+        shutdown(true);
     }
 
     public int getClientMaxPendingRequests() {
         return clientMaxPendingRequests;
     }
 
-    public RequestHandler getDefaultUserHandler() {
+    public @Nullable RequestHandler getDefaultUserHandler() {
         return defaultUserHandler;
     }
 
-    public SimpleChannelInboundHandler<Request> getCustomRequestRouter() {
+    public @Nullable SimpleChannelInboundHandler<Request> getCustomRequestRouter() {
         return customRequestRouter;
     }
 
-    public void setCustomRequestRouter(SimpleChannelInboundHandler<Request> customRequestRouter) {
+    public void setCustomRequestRouter(@Nullable SimpleChannelInboundHandler<Request> customRequestRouter) {
         this.customRequestRouter = customRequestRouter;
     }
 
     public static class Builder {
 
-        private final HashedWheelTimer timer;
+        private final @NotNull HashedWheelTimer timer;
         private static ExecutorService executorService = new ForkJoinPool();
-        private EventLoopGroup bossGroup;
-        private EventLoopGroup childGroup;
+        private @NotNull EventLoopGroup bossGroup;
+        private @NotNull EventLoopGroup childGroup;
 
         private static final boolean useEpoll = Epoll.isAvailable();
 
-        private final String service;
+        private final @NotNull String service;
         private InetAddress host;
         private int port = 0;
 
@@ -250,7 +249,7 @@ public final class TChannel {
         private Tracer tracer;
         private TracingContext tracingContext = new TracingContext.Default();
 
-        public Builder(String service) {
+        public Builder(@NotNull String service) {
             if (service == null) {
                 throw new NullPointerException("`service` cannot be null");
             }
@@ -266,63 +265,62 @@ public final class TChannel {
             childGroup = useEpoll ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         }
 
-        public Builder setExecutorService(ExecutorService executorService) {
+        public @NotNull Builder setExecutorService(ExecutorService executorService) {
             Builder.executorService = executorService;
             return this;
         }
 
-        public Builder setClientMaxPendingRequests(int clientMaxPendingRequests) {
+        public @NotNull Builder setClientMaxPendingRequests(int clientMaxPendingRequests) {
             this.clientMaxPendingRequests = clientMaxPendingRequests;
             return this;
         }
 
-        public Builder setServerHost(InetAddress host) {
+        public @NotNull Builder setServerHost(InetAddress host) {
             this.host = host;
             return this;
         }
 
-        public Builder setServerPort(int port) {
+        public @NotNull Builder setServerPort(int port) {
             this.port = port;
             return this;
         }
 
-        public Builder setBossGroup(EventLoopGroup bossGroup) {
+        public @NotNull Builder setBossGroup(@NotNull EventLoopGroup bossGroup) {
             this.bossGroup = bossGroup;
             return this;
         }
 
-        public Builder setChildGroup(EventLoopGroup childGroup) {
+        public @NotNull Builder setChildGroup(@NotNull EventLoopGroup childGroup) {
             this.childGroup = childGroup;
             return this;
         }
 
-        public Builder setInitTimeout(long initTimeout) {
+        public @NotNull Builder setInitTimeout(long initTimeout) {
             this.initTimeout = initTimeout;
             return this;
         }
 
-        public Builder setResetOnTimeoutLimit(int resetOnTimeoutLimit) {
+        public @NotNull Builder setResetOnTimeoutLimit(int resetOnTimeoutLimit) {
             this.resetOnTimeoutLimit = resetOnTimeoutLimit;
             return this;
         }
 
-        public Builder setTracer(Tracer tracer) {
+        public @NotNull Builder setTracer(Tracer tracer) {
             this.tracer = tracer;
             return this;
         }
 
-        public Builder setTracingContext(TracingContext tracingContext) {
+        public @NotNull Builder setTracingContext(TracingContext tracingContext) {
             this.tracingContext = tracingContext;
             return this;
         }
 
-        public TChannel build() {
-            String message = useEpoll ? "Using native epoll transport" : "Using NIO transport";
-            logger.debug(message);
+        public @NotNull TChannel build() {
+            logger.debug(useEpoll ? "Using native epoll transport" : "Using NIO transport");
             return new TChannel(this);
         }
 
-        private Bootstrap bootstrap(TChannel topChannel) {
+        private @NotNull Bootstrap bootstrap(@NotNull TChannel topChannel) {
             return new Bootstrap()
                 .group(this.childGroup)
                 .channel(useEpoll ? EpollSocketChannel.class : NioSocketChannel.class)
@@ -333,7 +331,7 @@ public final class TChannel {
                 .validate();
         }
 
-        private ServerBootstrap serverBootstrap(TChannel topChannel) {
+        private @NotNull ServerBootstrap serverBootstrap(@NotNull TChannel topChannel) {
             return new ServerBootstrap()
                 .group(this.bossGroup, this.childGroup)
                 .channel(useEpoll ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
@@ -342,16 +340,19 @@ public final class TChannel {
                 .childHandler(this.channelInitializer(true, topChannel))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.WRITE_BUFFER_WATER_MARK,
-                        new WriteBufferWaterMark(WRITE_BUFFER_LOW_WATER_MARK, WRITE_BUFFER_HIGH_WATER_MARK))
+                .option(
+                    ChannelOption.WRITE_BUFFER_WATER_MARK,
+                    new WriteBufferWaterMark(WRITE_BUFFER_LOW_WATER_MARK, WRITE_BUFFER_HIGH_WATER_MARK)
+                )
                 .validate();
         }
 
-        private ChannelInitializer<SocketChannel> channelInitializer(final boolean isServer,
-                                                                     final TChannel topChannel) {
+        private @NotNull ChannelInitializer<SocketChannel> channelInitializer(
+            final boolean isServer, final @NotNull TChannel topChannel
+        ) {
             return new ChannelInitializer<SocketChannel>() {
                 @Override
-                protected void initChannel(SocketChannel ch) throws Exception {
+                protected void initChannel(@NotNull SocketChannel ch) throws Exception {
                     // Translates TCP Streams to Raw Frames
                     ch.pipeline().addLast("FrameDecoder", new TChannelLengthFieldBasedFrameDecoder());
 
@@ -378,12 +379,12 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageFragmenter", new MessageFragmenter());
 
                     // Pass RequestHandlers to the RequestRouter
-                    if (topChannel.getCustomRequestRouter() != null) {
-                        ch.pipeline().addLast("RequestRouter", topChannel.getCustomRequestRouter());
-                    } else {
-                        ch.pipeline().addLast("RequestRouter", new RequestRouter(
-                                topChannel, executorService));
-                    }
+                    ch.pipeline().addLast(
+                        "RequestRouter",
+                        topChannel.getCustomRequestRouter() != null
+                            ? topChannel.getCustomRequestRouter()
+                            : new RequestRouter(topChannel, executorService)
+                    );
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel, timer));
 
                     // Register Channels as they are created.
@@ -392,5 +393,7 @@ public final class TChannel {
                 }
             };
         }
+
     }
+
 }

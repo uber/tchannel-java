@@ -107,21 +107,22 @@ public final class AsyncRequest {
                         request.getBody()));
 
                     count++;
-                    if (count == 1) {
-                        return new RawResponse.Builder(request)
-                            .setTransportHeaders(request.getTransportHeaders())
-                            .setHeader("Polo")
-                            .setBody("Pong!")
-                            .build();
-                    } else if (count == 2) {
-                        return new RawResponse.Builder(request)
-                            .setTransportHeaders(request.getTransportHeaders())
-                            .setResponseCode(ResponseCode.Error)
-                            .setHeader("Polo")
-                            .setBody("I feel bad ...")
-                            .build();
-                    } else {
-                        throw new UnsupportedOperationException("I feel very bad!");
+                    switch (count) {
+                        case 1:
+                            return new RawResponse.Builder(request)
+                                .setTransportHeaders(request.getTransportHeaders())
+                                .setHeader("Polo")
+                                .setBody("Pong!")
+                                .build();
+                        case 2:
+                            return new RawResponse.Builder(request)
+                                .setTransportHeaders(request.getTransportHeaders())
+                                .setResponseCode(ResponseCode.Error)
+                                .setHeader("Polo")
+                                .setBody("I feel bad ...")
+                                .build();
+                        default:
+                            throw new UnsupportedOperationException("I feel very bad!");
                     }
                 }
             });

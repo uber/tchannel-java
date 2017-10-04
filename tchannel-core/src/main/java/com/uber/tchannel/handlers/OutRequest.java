@@ -44,7 +44,7 @@ public final class OutRequest<V extends Response> {
     public OutRequest(@NotNull SubChannel subChannel, @NotNull Request request) {
         this.subChannel = subChannel;
         this.request = request;
-        this.future = TFuture.<V>create(request.getArgScheme());
+        this.future = TFuture.create(request.getArgScheme());
         this.retryLimit = request.getRetryLimit();
     }
 
@@ -91,7 +91,7 @@ public final class OutRequest<V extends Response> {
         return channelFuture;
     }
 
-    public void setChannelFuture(ChannelFuture channelFuture) {
+    public void setChannelFuture(@NotNull ChannelFuture channelFuture) {
         this.channelFuture = channelFuture;
     }
 
@@ -129,7 +129,7 @@ public final class OutRequest<V extends Response> {
         return lastError;
     }
 
-    public void setLastError(ErrorResponse lastError) {
+    public void setLastError(@NotNull ErrorResponse lastError) {
         this.lastError = lastError;
     }
 

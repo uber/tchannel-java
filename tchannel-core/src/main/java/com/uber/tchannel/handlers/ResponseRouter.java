@@ -35,11 +35,11 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -49,22 +49,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage> {
     private static final Logger logger = LoggerFactory.getLogger(ResponseRouter.class);
 
-    private final PeerManager peerManager;
-    private final HashedWheelTimer timer;
-    private final AtomicBoolean destroyed = new AtomicBoolean(false);
+    private final @NotNull PeerManager peerManager;
+    private final @NotNull HashedWheelTimer timer;
+    private final @NotNull AtomicBoolean destroyed = new AtomicBoolean(false);
 
     private final int resetOnTimeoutLimit;
-    private final AtomicInteger timeouts = new AtomicInteger(0);
+    private final @NotNull AtomicInteger timeouts = new AtomicInteger(0);
 
-    private final AtomicBoolean busy = new AtomicBoolean(false);
-    private final ConcurrentLinkedQueue<Long> requestQueue = new ConcurrentLinkedQueue<>();
-    private final Map<Long, OutRequest> requestMap = new ConcurrentHashMap<>();
+    private final @NotNull AtomicBoolean busy = new AtomicBoolean(false);
+    private final @NotNull ConcurrentLinkedQueue<Long> requestQueue = new ConcurrentLinkedQueue<>();
+    private final @NotNull Map<Long, OutRequest<?>> requestMap = new ConcurrentHashMap<>();
     private final int maxPendingRequests;
 
-    private final AtomicInteger idGenerator = new AtomicInteger(0);
+    private final @NotNull AtomicInteger idGenerator = new AtomicInteger(0);
     private ChannelHandlerContext ctx;
 
-    public ResponseRouter(TChannel topChannel, HashedWheelTimer timer) {
+    public ResponseRouter(@NotNull TChannel topChannel, @NotNull HashedWheelTimer timer) {
         this.peerManager = topChannel.getPeerManager();
         this.resetOnTimeoutLimit = topChannel.getResetOnTimeoutLimit();
         this.timer = timer;
@@ -72,7 +72,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(@NotNull ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         this.ctx = ctx;
     }
@@ -93,7 +93,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
             boolean flush = false;
             while (!requestQueue.isEmpty() && channel.isWritable()) {
                 long id = requestQueue.poll();
-                OutRequest outRequest = requestMap.get(id);
+                OutRequest<?> outRequest = requestMap.get(id);
                 if (outRequest != null) {
                     outRequest.setChannelFuture(channel.write(outRequest.getRequest()));
                     flush = true;
@@ -113,7 +113,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         }
     }
 
-    public boolean expectResponse(OutRequest outRequest) {
+    public boolean expectResponse(@NotNull OutRequest<?> outRequest) {
         int messageId = idGenerator.incrementAndGet();
         Request request = outRequest.getRequest();
         request.setId(messageId);
@@ -129,7 +129,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         return send(outRequest);
     }
 
-    protected boolean send(OutRequest outRequest) {
+    protected boolean send(@NotNull OutRequest<?> outRequest) {
         Request request = outRequest.getRequest();
         this.requestMap.put(request.getId(), outRequest);
         setTimer(outRequest);
@@ -148,7 +148,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         return true;
     }
 
-    protected void setTimer(final OutRequest outRequest) {
+    protected void setTimer(final @NotNull OutRequest<?> outRequest) {
         final long start = System.currentTimeMillis();
         Timeout timeout = timer.newTimeout(new TimerTask() {
             @Override
@@ -173,8 +173,8 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         outRequest.setTimeout(timeout);
     }
 
-    protected void handleResponse(ResponseMessage response) {
-        OutRequest outRequest = this.requestMap.remove(response.getId());
+    protected void handleResponse(@NotNull ResponseMessage response) {
+        OutRequest<?> outRequest = this.requestMap.remove(response.getId());
 
         // this may happen when the request times out already
         if (outRequest == null) {
@@ -186,7 +186,7 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ResponseMessage response) {
+    protected void channelRead0(ChannelHandlerContext ctx, @NotNull ResponseMessage response) {
         handleResponse(response);
     }
 
@@ -194,25 +194,13 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         if (!destroyed.compareAndSet(false, true)) {
             return;
         }
+        clean(requestMap.keySet());
+        clean(requestQueue);
+    }
 
-        Set<Long> keys = requestMap.keySet();
+    private void clean(@NotNull Iterable<Long> keys) {
         for (long key : keys) {
-            OutRequest outRequest = requestMap.remove(key);
-            if (outRequest == null) {
-                continue;
-            }
-
-            // wait until the send is completed
-            outRequest.flushWrite();
-
-            // Complete the request
-            outRequest.setLastError(ErrorType.NetworkError,
-                "Connection was reset due to network error");
-            outRequest.setFuture();
-        }
-
-        for (long key : requestQueue) {
-            OutRequest outRequest = requestMap.remove(key);
+            OutRequest<?> outRequest = requestMap.remove(key);
             if (outRequest == null) {
                 continue;
             }
@@ -227,4 +215,5 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         }
 
     }
+
 }

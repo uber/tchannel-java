@@ -36,6 +36,7 @@ import com.uber.tchannel.messages.TChannelMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,12 +87,9 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
         }
     }
 
-    private boolean hasMore(Frame frame) {
-        if (frame instanceof CallFrame) {
-            return ((CallFrame) frame).moreFragmentsFollow();
-        }
+    private static boolean hasMore(@Nullable Frame frame) {
+        return frame instanceof CallFrame && ((CallFrame) frame).moreFragmentsFollow();
 
-        return false;
     }
 
     private TChannelMessage decodeCallFrame(ChannelHandlerContext ctx, CallFrame frame) {

@@ -54,7 +54,7 @@ public final class HyperbahnClient {
 
     private static final String HYPERBAHN_SERVICE_NAME = "hyperbahn";
     private static final String HYPERBAHN_ADVERTISE_ENDPOINT = "ad";
-    public AtomicBoolean destroyed = new AtomicBoolean(false);
+    public AtomicBoolean destroyed = new AtomicBoolean(false); // FIXME why is it public and non-final???
 
     private final String service;
     private final TChannel tchannel;

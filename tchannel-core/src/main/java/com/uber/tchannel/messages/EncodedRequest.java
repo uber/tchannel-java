@@ -91,6 +91,9 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
         return body;
     }
 
+    /**
+     * @param <T> request body type
+     */
     public static class Builder<T> extends Request.Builder {
 
         protected Map<String, String> headers = new HashMap<>();
@@ -173,5 +176,7 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
             this.validateBody();
             return this;
         }
+
     }
+
 }
