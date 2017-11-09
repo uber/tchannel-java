@@ -70,14 +70,10 @@ public final class HyperbahnExample {
         future.addCallback(new TFutureCallback<JsonResponse<AdvertiseResponse>>() {
             @Override
             public void onResponse(JsonResponse<AdvertiseResponse> response) {
-                try {
-                    if (!response.isError()) {
-                        System.out.println("Got response. All set: " + response.getBody(AdvertiseResponse.class));
-                    } else {
-                        System.out.println("Error happened: " + response.getError().getMessage());
-                    }
-                } finally {
-                    response.release();
+                if (!response.isError()) {
+                    System.out.println("Got response. All set: " + response.getBody(AdvertiseResponse.class));
+                } else {
+                    System.out.println("Error happened: " + response.getError().getMessage());
                 }
             }
         });

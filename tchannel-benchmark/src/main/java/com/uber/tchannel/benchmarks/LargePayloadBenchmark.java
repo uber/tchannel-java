@@ -119,7 +119,6 @@ public class LargePayloadBenchmark {
             public void onResponse(RawResponse pongResponse) {
                 if (!pongResponse.isError()) {
                     counters.actualQPS.incrementAndGet();
-                    pongResponse.release();
                 } else {
                     switch (pongResponse.getError().getErrorType()) {
                         case Busy:

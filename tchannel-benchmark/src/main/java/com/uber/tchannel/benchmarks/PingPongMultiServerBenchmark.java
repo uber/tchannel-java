@@ -125,7 +125,6 @@ public class PingPongMultiServerBenchmark {
             public void onResponse(JsonResponse<Pong> pongResponse) {
                 if (!pongResponse.isError()) {
                     counters.actualQPS.incrementAndGet();
-                    pongResponse.release();
                 } else {
                     counters.errorQPS.incrementAndGet();
                 }
