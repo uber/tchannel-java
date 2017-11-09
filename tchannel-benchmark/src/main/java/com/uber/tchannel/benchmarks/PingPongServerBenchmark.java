@@ -113,7 +113,6 @@ public class PingPongServerBenchmark {
                     // uncomment the following code to enforce evaluation
                     // pongResponse.getBody(Pong.class);
                     // pongResponse.getHeaders();
-                    pongResponse.release();
                 } else {
                     // System.out.println(pongResponse.getError().getMessage());
                     switch (pongResponse.getError().getErrorType()) {

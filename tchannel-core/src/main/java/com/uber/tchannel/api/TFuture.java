@@ -111,9 +111,12 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         super.addListener(new Runnable() {
             @Override
             public void run() {
-                listener.run();
-                if (listenerCount.decrementAndGet() == 0) {
-                    response.release();
+                try {
+                    listener.run();
+                } finally {
+                    if (listenerCount.decrementAndGet() == 0) {
+                        response.release();
+                    }
                 }
             }
         }, exec);

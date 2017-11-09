@@ -84,8 +84,6 @@ public final class HyperbahnClient {
     /**
      * Starts advertising on Hyperbahn at a fixed interval.
      *
-     * The caller of this function owns the returned buffer and it is their responsibility to release it.
-     *
      * @return a future that resolves to the response of the first advertise request
      */
     public TFuture<JsonResponse<AdvertiseResponse>> advertise() {
@@ -132,13 +130,7 @@ public final class HyperbahnClient {
         advertiseTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                advertise().addCallback(new TFutureCallback<JsonResponse<AdvertiseResponse>>() {
-                    @Override
-                    public void onResponse(JsonResponse<AdvertiseResponse> response) {
-                        // We own this buffer so we should release it.
-                        response.release();
-                    }
-                });
+                advertise();
             }
         }, advertiseInterval);
     }

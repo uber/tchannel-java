@@ -85,12 +85,7 @@ public class HyperbahnClientTest {
             .setRouters(routers)
             .setAdvertiseInterval(100)
             .build();
-        hyperbahnClient.advertise().addCallback(new TFutureCallback<JsonResponse<AdvertiseResponse>>() {
-            @Override
-            public void onResponse(JsonResponse<AdvertiseResponse> response) {
-                response.release();
-            }
-        });
+        hyperbahnClient.advertise();
 
         sleep(500);
         assertTrue(responseHandler.requestsReceived >= 3);
