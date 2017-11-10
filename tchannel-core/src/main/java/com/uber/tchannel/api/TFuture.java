@@ -58,7 +58,7 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
      * Create future. Example usage: {@code TFuture<RawResponse> future = TFuture.create(...); }.
      */
     public static @NotNull <T extends Response> TFuture<T> create(
-        @NotNull ArgScheme argScheme,
+        ArgScheme argScheme,
         @Nullable TracingContext tracingContext
     ) {
         return new TFuture<>(argScheme, tracingContext);
@@ -66,7 +66,7 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
 
     /** @deprecated Use {@link #create(ArgScheme, TracingContext)}. */
     @Deprecated
-    public static @NotNull <T extends Response> TFuture<T> create(@NotNull ArgScheme argScheme) {
+    public static @NotNull <T extends Response> TFuture<T> create(ArgScheme argScheme) {
         return create(argScheme, null);
     }
 
@@ -75,7 +75,7 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     private final @Nullable TracingContext tracingContext;
     private V response = null;
 
-    private TFuture(@NotNull ArgScheme argScheme, @Nullable TracingContext tracingContext) {
+    private TFuture(ArgScheme argScheme, @Nullable TracingContext tracingContext) {
         this.argScheme = argScheme;
         this.tracingContext = tracingContext;
     }
@@ -136,9 +136,15 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                 } finally {
                     if (span != null) {
                         try { // this _might_ fail in case the listener managed to corrupt the tracing context
-                            tracingContext.popSpan();
+                            Span poppedSpan = tracingContext.popSpan();
+                            if (!span.equals(poppedSpan)) {
+                                logger.error(
+                                    "Corrupted tracing context after running listener {}: expected span {} but got {}",
+                                    listener, span, poppedSpan
+                                );
+                            }
                         } catch (EmptyStackException e) {
-                            logger.error("Corrupted tracing context after running listener {}", listener, e);
+                            logger.error("Corrupted (empty) tracing context after running listener {}", listener, e);
                         }
                     }
                     if (listenerCount.decrementAndGet() == 0) {
