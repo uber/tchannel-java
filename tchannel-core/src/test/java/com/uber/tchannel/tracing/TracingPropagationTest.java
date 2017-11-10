@@ -23,8 +23,6 @@
 package com.uber.tchannel.tracing;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.uber.jaeger.Span;
 import com.uber.jaeger.SpanContext;
@@ -67,9 +65,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 /**
@@ -198,10 +194,8 @@ public class TracingPropagationTest {
             // To make downstream calls the original thread should be released therefore a future is
             // setup and returned. This also simulates the behavior of a real handler impl better.
             final SettableFuture<ThriftResponse<Example>> responseFuture = SettableFuture.create();
-            ListeningExecutorService service = MoreExecutors.listeningDecorator(
-                Executors.newFixedThreadPool(1));
             final Span span = (Span) tracingContext.currentSpan();
-            service.submit(new Callable<Object>() {
+            Executors.newSingleThreadExecutor().submit(new Callable<Object>() {
                 @Override
                 public Object call() {
                     try {
@@ -221,6 +215,8 @@ public class TracingPropagationTest {
                     } catch (Exception ex) {
                         ex.printStackTrace();
                         fail("Unexpected exception");
+                    } finally {
+                        tracingContext.popSpan();
                     }
                     return null;
                 }
@@ -272,7 +268,8 @@ public class TracingPropagationTest {
     private static TraceResponse callDownstreamJSON(String remainingEncodings) throws Exception {
         JsonRequest<String> request = new JsonRequest
                 .Builder<String>("tchannel-name", "endpoint")
-                .setTimeout(1, TimeUnit.MINUTES)
+                .setTimeout(1000, TimeUnit.MILLISECONDS)
+                .setRetryLimit(0)
                 .setBody(remainingEncodings)
                 .build();
 
@@ -296,7 +293,8 @@ public class TracingPropagationTest {
         throws Exception {
         ThriftRequest<Example> request = new ThriftRequest
                 .Builder<Example>("tchannel-name", endpoint)
-                .setTimeout(1, TimeUnit.MINUTES)
+                .setTimeout(1000, TimeUnit.MILLISECONDS)
+                .setRetryLimit(0)
                 .setBody(new Example(remainingEncodings, 0))
                 .build();
 
@@ -349,8 +347,10 @@ public class TracingPropagationTest {
                 }
                 assertEquals(4, reporter.getSpans().size());
             }
-        } catch (ErrorResponseException ignored) {
-            assertNotEquals("Requests with 'pass' baggage must pass", "pass", customBaggage);
+        } catch (ErrorResponseException error) {
+            if ("pass".equals(customBaggage)) {
+                fail("Request with 'pass' baggage must pass but failed with: " + error);
+            }
         }
     }
 
