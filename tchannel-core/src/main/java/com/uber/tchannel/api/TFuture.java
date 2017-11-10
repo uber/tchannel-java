@@ -30,10 +30,14 @@ import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.messages.Response;
+import com.uber.tchannel.tracing.TracingContext;
+import io.opentracing.Span;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.EmptyStackException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Class representing the future response of a TChannel call. It is generic
  * and wraps/contains a payload. You construct instances via the factory
- * {@link #create(ArgScheme)}
+ * {@link #create(ArgScheme, TracingContext)}.
  * @param <V> the type of the payload
  */
 
@@ -53,16 +57,27 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     /**
      * Create future. Example usage: {@code TFuture<RawResponse> future = TFuture.create(...); }.
      */
+    public static @NotNull <T extends Response> TFuture<T> create(
+        ArgScheme argScheme,
+        @Nullable TracingContext tracingContext
+    ) {
+        return new TFuture<>(argScheme, tracingContext);
+    }
+
+    /** @deprecated Use {@link #create(ArgScheme, TracingContext)}. */
+    @Deprecated
     public static @NotNull <T extends Response> TFuture<T> create(ArgScheme argScheme) {
-        return new TFuture<>(argScheme);
+        return create(argScheme, null);
     }
 
     private final AtomicInteger listenerCount = new AtomicInteger(0);
+    private final ArgScheme argScheme;
+    private final @Nullable TracingContext tracingContext;
     private V response = null;
-    private ArgScheme argScheme = null;
 
-    private TFuture(ArgScheme argScheme) {
+    private TFuture(ArgScheme argScheme, @Nullable TracingContext tracingContext) {
         this.argScheme = argScheme;
+        this.tracingContext = tracingContext;
     }
 
     @SuppressWarnings("unchecked")
@@ -108,12 +123,30 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     @Override
     public void addListener(final Runnable listener, Executor exec) {
         listenerCount.incrementAndGet();
+        // this is the current span of whomever is adding the listener - preserve it for the invocation of the latter
+        final Span span = tracingContext != null && tracingContext.hasSpan() ? tracingContext.currentSpan() : null;
         super.addListener(new Runnable() {
             @Override
             public void run() {
+                if (span != null) {
+                    tracingContext.pushSpan(span);
+                }
                 try {
                     listener.run();
                 } finally {
+                    if (span != null) {
+                        try { // this _might_ fail in case the listener managed to corrupt the tracing context
+                            Span poppedSpan = tracingContext.popSpan();
+                            if (!span.equals(poppedSpan)) {
+                                logger.error(
+                                    "Corrupted tracing context after running listener {}: expected span {} but got {}",
+                                    listener, span, poppedSpan
+                                );
+                            }
+                        } catch (EmptyStackException e) {
+                            logger.error("Corrupted (empty) tracing context after running listener {}", listener, e);
+                        }
+                    }
                     if (listenerCount.decrementAndGet() == 0) {
                         response.release();
                     }
@@ -137,4 +170,5 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     public boolean cancel(boolean mayInterruptIfRunning) {
         throw new UnsupportedOperationException("Cancel is not supported.");
     }
+
 }

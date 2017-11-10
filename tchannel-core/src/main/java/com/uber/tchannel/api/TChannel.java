@@ -230,7 +230,7 @@ public final class TChannel {
     public static class Builder {
 
         private final @NotNull HashedWheelTimer timer;
-        private static ExecutorService executorService = new ForkJoinPool();
+        private static ExecutorService defaultExecutorService = null;
         private @NotNull EventLoopGroup bossGroup;
         private @NotNull EventLoopGroup childGroup;
 
@@ -248,6 +248,7 @@ public final class TChannel {
 
         private Tracer tracer;
         private TracingContext tracingContext = new TracingContext.Default();
+        private ExecutorService executorService = null;
 
         public Builder(@NotNull String service) {
             if (service == null) {
@@ -265,8 +266,21 @@ public final class TChannel {
             childGroup = useEpoll ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         }
 
-        public @NotNull Builder setExecutorService(ExecutorService executorService) {
-            Builder.executorService = executorService;
+        /** This provides legacy behavior of globally shared {@link ForkJoinPool} as the default executor. */
+        private static synchronized @NotNull ExecutorService defaultExecutorService() {
+            if (defaultExecutorService == null) {
+                defaultExecutorService = new ForkJoinPool();
+            }
+            return defaultExecutorService;
+        }
+
+        /** Returns either an {@link ExecutorService} configured for this builder or a default {@link ForkJoinPool}. */
+        private @NotNull ExecutorService getExecutorService() {
+            return executorService == null ? defaultExecutorService() : executorService;
+        }
+
+        public @NotNull Builder setExecutorService(@Nullable ExecutorService executorService) {
+            this.executorService = executorService;
             return this;
         }
 
@@ -383,7 +397,7 @@ public final class TChannel {
                         "RequestRouter",
                         topChannel.getCustomRequestRouter() != null
                             ? topChannel.getCustomRequestRouter()
-                            : new RequestRouter(topChannel, executorService)
+                            : new RequestRouter(topChannel, getExecutorService())
                     );
                     ch.pipeline().addLast("ResponseRouter", new ResponseRouter(topChannel, timer));
 
