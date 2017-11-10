@@ -237,7 +237,7 @@ public final class SubChannel {
         InetAddress host,
         int port
     ) {
-        OutRequest<V> outRequest = new OutRequest<>(this, request);
+        OutRequest<V> outRequest = new OutRequest<>(this, request, topChannel.getTracingContext());
         if (host != null) {
             Connection conn = peerManager.findOrNew(new InetSocketAddress(host, port));
             // No retry for direct connections

@@ -11,6 +11,7 @@ import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.messages.ResponseMessage;
 import com.uber.tchannel.messages.ThriftResponse;
+import com.uber.tchannel.tracing.TracingContext;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.Timeout;
 import org.jetbrains.annotations.NotNull;
@@ -41,11 +42,21 @@ public final class OutRequest<V extends Response> {
     private @Nullable ChannelFuture channelFuture = null;
     private @Nullable ErrorResponse lastError = null;
 
-    public OutRequest(@NotNull SubChannel subChannel, @NotNull Request request) {
+    public OutRequest(
+        @NotNull SubChannel subChannel,
+        @NotNull Request request,
+        @Nullable TracingContext tracingContext
+    ) {
         this.subChannel = subChannel;
         this.request = request;
-        this.future = TFuture.create(request.getArgScheme());
+        this.future = TFuture.create(request.getArgScheme(), tracingContext);
         this.retryLimit = request.getRetryLimit();
+    }
+
+    /** @deprecated Use {@link #OutRequest(SubChannel, Request, TracingContext)}. */
+    @Deprecated
+    public OutRequest(@NotNull SubChannel subChannel, @NotNull Request request) {
+        this(subChannel, request, null);
     }
 
     public @NotNull Request getRequest() {
