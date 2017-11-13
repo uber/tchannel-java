@@ -62,7 +62,7 @@ public class Connection {
         return this.channel;
     }
 
-    public @Nullable TChannelError lastError() {
+    public synchronized @Nullable TChannelError lastError() {
         return this.lastError;
     }
 
@@ -131,11 +131,11 @@ public class Connection {
         return "0.0.0.0:0".equals(this.remoteAddress);
     }
 
-    public @Nullable String getRemoteAddress() {
+    public synchronized @Nullable String getRemoteAddress() {
         return this.remoteAddress;
     }
 
-    public @NotNull SocketAddress getRemoteAddressAsSocketAddress() {
+    public synchronized @NotNull SocketAddress getRemoteAddressAsSocketAddress() {
         return hostPortToSocketAddress(this.remoteAddress);
     }
 
