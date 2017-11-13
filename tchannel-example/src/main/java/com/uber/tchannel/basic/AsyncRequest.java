@@ -80,7 +80,7 @@ public final class AsyncRequest {
         }
 
         done.await();
-        System.out.println(String.format("\nTime cost: %dms", System.currentTimeMillis() - start));
+        System.out.println(String.format("%nTime cost: %dms", System.currentTimeMillis() - start));
 
         // close channels asynchronously
         server.shutdown(false);

@@ -71,7 +71,7 @@ public final class SyncRequest {
             System.out.println();
         }
 
-        System.out.println(String.format("\nTime cost: %dms", System.currentTimeMillis() - start));
+        System.out.println(String.format("%nTime cost: %dms", System.currentTimeMillis() - start));
 
         // close channels asynchronously
         server.shutdown(false);
