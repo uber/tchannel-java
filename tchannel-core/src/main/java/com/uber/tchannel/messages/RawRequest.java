@@ -28,6 +28,7 @@ import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -137,13 +138,13 @@ public final class RawRequest extends Request {
         }
 
         public final Builder setHeader(String header) {
-            this.setArg2(Unpooled.wrappedBuffer(header.getBytes()));
+            this.setArg2(Unpooled.wrappedBuffer(header.getBytes(StandardCharsets.UTF_8)));
             this.header = header;
             return this;
         }
 
         public final Builder setBody(String body) {
-            setArg3(Unpooled.wrappedBuffer(body.getBytes()));
+            setArg3(Unpooled.wrappedBuffer(body.getBytes(StandardCharsets.UTF_8)));
             this.body = body;
             return this;
         }

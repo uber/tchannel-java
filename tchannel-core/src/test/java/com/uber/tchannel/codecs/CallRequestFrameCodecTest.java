@@ -27,6 +27,7 @@ import com.uber.tchannel.frames.CallRequestFrame;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -36,7 +37,7 @@ public class CallRequestFrameCodecTest {
     @Test
     public void testEncodeDecode() throws Exception {
 
-        CallRequestFrame callRequestFrame = Fixtures.callRequest(42, false, Unpooled.wrappedBuffer("Hello, World!".getBytes()));
+        CallRequestFrame callRequestFrame = Fixtures.callRequest(42, false, Unpooled.wrappedBuffer("Hello, World!".getBytes(StandardCharsets.UTF_8)));
         CallRequestFrame inboundCallRequestFrame =
             (CallRequestFrame) MessageCodec.decode(
                 CodecTestUtil.encodeDecode(

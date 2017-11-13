@@ -29,6 +29,7 @@ import com.uber.tchannel.headers.TransportHeaders;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -290,7 +291,7 @@ public abstract class Request implements RawMessage {
         }
 
         private Builder setEndpoint(String endpoint) {
-            this.setArg1(Unpooled.wrappedBuffer(endpoint.getBytes()));
+            this.setArg1(Unpooled.wrappedBuffer(endpoint.getBytes(StandardCharsets.UTF_8)));
             this.endpoint = endpoint;
 
             return this;

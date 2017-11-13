@@ -25,6 +25,7 @@ import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -41,10 +42,10 @@ public class TFrameCodecTest {
         );
 
         String payload = "Hello, World!";
-        ByteBuf buffer = Unpooled.wrappedBuffer(payload.getBytes());
+        ByteBuf buffer = Unpooled.wrappedBuffer(payload.getBytes(StandardCharsets.UTF_8));
 
         TFrame frame = new TFrame(
-                payload.getBytes().length,
+                payload.getBytes(StandardCharsets.UTF_8).length,
                 FrameType.InitRequest,
                 Integer.MAX_VALUE,
                 buffer

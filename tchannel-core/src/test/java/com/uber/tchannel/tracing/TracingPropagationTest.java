@@ -56,6 +56,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -179,7 +180,7 @@ public class TracingPropagationTest {
             String encodings = request.getBody(Example.class).getAString();
             TraceResponse response = observeSpanAndDownstream(encodings);
             ByteBuf bytes = new JSONSerializer().encodeBody(response);
-            Example thriftResponse = new Example(new String(bytes.array()), 0);
+            Example thriftResponse = new Example(new String(bytes.array(), StandardCharsets.UTF_8), 0);
             bytes.release();
             return new ThriftResponse.Builder<Example>(request)
                     .setTransportHeaders(request.getTransportHeaders())
@@ -204,7 +205,7 @@ public class TracingPropagationTest {
                         String encodings = request.getBody(Example.class).getAString();
                         TraceResponse traceResponse = observeSpanAndDownstream(encodings);
                         ByteBuf bytes = new JSONSerializer().encodeBody(traceResponse);
-                        Example thriftResponse = new Example(new String(bytes.array()), 0);
+                        Example thriftResponse = new Example(new String(bytes.array(), StandardCharsets.UTF_8), 0);
                         bytes.release();
                         ThriftResponse<Example> response = new ThriftResponse.Builder<Example>(request)
                                 .setTransportHeaders(request.getTransportHeaders())
@@ -311,7 +312,7 @@ public class TracingPropagationTest {
             }
             String json = thriftResponse.getBody(Example.class).getAString();
             ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
-            byteBuf.writeBytes(json.getBytes());
+            byteBuf.writeBytes(json.getBytes(StandardCharsets.UTF_8));
             TraceResponse response = new JSONSerializer().decodeBody(byteBuf, TraceResponse.class);
             byteBuf.release();
             return response;

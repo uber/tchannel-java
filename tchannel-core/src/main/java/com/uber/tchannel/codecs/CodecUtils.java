@@ -28,6 +28,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import java.nio.charset.StandardCharsets;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,11 +69,11 @@ public final class CodecUtils {
         int valueLength = buffer.readUnsignedShort();
         byte[] valueBytes = new byte[valueLength];
         buffer.readBytes(valueBytes);
-        return new String(valueBytes);
+        return new String(valueBytes, StandardCharsets.UTF_8);
     }
 
     public static void encodeString(@NotNull String value, @NotNull ByteBuf buffer) {
-        byte[] raw = value.getBytes();
+        byte[] raw = value.getBytes(StandardCharsets.UTF_8);
         buffer.writeShort(raw.length);
         buffer.writeBytes(raw);
     }
@@ -81,11 +82,11 @@ public final class CodecUtils {
         int valueLength = buffer.readUnsignedByte();
         byte[] valueBytes = new byte[valueLength];
         buffer.readBytes(valueBytes);
-        return new String(valueBytes);
+        return new String(valueBytes, StandardCharsets.UTF_8);
     }
 
     public static void encodeSmallString(@NotNull String value, @NotNull ByteBuf buffer) {
-        byte[] raw = value.getBytes();
+        byte[] raw = value.getBytes(StandardCharsets.UTF_8);
         buffer.writeByte(raw.length);
         buffer.writeBytes(raw);
     }

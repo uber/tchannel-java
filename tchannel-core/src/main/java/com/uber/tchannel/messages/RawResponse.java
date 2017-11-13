@@ -27,6 +27,7 @@ import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -140,13 +141,13 @@ public class RawResponse extends Response {
         }
 
         public final @NotNull Builder setHeader(@NotNull String header) {
-            this.setArg2(Unpooled.wrappedBuffer(header.getBytes()));
+            this.setArg2(Unpooled.wrappedBuffer(header.getBytes(StandardCharsets.UTF_8)));
             this.header = header;
             return this;
         }
 
         public final @NotNull Builder setBody(@NotNull String body) {
-            setArg3(Unpooled.wrappedBuffer(body.getBytes()));
+            setArg3(Unpooled.wrappedBuffer(body.getBytes(StandardCharsets.UTF_8)));
             this.body = body;
             return this;
         }

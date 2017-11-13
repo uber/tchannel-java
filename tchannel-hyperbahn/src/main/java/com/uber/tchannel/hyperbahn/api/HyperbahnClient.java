@@ -33,15 +33,18 @@ import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
+import java.io.FileInputStream;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -199,7 +202,7 @@ public final class HyperbahnClient {
         private static @NotNull List<InetSocketAddress> loadRouters(String hostsFilePath) throws IOException {
 
             List<String> hostPorts;
-            try (Reader reader = new FileReader(hostsFilePath)) {
+            try (Reader reader = new InputStreamReader(new FileInputStream(hostsFilePath), StandardCharsets.UTF_8)) {
                 hostPorts = new Gson().fromJson(reader, LIST_OF_STRINGS);
             }
 

@@ -34,6 +34,7 @@ import com.uber.tchannel.messages.RawMessage;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -67,7 +68,7 @@ public class TestMessageMultiplexer {
             Unpooled.wrappedBuffer(
                 // arg1 size
                 new byte[]{0x00, 0x04},
-                "arg1".getBytes(),
+                "arg1".getBytes(StandardCharsets.UTF_8),
                 new byte[]{0x00, 0x00}
         ));
 
@@ -83,7 +84,7 @@ public class TestMessageMultiplexer {
         CallRequestContinueFrame firstCallRequestContinueFrame = Fixtures.callRequestContinue(id, true, Unpooled.wrappedBuffer(
             // arg2 size
             new byte[]{0x00, 0x04},
-            "arg2".getBytes()
+            "arg2".getBytes(StandardCharsets.UTF_8)
         ));
         channel.writeInbound(
             MessageCodec.encode(
@@ -100,7 +101,7 @@ public class TestMessageMultiplexer {
             new byte[]{0x00, 0x00},
             // arg3 size
             new byte[]{0x00, 0x04},
-            "arg3".getBytes()
+            "arg3".getBytes(StandardCharsets.UTF_8)
         ));
         channel.writeInbound(
             MessageCodec.encode(
@@ -174,7 +175,7 @@ public class TestMessageMultiplexer {
         CallResponseContinueFrame firstCallResponseContinueFrame = Fixtures.callResponseContinue(id, true, Unpooled.wrappedBuffer(
             // arg2 size
             new byte[]{0x00, 0x04},
-            "arg2".getBytes()
+            "arg2".getBytes(StandardCharsets.UTF_8)
         ));
         channel.writeInbound(
             MessageCodec.encode(
@@ -191,7 +192,7 @@ public class TestMessageMultiplexer {
             new byte[]{0x00, 0x00},
             // arg3 size
             new byte[]{0x00, 0x04},
-            "arg3".getBytes()
+            "arg3".getBytes(StandardCharsets.UTF_8)
         ));
         channel.writeInbound(
             MessageCodec.encode(
