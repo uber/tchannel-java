@@ -30,6 +30,7 @@ import io.netty.util.CharsetUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,17 +64,17 @@ public final class JSONSerializer implements Serializer.SerializerInterface {
 
     @Override
     public ByteBuf encodeEndpoint(String method) {
-        return Unpooled.wrappedBuffer(method.getBytes());
+        return Unpooled.wrappedBuffer(method.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
     public ByteBuf encodeHeaders(Map<String, String> applicationHeaders) {
-        return Unpooled.wrappedBuffer(GSON.toJson(applicationHeaders, HEADER_TYPE).getBytes());
+        return Unpooled.wrappedBuffer(GSON.toJson(applicationHeaders, HEADER_TYPE).getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
     public ByteBuf encodeBody(Object body) {
-        return Unpooled.wrappedBuffer(GSON.toJson(body).getBytes());
+        return Unpooled.wrappedBuffer(GSON.toJson(body).getBytes(StandardCharsets.UTF_8));
     }
 
 }

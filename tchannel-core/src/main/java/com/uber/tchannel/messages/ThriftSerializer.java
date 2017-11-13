@@ -27,6 +27,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
@@ -79,7 +80,7 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
 
     @Override
     public ByteBuf encodeEndpoint(@NotNull String method) {
-        return Unpooled.wrappedBuffer(method.getBytes());
+        return Unpooled.wrappedBuffer(method.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override

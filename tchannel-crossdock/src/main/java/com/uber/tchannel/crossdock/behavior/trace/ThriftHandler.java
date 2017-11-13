@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 class ThriftHandler extends ThriftRequestHandler<Call_args, Call_result> {
@@ -82,7 +83,7 @@ class ThriftHandler extends ThriftRequestHandler<Call_args, Call_result> {
 
     private static <T> T jsonToObject(String json, Class<T> objClass) {
         ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(json.length());
-        byteBuf.writeBytes(json.getBytes());
+        byteBuf.writeBytes(json.getBytes(StandardCharsets.UTF_8));
         T obj = new JSONSerializer().decodeBody(byteBuf, objClass);
         byteBuf.release();
         return obj;
@@ -90,7 +91,7 @@ class ThriftHandler extends ThriftRequestHandler<Call_args, Call_result> {
 
     private static String objectToJSON(Object obj) {
         ByteBuf bytes = new JSONSerializer().encodeBody(obj);
-        String json = new String(bytes.array());
+        String json = new String(bytes.array(), StandardCharsets.UTF_8);
         bytes.release();
         return json;
     }
