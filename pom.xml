@@ -108,7 +108,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.15.Final</version>
+                <version>4.1.17.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -163,7 +163,7 @@
             <dependency>
                 <groupId>com.uber.jaeger</groupId>
                 <artifactId>jaeger-core</artifactId>
-                <version>0.20.6</version>
+                <version>0.21.0</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains</groupId>
