@@ -53,10 +53,10 @@ import org.jetbrains.annotations.Nullable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class SubChannel {
 
@@ -66,7 +66,7 @@ public final class SubChannel {
     private final long initTimeout;
     private final Connection.Direction preferredDirection;
     private final @NotNull List<SubPeer> peers = new ArrayList<>();
-    private final @NotNull Map<String, RequestHandler> requestHandlers = new HashMap<>();
+    private final @NotNull Map<String, RequestHandler> requestHandlers = new ConcurrentHashMap<>();
 
     private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
             ImmutableMap.of(ArgScheme.JSON, new JSONSerializer(), ArgScheme.THRIFT, new ThriftSerializer());
@@ -93,7 +93,13 @@ public final class SubChannel {
         return this.peerManager;
     }
 
-    public @NotNull SubChannel register(String endpoint, RequestHandler requestHandler) {
+    /**
+     * Add a handler for a named endpoint. None of the parameters can be null.
+     * @param endpoint name of endpoint
+     * @param requestHandler request handler
+     * @return same object (this)
+     */
+    public @NotNull SubChannel register(@NotNull String endpoint, @NotNull RequestHandler requestHandler) {
         requestHandlers.put(endpoint, requestHandler);
         return this;
     }
@@ -112,7 +118,11 @@ public final class SubChannel {
         return register("Meta::health", healthHandler);
     }
 
-    public @Nullable RequestHandler getRequestHandler(String endpoint) {
+    /**
+     * @param endpoint name of endpoint
+     * @return Corresponding handler or null of no handler for endpoint
+     */
+    public @Nullable RequestHandler getRequestHandler(@Nullable String endpoint) {
         return requestHandlers.get(endpoint);
     }
 
