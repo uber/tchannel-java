@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.zip.Adler32;
 
-public final class Checksums {
+public class Checksums {
 
     private Checksums() {}
 

@@ -58,7 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public final class SubChannel {
+public class SubChannel {
 
     private final String service;
     private final @NotNull TChannel topChannel;

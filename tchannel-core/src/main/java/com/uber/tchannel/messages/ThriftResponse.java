@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
-public final class ThriftResponse<T> extends EncodedResponse<T> {
+public class ThriftResponse<T> extends EncodedResponse<T> {
 
     private ThriftResponse(Builder<T> builder) {
         super(builder);

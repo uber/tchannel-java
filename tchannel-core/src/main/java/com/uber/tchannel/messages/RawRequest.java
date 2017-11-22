@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public final class RawRequest extends Request {
+public class RawRequest extends Request {
     private String header = null;
     private String body = null;
 

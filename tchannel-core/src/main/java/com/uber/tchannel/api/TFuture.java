@@ -50,7 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @param <V> the type of the payload
  */
 
-public final class TFuture<V extends Response> extends AbstractFuture<V> {
+public class TFuture<V extends Response> extends AbstractFuture<V> {
 
     private static final Logger logger = LoggerFactory.getLogger(TFuture.class);
 

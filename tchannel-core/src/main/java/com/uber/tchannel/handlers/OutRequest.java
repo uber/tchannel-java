@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * The logic unit for managing out requests
  */
-public final class OutRequest<V extends Response> {
+public class OutRequest<V extends Response> {
 
     private static final Logger logger = LoggerFactory.getLogger(OutRequest.class);
 

@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class JSONSerializer implements Serializer.SerializerInterface {
+public class JSONSerializer implements Serializer.SerializerInterface {
 
     private static final Type HEADER_TYPE = (new TypeToken<Map<String, String>>() {}).getType();
 

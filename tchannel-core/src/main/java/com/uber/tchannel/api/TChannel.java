@@ -71,7 +71,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 
-public final class TChannel {
+public class TChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(TChannel.class);
 

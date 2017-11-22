@@ -25,7 +25,7 @@ package com.uber.tchannel.messages;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.frames.FrameType;
 
-public final class ErrorResponse extends ResponseMessage {
+public class ErrorResponse extends ResponseMessage {
 
     private final ErrorType errorType;
     private final String message;

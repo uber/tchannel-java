@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
-public final class JsonResponse<T> extends EncodedResponse<T> {
+public class JsonResponse<T> extends EncodedResponse<T> {
 
     private JsonResponse(Builder<T> builder) {
         super(builder);
