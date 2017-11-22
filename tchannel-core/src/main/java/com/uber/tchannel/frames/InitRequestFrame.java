@@ -33,7 +33,7 @@ import java.util.Map;
  * and describe the service names on both ends. In the future, we will likely use this to negotiate authentication
  * and authorization between services.
  */
-public final class InitRequestFrame extends InitFrame {
+public class InitRequestFrame extends InitFrame {
 
     private int version;
     private Map<String, String> headers;

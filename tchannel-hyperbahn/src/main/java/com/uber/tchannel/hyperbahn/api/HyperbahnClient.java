@@ -52,7 +52,7 @@ import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
-public final class HyperbahnClient {
+public class HyperbahnClient {
     private static final Logger logger = LoggerFactory.getLogger(HyperbahnClient.class);
 
     private static final String HYPERBAHN_SERVICE_NAME = "hyperbahn";

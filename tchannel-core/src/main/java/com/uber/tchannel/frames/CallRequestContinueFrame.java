@@ -28,7 +28,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
 
-public final class CallRequestContinueFrame extends CallFrame {
+public class CallRequestContinueFrame extends CallFrame {
 
     public CallRequestContinueFrame(long id, byte flags, ChecksumType checksumType, int checksum, ByteBuf payload) {
         this.id = id;

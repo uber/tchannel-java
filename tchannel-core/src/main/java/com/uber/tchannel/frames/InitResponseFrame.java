@@ -34,7 +34,7 @@ import java.util.Map;
  * actual version that will be used for the rest of this connection. The header name/values are the same,
  * but identify the server.
  */
-public final class InitResponseFrame extends InitFrame {
+public class InitResponseFrame extends InitFrame {
 
     private int version;
     private Map<String, String> headers;

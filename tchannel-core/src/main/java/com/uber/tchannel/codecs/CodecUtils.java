@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public final class CodecUtils {
+public class CodecUtils {
 
     private CodecUtils() {}
 

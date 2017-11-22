@@ -31,7 +31,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 
-public final class ErrorFrame extends Frame {
+public class ErrorFrame extends Frame {
 
     private ErrorType errorType;
     private Trace tracing;

@@ -42,7 +42,7 @@ import java.util.Map;
  * <p>
  * The size of arg1 is at most 16KiB.
  */
-public final class CallResponseFrame extends CallFrame {
+public class CallResponseFrame extends CallFrame {
 
     private ResponseCode responseCode;
     private Trace tracing;

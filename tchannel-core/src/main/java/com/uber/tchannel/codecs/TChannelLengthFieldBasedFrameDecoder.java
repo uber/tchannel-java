@@ -24,7 +24,7 @@ package com.uber.tchannel.codecs;
 
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-public final class TChannelLengthFieldBasedFrameDecoder extends LengthFieldBasedFrameDecoder {
+public class TChannelLengthFieldBasedFrameDecoder extends LengthFieldBasedFrameDecoder {
     public TChannelLengthFieldBasedFrameDecoder() {
         super(
                 TFrame.MAX_FRAME_LENGTH,

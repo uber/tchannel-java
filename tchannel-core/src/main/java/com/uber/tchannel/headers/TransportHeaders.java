@@ -22,7 +22,7 @@
 
 package com.uber.tchannel.headers;
 
-public final class TransportHeaders {
+public class TransportHeaders {
 
     public static final String ARG_SCHEME_KEY = "as";
     public static final String CLAIM_AT_START_KEY = "cas";

@@ -27,7 +27,7 @@ import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
-public final class ClaimFrame extends Frame {
+public class ClaimFrame extends Frame {
 
     private long ttl;
     private Trace tracing;

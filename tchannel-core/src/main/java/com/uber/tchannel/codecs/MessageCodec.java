@@ -45,7 +45,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class MessageCodec {
+public class MessageCodec {
 
     private MessageCodec() {}
 
