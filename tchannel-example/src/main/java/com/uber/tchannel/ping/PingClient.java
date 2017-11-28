@@ -38,6 +38,7 @@ import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PingClient {
 
@@ -79,7 +80,7 @@ public class PingClient {
     public void run() throws Exception {
         TChannel tchannel = new TChannel.Builder("ping-client").build();
         SubChannel subChannel = tchannel.makeSubChannel("ping-server");
-        final ConcurrentHashMap<String, Integer> msgs = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<String, AtomicInteger> msgs = new ConcurrentHashMap<>();
         final CountDownLatch done = new CountDownLatch(requests);
 
         for (int i = 0; i < requests; i++) {
@@ -99,19 +100,18 @@ public class PingClient {
                 public void onResponse(JsonResponse<Pong> pongResponse) {
                     done.countDown();
                     String msg = pongResponse.toString();
-                    if (msgs.containsKey(msg)) {
-                        msgs.put(msg, msgs.get(msg) + 1);
-                    } else {
-                        msgs.put(msg, 1);
+                    AtomicInteger count = msgs.putIfAbsent(msg, new AtomicInteger(1));
+                    if (count != null) {
+                        count.incrementAndGet();
                     }
                 }
             });
         }
 
         done.await();
-        for (Map.Entry<String, Integer> stringIntegerEntry : msgs.entrySet()) {
+        for (Map.Entry<String, AtomicInteger> stringIntegerEntry : msgs.entrySet()) {
             System.out.println(String.format("%s%n\tcount:%d",
-                (String) stringIntegerEntry.getKey(), stringIntegerEntry.getValue()
+                stringIntegerEntry.getKey(), stringIntegerEntry.getValue()
             ));
         }
 
