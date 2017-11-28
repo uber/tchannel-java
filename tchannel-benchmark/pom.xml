@@ -35,7 +35,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
     <parent>
         <artifactId>tchannel</artifactId>
         <groupId>com.uber.tchannel</groupId>
-        <version>0.7.8</version>
+        <version>0.7.9-SNAPSHOT</version>
     </parent>
 
     <artifactId>tchannel-benchmark</artifactId>
