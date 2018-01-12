@@ -1,4 +1,4 @@
-#TChannel Examples
+# TChannel Examples
 
 In TChannel-JAVA, the [SubChannel.send(...)](../tchannel-core/src/main/java/com/uber/tchannel/api/SubChannel.java)
 function returns a [future object](../tchannel-core/src/main/java/com/uber/tchannel/api/TFuture.java), which can either
@@ -8,7 +8,7 @@ protocol communication in JAVA. The synchronous and asynchronous examples are be
 * [AsyncRequest](./src/main/java/com/uber/tchannel/basic/AsyncRequest.java)
 
 
-##Run Examples
+## Run Examples
 
 ### 1. Requet Examples
 #### 1.1 [SyncRequest](./src/main/java/com/uber/tchannel/basic/SyncRequest.java)
