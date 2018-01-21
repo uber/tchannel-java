@@ -88,6 +88,7 @@
         <jmh.version>1.19</jmh.version>
         <se.eris.notnull.instrument>false</se.eris.notnull.instrument><!-- off by default -->
         <slf4j.version>1.7.25</slf4j.version>
+        <com.uber.jaeger.version>0.23.0</com.uber.jaeger.version>
 
     </properties>
 
@@ -158,12 +159,7 @@
             <dependency>
                 <groupId>io.opentracing</groupId>
                 <artifactId>opentracing-api</artifactId>
-                <version>0.30.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.uber.jaeger</groupId>
-                <artifactId>jaeger-core</artifactId>
-                <version>0.21.0</version>
+                <version>0.31.0</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains</groupId>
