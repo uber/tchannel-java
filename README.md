@@ -118,4 +118,50 @@ Pull requests *must* have thorough testing and be reviewed by at least one other
 You *must* run [benchmarks](./tchannel-benchmark/src/main/java/com/uber/tchannel/benchmarks/)
 to ensure there is no performance degradation.
 
+## Releasing
+
+1. Create an account for [oss.sonatype.org](http://oss.sonatype.org). You can sign up [here](https://issues.sonatype.org/secure/Signup!default.jspa).
+
+     This will be your credentials for ```~/.m2/settings.xml``` as well, which are going to be needed for pushing
+     changes to the Sonatype index.
+
+2. File a ticket with Sonatype to get required permissions to publish for ``com.uber.tchannel`` group ID.
+   {[example](https://issues.sonatype.org/browse/OSSRH-37519)}
+
+3. Generate and share a PGP signature.
+     
+     a. ``$ gpg --gen-key``
+     
+     b. pick ``RSA and RSA (default)`` with keysize of 2048 bits. Expiration time is left up to you
+     (but never expire might be easiest option).
+     
+     c. ``$ gpg --list-secret-keys`` will now list your keys.
+     
+     d. Take the pub key ID from the result of ``gpg --list-keys`` and do something like
+     ``$ gpg --keyserver hkp://pool.sks-keyservers.net --send-keys ********`` to upload your pub keys.
+
+4. Settings
+     
+     ``pom.xml`` already has the required configuration. Make the following change to ``~/.m2/settings.xml``, using the
+     credentials from (1).
+     
+     ```xml
+     <settings>
+         <servers>
+             <server>
+                 <id>ossrh</id>
+                 <username>your-username-here</username>
+                 <password>your-password-here</password>
+             </server>
+         </servers>
+     </settings>
+     ```
+     
+     ``mvn help:effective-settings`` will assist in weeding out typos.
+
+5. Run ``make release``.
+
+6. You will be able to see activity related to the change on the Nexus Repository Manager [here](http://oss.sonatype.org). 
+   It can take between 12-24 hours for the full release to complete, and the artifacts to be consumable from other projects.
+
 ## MIT Licenced
