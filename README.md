@@ -120,7 +120,7 @@ to ensure there is no performance degradation.
 
 ## Releasing
 
-1. Create an account on [oss.sonatype.org](http://oss.sonatype.org)
+1. Create an account for [oss.sonatype.org](http://oss.sonatype.org). You can sign up [here](https://issues.sonatype.org/secure/Signup!default.jspa).
 
      This will be your credentials for ```~/.m2/settings.xml``` as well, which are going to be needed for pushing
      changes to the Sonatype index.
@@ -128,7 +128,7 @@ to ensure there is no performance degradation.
 2. File a ticket with Sonatype to get required permissions to publish for ``com.uber.tchannel`` group ID.
    {[example](https://issues.sonatype.org/browse/OSSRH-37519)}
 
-2. Generate and share a PGP signature.
+3. Generate and share a PGP signature.
      
      a. ``$ gpg --gen-key``
      
@@ -140,7 +140,7 @@ to ensure there is no performance degradation.
      d. Take the pub key ID from the result of ``gpg --list-keys`` and do something like
      ``$ gpg --keyserver hkp://pool.sks-keyservers.net --send-keys ********`` to upload your pub keys.
 
-3. Settings
+4. Settings
      
      ``pom.xml`` already has the required configuration. Make the following change to ``~/.m2/settings.xml``, using the
      credentials from (1).
@@ -159,6 +159,9 @@ to ensure there is no performance degradation.
      
      ``mvn help:effective-settings`` will assist in weeding out typos.
 
-4. Run ``make release``.
+5. Run ``make release``.
+
+6. You will be able to see activity related to the change on the Nexus Repository Manager [here](http://oss.sonatype.org). 
+   It can take between 12-24 hours for the full release to complete, and the artifacts to be consumable from other projects.
 
 ## MIT Licenced
