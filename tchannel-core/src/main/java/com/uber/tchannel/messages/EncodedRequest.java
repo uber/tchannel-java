@@ -33,7 +33,7 @@ import java.util.Map;
 
 public abstract class EncodedRequest<T> extends Request implements TraceableRequest {
 
-    private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
+    private static final ImmutableMap<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
             ImmutableMap.of(ArgScheme.JSON, new JSONSerializer(), ArgScheme.THRIFT, new ThriftSerializer());
 
     private static final Serializer serializer = new Serializer(DEFAULT_SERIALIZERS);

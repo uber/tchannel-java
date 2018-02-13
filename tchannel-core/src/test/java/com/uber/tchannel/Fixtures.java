@@ -35,7 +35,9 @@ import io.netty.buffer.Unpooled;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Fixtures {
+public final class Fixtures {
+
+    private Fixtures() {}
 
     public static CallRequestFrame callRequest(long id, boolean moreFragments, ByteBuf payload) {
         return callRequest(id, moreFragments, new HashMap<String, String>(), payload);

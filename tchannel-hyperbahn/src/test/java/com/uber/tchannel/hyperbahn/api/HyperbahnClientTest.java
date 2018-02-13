@@ -25,7 +25,6 @@ package com.uber.tchannel.hyperbahn.api;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
-import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
 import com.uber.tchannel.messages.JsonRequest;
@@ -106,7 +105,7 @@ public class HyperbahnClientTest {
         return server;
     }
 
-    public class AdvertiseResponseHandler extends JSONRequestHandler<AdvertiseRequest, AdvertiseResponse> {
+    public static class AdvertiseResponseHandler extends JSONRequestHandler<AdvertiseRequest, AdvertiseResponse> {
         public int requestsReceived = 0;
 
         @Override

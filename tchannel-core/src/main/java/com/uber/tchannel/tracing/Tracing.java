@@ -28,7 +28,6 @@ import com.uber.tchannel.handlers.OutRequest;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import io.opentracing.Span;
-import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;

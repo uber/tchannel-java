@@ -72,11 +72,11 @@ class ThriftHandler extends ThriftRequestHandler<Call_args, Call_result> {
         }
     }
 
-    private <T> T dataToObject(Data data, Class<T> objClass) {
+    private static <T> T dataToObject(Data data, Class<T> objClass) {
         return jsonToObject(data.getS2(), objClass);
     }
 
-    private Data objectToData(Object obj) {
+    private static Data objectToData(Object obj) {
         String json = objectToJSON(obj);
         return new Data(false, json, 0);
     }

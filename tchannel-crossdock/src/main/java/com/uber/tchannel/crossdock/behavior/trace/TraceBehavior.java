@@ -81,7 +81,7 @@ public class TraceBehavior {
         return response;
     }
 
-    private InetAddress host(Downstream downstream) {
+    private static InetAddress host(Downstream downstream) {
         String[] hostPort = downstream.getHostPort().split(":");
         try {
             return InetAddress.getByName(hostPort[0]);
@@ -91,7 +91,7 @@ public class TraceBehavior {
         }
     }
 
-    private int port(Downstream downstream) {
+    private static int port(Downstream downstream) {
         String[] hostPort = downstream.getHostPort().split(":");
         return Integer.parseInt(hostPort[1]);
     }

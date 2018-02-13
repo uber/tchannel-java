@@ -34,7 +34,7 @@ import java.util.Map;
 
 public abstract class EncodedResponse<T> extends Response {
 
-    private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS = ImmutableMap.of(
+    private static final ImmutableMap<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS = ImmutableMap.of(
         ArgScheme.JSON, new JSONSerializer(),
         ArgScheme.THRIFT, new ThriftSerializer()
     );

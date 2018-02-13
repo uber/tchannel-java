@@ -76,7 +76,7 @@ public class TestThriftAsyncRequestHandler {
 
             response = responsePromise.get();
             assertNull(response.getError());
-            assertEquals(responseBody, (Example) response.getBody(Example.class));
+            assertEquals(responseBody, response.getBody(Example.class));
         } finally {
             if (response != null) {
                 response.release();
