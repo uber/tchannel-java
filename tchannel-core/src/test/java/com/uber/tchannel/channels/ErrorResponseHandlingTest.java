@@ -86,7 +86,7 @@ public class ErrorResponseHandlingTest {
         client.shutdown();
     }
 
-    protected  class EchoHandler implements RequestHandler {
+    protected static class EchoHandler implements RequestHandler {
         public boolean accessed = false;
 
         @Override

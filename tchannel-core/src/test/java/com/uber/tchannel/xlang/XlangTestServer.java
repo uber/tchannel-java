@@ -18,7 +18,10 @@ import java.net.InetAddress;
 //      2. https://github.com/uber/tchannel-node/blob/master/scripts/xlang_test.js
 
 
-public class XlangTestServer {
+public final class XlangTestServer {
+
+    private XlangTestServer() {}
+
     public static void main(String[] args) throws Exception {
         TChannel tchannel = new TChannel.Builder("test_as_raw")
             .setServerHost(InetAddress.getByName(null))

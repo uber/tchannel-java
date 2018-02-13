@@ -37,19 +37,19 @@ public class ThriftSerializerTest {
     private Serializer.SerializerInterface serializer;
 
     @org.junit.Before
-    public void setUp() throws Exception {
+    public void setUp() {
         this.serializer = new ThriftSerializer();
     }
 
     @Test
     public void testNewInstance() throws Exception {
-        Class<?> instanceType = Example.class;
-        Example obj = (Example) instanceType.newInstance();
+        Class<Example> instanceType = Example.class;
+        Example obj = instanceType.getConstructor().newInstance();
         assertNotNull(obj);
     }
 
     @Test
-    public void testEncodeDecodeEndpoint() throws Exception {
+    public void testEncodeDecodeEndpoint() {
         String endpoint = "SomeService::someMethod";
         ByteBuf endpointBuf = this.serializer.encodeEndpoint(endpoint);
         String decodedEndpoint = this.serializer.decodeEndpoint(endpointBuf);
@@ -58,7 +58,7 @@ public class ThriftSerializerTest {
     }
 
     @Test
-    public void testEncodeDecodeHeaders() throws Exception {
+    public void testEncodeDecodeHeaders() {
         Map<String, String> headers = new HashMap<String, String>() {{
             put("foo", "bar");
         }};
@@ -82,8 +82,8 @@ public class ThriftSerializerTest {
     public void testEncodeDecodeBody() throws Exception {
 
         // Given
-        Class<?> instanceType = Example.class;
-        Example obj = (Example) instanceType.newInstance();
+        Class<Example> instanceType = Example.class;
+        Example obj = instanceType.getConstructor().newInstance();
         obj.setAnInteger(42);
         obj.setAString("Hello, World!");
 
@@ -98,7 +98,7 @@ public class ThriftSerializerTest {
     }
 
     @org.junit.After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         this.serializer = null;
     }
 }

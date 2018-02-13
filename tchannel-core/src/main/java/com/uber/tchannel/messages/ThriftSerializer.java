@@ -27,6 +27,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TDeserializer;
@@ -59,7 +61,7 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
 
         try {
             // Create a new instance of type 'T'
-            T base = bodyType.newInstance();
+            T base = bodyType.getConstructor().newInstance();
 
             // Get byte[] from ByteBuf
             byte[] payloadBytes = new byte[arg3.readableBytes()];
@@ -70,7 +72,13 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
             deserializer.deserialize((TBase<?, ?>) base, payloadBytes);
 
             return base;
-        } catch (InstantiationException | IllegalAccessException | TException e) {
+        } catch (
+            NoSuchMethodException
+                | InvocationTargetException
+                | InstantiationException
+                | IllegalAccessException
+                | TException e
+        ) {
             logger.error("Failed to decode body to {}", bodyType.getName(), e);
         }
 

@@ -68,7 +68,7 @@ public final class SubChannel {
     private final @NotNull List<SubPeer> peers = new ArrayList<>();
     private final @NotNull Map<String, RequestHandler> requestHandlers = new ConcurrentHashMap<>();
 
-    private static final Map<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
+    private static final ImmutableMap<ArgScheme, Serializer.SerializerInterface> DEFAULT_SERIALIZERS =
             ImmutableMap.of(ArgScheme.JSON, new JSONSerializer(), ArgScheme.THRIFT, new ThriftSerializer());
 
     private final Serializer serializer = new Serializer(DEFAULT_SERIALIZERS);

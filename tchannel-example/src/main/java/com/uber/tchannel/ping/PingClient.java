@@ -110,7 +110,7 @@ public class PingClient {
 
         done.await();
         for (Map.Entry<String, AtomicInteger> stringIntegerEntry : msgs.entrySet()) {
-            System.out.println(String.format("%s%n\tcount:%d",
+            System.out.println(String.format("%s%n\tcount:%s",
                 stringIntegerEntry.getKey(), stringIntegerEntry.getValue()
             ));
         }

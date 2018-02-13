@@ -460,7 +460,7 @@ public class PeerManagerTest {
 
     }
 
-    private void assertStats(String label, TChannel channel, int in, int out) {
+    private static void assertStats(String label, TChannel channel, int in, int out) {
         assertEquals(
             label + " stats",
             ImmutableMap.of(

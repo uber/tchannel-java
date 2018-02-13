@@ -25,7 +25,9 @@ package com.uber.tchannel.codecs;
 import io.netty.channel.embedded.EmbeddedChannel;
 
 
-public class CodecTestUtil {
+public final class CodecTestUtil {
+
+    private CodecTestUtil() {}
 
     public static TFrame encodeDecode(TFrame frame) {
         EmbeddedChannel channel = new EmbeddedChannel(
