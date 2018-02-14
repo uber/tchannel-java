@@ -33,6 +33,7 @@ import com.uber.tchannel.handlers.MessageFragmenter;
 import com.uber.tchannel.handlers.RequestRouter;
 import com.uber.tchannel.handlers.ResponseRouter;
 import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.tracing.OpenTracingContext;
 import com.uber.tchannel.tracing.TracingContext;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.bootstrap.Bootstrap;
@@ -109,7 +110,9 @@ public final class TChannel {
         this.timer = builder.timer;
         this.clientMaxPendingRequests = builder.clientMaxPendingRequests;
         this.tracer = builder.tracer;
-        this.tracingContext = builder.tracingContext;
+        this.tracingContext = builder.tracingContext == null
+            ? tracer == null ? new TracingContext.Default() : new OpenTracingContext(tracer.scopeManager())
+            : builder.tracingContext;
     }
 
     public String getListeningHost() {
@@ -247,7 +250,7 @@ public final class TChannel {
         private static final int WRITE_BUFFER_HIGH_WATER_MARK = 32 * 1024;
 
         private Tracer tracer;
-        private TracingContext tracingContext = new TracingContext.Default();
+        private TracingContext tracingContext;
         private ExecutorService executorService = null;
 
         public Builder(@NotNull String service) {
