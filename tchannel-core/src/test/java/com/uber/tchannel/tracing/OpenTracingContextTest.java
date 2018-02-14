@@ -25,13 +25,15 @@ import com.uber.jaeger.Tracer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Tests {@link TracingContext.ThreadLocal} implementation of {@link TracingContext} interface.
+ * Tests {@link OpenTracingContext} implementation of {@link TracingContext} interface.
+ *
+ * @author yegor 2018-02-13.
  */
-public class TracingContextTest extends TracingContextTestBase {
+public class OpenTracingContextTest extends TracingContextTestBase {
 
     @Override
     protected @NotNull TracingContext tracingContext(@NotNull Tracer tracer) {
-        return new TracingContext.ThreadLocal();
+        return new OpenTracingContext(tracer.scopeManager());
     }
 
 }
