@@ -327,6 +327,11 @@ public final class TChannel {
             return this;
         }
 
+        /**
+         * As of v.0.8.5, default {@link TracingContext} implementation will be automatically provided when a non-null
+         * {@link Tracer} instance is set via {@link #setTracer(Tracer)}.
+         * This method can still be used to provide a custom {@link TracingContext} implementation.
+         */
         public @NotNull Builder setTracingContext(TracingContext tracingContext) {
             this.tracingContext = tracingContext;
             return this;
