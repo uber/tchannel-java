@@ -33,6 +33,7 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.AsyncRequestHandler;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.errors.ErrorType;
+import com.uber.tchannel.errors.ProtocolError;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import com.uber.tchannel.tracing.Tracing;
@@ -150,8 +151,19 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             @Override
             public void onFailure(@NotNull Throwable throwable) {
                 logger.error("Failed to handle the request due to exception.", throwable);
+
+                ErrorType errorType = null;
+                if (throwable instanceof ProtocolError) {
+                    ProtocolError protocolError = (ProtocolError) throwable;
+                    errorType = protocolError.getErrorType();
+                }
+
+                if (errorType == null) {
+                    errorType = ErrorType.UnexpectedError;
+                }
+
                 sendError(
-                    ErrorType.UnexpectedError, "Failed to handle the request: " + throwable.getMessage(), request, ctx
+                    errorType, "Failed to handle the request: " + throwable.getMessage(), request, ctx
                 );
             }
 
