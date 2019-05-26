@@ -83,7 +83,7 @@
         <!-- store method parameter names in the bytecode (java 8+) -->
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
-        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
         <!-- https://issues.apache.org/jira/browse/MCOMPILER-205 -->
         <maven.compiler.useIncrementalCompilation>false</maven.compiler.useIncrementalCompilation>
