@@ -1,20 +1,20 @@
 
 package com.uber.tchannel.crossdock;
 
-import com.uber.jaeger.SpanContext;
-import com.uber.jaeger.Tracer;
-import com.uber.jaeger.reporters.CompositeReporter;
-import com.uber.jaeger.reporters.InMemoryReporter;
-import com.uber.jaeger.reporters.LoggingReporter;
-import com.uber.jaeger.reporters.Reporter;
-import com.uber.jaeger.samplers.ConstSampler;
-import com.uber.jaeger.samplers.Sampler;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.crossdock.api.Downstream;
 import com.uber.tchannel.crossdock.api.Request;
 import com.uber.tchannel.crossdock.api.Response;
 import com.uber.tchannel.crossdock.behavior.trace.TraceBehavior;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.reporters.CompositeReporter;
+import io.jaegertracing.internal.reporters.InMemoryReporter;
+import io.jaegertracing.internal.reporters.LoggingReporter;
+import io.jaegertracing.internal.samplers.ConstSampler;
+import io.jaegertracing.spi.Reporter;
+import io.jaegertracing.spi.Sampler;
 import io.opentracing.Span;
+import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import org.junit.After;
 import org.junit.Before;
@@ -79,7 +79,7 @@ public class TraceBehaviorTest {
         reporter = new InMemoryReporter();
         Sampler sampler = new ConstSampler(false);
         Reporter compositeReporter = new CompositeReporter(reporter, new LoggingReporter());
-        tracer = new Tracer.Builder(SERVER_NAME, compositeReporter, sampler).build();
+        tracer = new JaegerTracer.Builder(SERVER_NAME).withSampler(sampler).withReporter(compositeReporter).build();
 
         server = new Server("127.0.0.1", tracer);
         server.start();
@@ -124,8 +124,7 @@ public class TraceBehaviorTest {
         logger.info("Response: {}", response);
         span.finish();
 
-        SpanContext spanContext = (SpanContext) span.context();
-        String traceId = String.format("%x", spanContext.getTraceId());
+        String traceId = span.context().toTraceId();
 
         validate(response, traceId, baggage, 2);
         if (sampled) {

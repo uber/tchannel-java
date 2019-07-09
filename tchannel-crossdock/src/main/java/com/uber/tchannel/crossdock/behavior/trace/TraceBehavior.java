@@ -1,12 +1,12 @@
 package com.uber.tchannel.crossdock.behavior.trace;
 
-import com.uber.jaeger.SpanContext;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.crossdock.api.Downstream;
 import com.uber.tchannel.crossdock.api.ObservedSpan;
 import com.uber.tchannel.crossdock.api.Request;
 import com.uber.tchannel.crossdock.api.Response;
 import com.uber.tchannel.headers.ArgScheme;
+import io.jaegertracing.internal.JaegerSpanContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,10 +45,10 @@ public class TraceBehavior {
         if (!tchannel.getTracingContext().hasSpan()) {
             return new ObservedSpan("no span", false, "no span");
         }
-        SpanContext spanContext = (SpanContext) tchannel.getTracingContext().currentSpan().context();
+        JaegerSpanContext spanContext = (JaegerSpanContext) tchannel.getTracingContext().currentSpan().context();
 
         return new ObservedSpan(
-                String.format("%x", spanContext.getTraceId()),
+                String.format("%s", spanContext.getTraceId()),
                 spanContext.isSampled(),
                 spanContext.getBaggageItem(BAGGAGE_KEY));
     }

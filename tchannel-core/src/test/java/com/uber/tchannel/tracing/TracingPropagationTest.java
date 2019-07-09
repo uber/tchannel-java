@@ -24,27 +24,23 @@ package com.uber.tchannel.tracing;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.uber.jaeger.Span;
-import com.uber.jaeger.SpanContext;
-import com.uber.jaeger.Tracer;
-import com.uber.jaeger.reporters.InMemoryReporter;
-import com.uber.jaeger.samplers.ConstSampler;
-import com.uber.jaeger.samplers.Sampler;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.api.handlers.ThriftAsyncRequestHandler;
 import com.uber.tchannel.api.handlers.ThriftRequestHandler;
-import com.uber.tchannel.messages.JSONSerializer;
-import com.uber.tchannel.messages.JsonRequest;
-import com.uber.tchannel.messages.JsonResponse;
-import com.uber.tchannel.messages.Request;
-import com.uber.tchannel.messages.ThriftRequest;
-import com.uber.tchannel.messages.ThriftResponse;
+import com.uber.tchannel.messages.*;
 import com.uber.tchannel.messages.generated.Example;
+import io.jaegertracing.internal.JaegerSpanContext;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.reporters.InMemoryReporter;
+import io.jaegertracing.internal.samplers.ConstSampler;
+import io.jaegertracing.spi.Sampler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
@@ -65,9 +61,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * This test validates tracing context propagation through multiple network hops.
@@ -115,7 +109,10 @@ public class TracingPropagationTest {
     public static void setUp() throws Exception {
         reporter = new InMemoryReporter();
         Sampler sampler = new ConstSampler(true);
-        tracer = new Tracer.Builder("tchannel-name", reporter, sampler).build();
+        tracer = new JaegerTracer.Builder("tchannel-name")
+            .withReporter(reporter)
+            .withSampler(sampler)
+            .build();
 
         tracingContext = new CustomTracingContext();
 
@@ -227,10 +224,10 @@ public class TracingPropagationTest {
     }
 
     private static TraceResponse observeSpanAndDownstream(String encodings) {
-        Span span = (Span) tracingContext.currentSpan();
+        Span span = tracingContext.currentSpan();
         TraceResponse response = new TraceResponse();
-        SpanContext context = span.context();
-        response.traceId = String.format("%x", context.getTraceId());
+        JaegerSpanContext context = (JaegerSpanContext) span.context();
+        response.traceId = context.getTraceId();
         response.sampled = context.isSampled();
         response.baggage = span.getBaggageItem(BAGGAGE_KEY);
         try {
@@ -323,9 +320,9 @@ public class TracingPropagationTest {
 
     @Test
     public void testPropagation() throws Exception {
-        Span span = (Span) tracer.buildSpan("root").startManual();
-        SpanContext context = span.context();
-        String traceId = String.format("%x", context.getTraceId());
+        Span span = tracer.buildSpan("root").start();
+        JaegerSpanContext context = (JaegerSpanContext) span.context();
+        String traceId = context.getTraceId();
         String baggage = "Baggage-" + System.currentTimeMillis();
         span.setBaggageItem(BAGGAGE_KEY, baggage);
         span.setBaggageItem(CUSTOM_BAGGAGE_PARAM_KEY, customBaggage);

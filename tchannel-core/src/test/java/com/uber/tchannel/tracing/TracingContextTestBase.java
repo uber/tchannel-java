@@ -1,9 +1,10 @@
 package com.uber.tchannel.tracing;
 
-import com.uber.jaeger.Tracer;
-import com.uber.jaeger.reporters.InMemoryReporter;
-import com.uber.jaeger.samplers.ConstSampler;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.reporters.InMemoryReporter;
+import io.jaegertracing.internal.samplers.ConstSampler;
 import io.opentracing.Span;
+import io.opentracing.Tracer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Test;
@@ -25,9 +26,10 @@ public abstract class TracingContextTestBase {
     private final @NotNull InMemoryReporter reporter = new InMemoryReporter();
 
     @SuppressWarnings("resource") // closed in tearDown()
-    private final @NotNull Tracer tracer = new Tracer.Builder(
-        "tchannel-name", reporter, new ConstSampler(true)
-    ).build();
+    private final @NotNull Tracer tracer = new JaegerTracer.Builder("tchannel-name")
+        .withReporter(reporter)
+        .withSampler(new ConstSampler(true))
+        .build();
 
     private final @NotNull TracingContext tracingContext;
 
@@ -78,14 +80,21 @@ public abstract class TracingContextTestBase {
         assertEquals(span2, tracingContext.popSpan());
         assertEquals(span1, tracingContext.popSpan());
         assertFalse(tracingContext.hasSpan());
+
+        tracingContext.pushSpan(span1);
+        tracingContext.pushSpan(span2);
+        tracingContext.clear();
+        assertFalse(tracingContext.hasSpan());
     }
 
     @Test
     public void testTracingContextThreadLocal() throws InterruptedException {
+        final String[] spanId = new String[1];
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 Span span = tracer.buildSpan("test").start();
+                spanId[0] = span.context().toSpanId();
                 tracingContext.pushSpan(span);
                 assertTrue("Have span in worker thread", tracingContext.hasSpan());
             }
