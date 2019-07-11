@@ -48,7 +48,7 @@ public class TraceBehavior {
         JaegerSpanContext spanContext = (JaegerSpanContext) tchannel.getTracingContext().currentSpan().context();
 
         return new ObservedSpan(
-                String.format("%s", spanContext.getTraceId()),
+                spanContext.toTraceId(),
                 spanContext.isSampled(),
                 spanContext.getBaggageItem(BAGGAGE_KEY));
     }
