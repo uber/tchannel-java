@@ -78,22 +78,6 @@
             <groupId>io.opentracing</groupId>
             <artifactId>opentracing-api</artifactId>
         </dependency>
-        <!-- test dependencies -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.uber.jaeger</groupId>
-            <artifactId>jaeger-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
@@ -118,6 +102,32 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.thrift</groupId>
+            <artifactId>libthrift</artifactId>
+        </dependency>
+
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jaegertracing</groupId>
+            <artifactId>jaeger-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.opentracing</groupId>
+            <artifactId>opentracing-noop</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

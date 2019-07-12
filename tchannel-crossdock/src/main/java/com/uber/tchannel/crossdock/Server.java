@@ -1,17 +1,18 @@
 
 package com.uber.tchannel.crossdock;
 
-import com.uber.jaeger.Tracer;
-import com.uber.jaeger.reporters.InMemoryReporter;
-import com.uber.jaeger.samplers.ConstSampler;
-import com.uber.jaeger.samplers.Sampler;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.JSONRequestHandler;
 import com.uber.tchannel.crossdock.behavior.trace.TraceBehavior;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import com.uber.tchannel.tracing.TracingContext;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.reporters.InMemoryReporter;
+import io.jaegertracing.internal.samplers.ConstSampler;
+import io.jaegertracing.spi.Sampler;
 import io.netty.channel.ChannelFuture;
+import io.opentracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +69,7 @@ public class Server {
     public static void main(String[] args) throws UnknownHostException, InterruptedException {
         InMemoryReporter reporter = new InMemoryReporter();
         Sampler sampler = new ConstSampler(true);
-        Tracer tracer = new Tracer.Builder(SERVER_NAME, reporter, sampler).build();
+        Tracer tracer = new JaegerTracer.Builder(SERVER_NAME).withReporter(reporter).withSampler(sampler).build();
 
         HTTPServer httpServer = new HTTPServer();
         Thread httpThread = new Thread(httpServer);

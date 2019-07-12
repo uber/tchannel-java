@@ -52,42 +52,46 @@ public class OpenTracingContext implements TracingContext {
     @Override
     @SuppressWarnings("resource")
     public void pushSpan(@NotNull Span span) {
-        scopeManager.activate(span, false);
+        scopeManager.activate(span);
     }
 
     @Override
     @SuppressWarnings("resource")
     public boolean hasSpan() {
-        return scopeManager.active() != null;
+        return scopeManager.activeSpan() != null;
     }
 
     @Override
     public @NotNull Span currentSpan() throws EmptyStackException {
-        @SuppressWarnings("resource") Scope scope = scopeManager.active();
-        if (scope == null) {
+        Span span = scopeManager.activeSpan();
+        if (span == null) {
             throw new EmptyStackException();
-        } else {
-            return scope.span();
         }
+        return span;
     }
 
     @Override
     public @NotNull Span popSpan() throws EmptyStackException {
+        //auto close scope acts as if we pop the span
         try (Scope scope = scopeManager.active()) {
             if (scope == null) {
                 throw new EmptyStackException();
-            } else {
-                return scope.span();
             }
+            return scope.span();
         }
     }
 
     @Override
     @SuppressWarnings("resource")
     public void clear() {
-        Scope scope;
-        while ((scope = scopeManager.active()) != null) {
+        Scope lastScope = null;
+        Scope scope = scopeManager.active();
+        //NoopScopeManager will always return the same INSTANCE as active scope
+        //to avoid infinite loop we need to check if we are closing the same instance again and again
+        while (scope != null && lastScope != scope) {
             scope.close();
+            lastScope = scope;
+            scope = scopeManager.active();
         }
     }
 

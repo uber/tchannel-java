@@ -21,7 +21,7 @@
  */
 package com.uber.tchannel.tracing;
 
-import com.uber.jaeger.Tracer;
+import io.opentracing.Tracer;
 import org.jetbrains.annotations.NotNull;
 
 /**

@@ -25,8 +25,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.uber.jaeger.reporters.NoopReporter;
-import com.uber.jaeger.samplers.ConstSampler;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.errors.TChannelError;
@@ -36,6 +34,9 @@ import com.uber.tchannel.messages.ErrorResponse;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
 import com.uber.tchannel.messages.generated.Meta;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.reporters.NoopReporter;
+import io.jaegertracing.internal.samplers.ConstSampler;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import org.hamcrest.CoreMatchers;
@@ -68,9 +69,11 @@ public abstract class AsyncTracingContextTestBase {
 
     @Test
     public void test() throws InterruptedException, TChannelError, ExecutionException, TimeoutException {
-        Tracer tracer = new com.uber.jaeger.Tracer
-            .Builder(SERVICE, new NoopReporter(), new ConstSampler(false))
+        Tracer tracer = new JaegerTracer.Builder(SERVICE)
+            .withReporter(new NoopReporter())
+            .withSampler(new ConstSampler(false))
             .build();
+
         final TracingContext tracingContext = tracingContext(tracer);
         try (
             final TestChannel service = new TestChannel(SERVICE, tracer, tracingContext);
