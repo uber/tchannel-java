@@ -23,12 +23,14 @@
 package com.uber.tchannel.api;
 
 import com.uber.tchannel.api.TChannel.Builder;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.MultithreadEventExecutorGroup;
 import org.junit.Test;
 
 import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class TChannelBuilderTest {
@@ -71,5 +73,23 @@ public class TChannelBuilderTest {
 
         assertEquals(3, ((MultithreadEventExecutorGroup) builder.getBossGroup()).executorCount());
         assertEquals(5, ((MultithreadEventExecutorGroup) builder.getChildGroup()).executorCount());
+    }
+
+    @Test
+    public void testGroupsThreadCountsIgnoredForExplicitGroups() throws Exception {
+
+        NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        NioEventLoopGroup childGroup = new NioEventLoopGroup(1);
+
+        Builder builder = new Builder("some-service")
+            .setBossGroup(bossGroup)
+            .setChildGroup(childGroup)
+            .setBossGroupThreads(3)
+            .setChildGroupThreads(5);
+
+        builder.build();
+
+        assertSame(bossGroup, builder.getBossGroup());
+        assertSame(childGroup, builder.getChildGroup());
     }
 }
