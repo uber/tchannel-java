@@ -363,12 +363,16 @@ public final class TChannel {
 
         public @NotNull TChannel build() {
             logger.debug(useEpoll ? "Using native epoll transport" : "Using NIO transport");
-            bossGroup = useEpoll
-                ? new EpollEventLoopGroup(bossGroupThreads, new DefaultThreadFactory("epoll-boss-group"))
-                : new NioEventLoopGroup(bossGroupThreads, new DefaultThreadFactory("nio-boss-group"));
-            childGroup = useEpoll
-                ? new EpollEventLoopGroup(childGroupThreads, new DefaultThreadFactory("epoll-child-group"))
-                : new NioEventLoopGroup(childGroupThreads, new DefaultThreadFactory("nio-child-group"));
+            if (bossGroup == null) {
+                bossGroup = useEpoll
+                    ? new EpollEventLoopGroup(bossGroupThreads, new DefaultThreadFactory("epoll-boss-group"))
+                    : new NioEventLoopGroup(bossGroupThreads, new DefaultThreadFactory("nio-boss-group"));
+            }
+            if (childGroup == null) {
+                childGroup = useEpoll
+                    ? new EpollEventLoopGroup(childGroupThreads, new DefaultThreadFactory("epoll-child-group"))
+                    : new NioEventLoopGroup(childGroupThreads, new DefaultThreadFactory("nio-child-group"));
+            }
             return new TChannel(this);
         }
 
