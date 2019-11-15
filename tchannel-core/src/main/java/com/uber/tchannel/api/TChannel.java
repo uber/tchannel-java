@@ -305,12 +305,25 @@ public final class TChannel {
             return this;
         }
 
+        /**
+         * Set the number of threads used for the boss group.
+         *
+         * Default value: 1
+         *
+         * {@link #setBossGroup} takes precedence over this, if set.
+         */
         public @NotNull Builder setBossGroupThreads(int bossGroupThreads) {
             this.bossGroupThreads = bossGroupThreads;
             return this;
         }
 
-        /** Set to 0 (zero) to default to environment-based count. */
+        /**
+         * Set the number of threads used for the child group.
+         *
+         * Default value: 0 (falls back to {@code NettyRuntime.availableProcessors()})
+         *
+         * {@link #setChildGroup} takes precedence over this, if set.
+         */
         public @NotNull Builder setChildGroupThreads(int childGroupThreads) {
             this.childGroupThreads = childGroupThreads;
             return this;
