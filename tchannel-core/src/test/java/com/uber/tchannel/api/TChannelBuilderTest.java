@@ -22,6 +22,8 @@
 
 package com.uber.tchannel.api;
 
+import com.uber.tchannel.api.TChannel.Builder;
+import io.netty.util.concurrent.MultithreadEventExecutorGroup;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -49,8 +51,8 @@ public class TChannelBuilderTest {
         // InetAddress constructed using hostname will not return IP address
         // with getHostName call
         TChannel tchannel = new TChannel.Builder("some-service")
-                .setServerHost(InetAddress.getByName("localhost"))
-                .build();
+            .setServerHost(InetAddress.getByName("localhost"))
+            .build();
         tchannel.listen();
 
         // The regular expression used here doesn't cover all invalid cases, but it's
@@ -58,4 +60,16 @@ public class TChannelBuilderTest {
         assertTrue((tchannel.getListeningHost().matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")));
     }
 
+    @Test
+    public void testGroupsThreadCounts() throws Exception {
+
+        Builder builder = new Builder("some-service")
+            .setBossGroupThreads(3)
+            .setChildGroupThreads(5);
+
+        builder.build();
+
+        assertEquals(3, ((MultithreadEventExecutorGroup) builder.getBossGroup()).executorCount());
+        assertEquals(5, ((MultithreadEventExecutorGroup) builder.getChildGroup()).executorCount());
+    }
 }

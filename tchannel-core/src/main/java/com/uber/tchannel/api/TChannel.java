@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.api;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.channels.Connection;
@@ -238,8 +239,8 @@ public final class TChannel {
 
         private final @NotNull HashedWheelTimer timer;
         private static ExecutorService defaultExecutorService = null;
-        private @NotNull EventLoopGroup bossGroup;
-        private @NotNull EventLoopGroup childGroup;
+        private EventLoopGroup bossGroup;
+        private EventLoopGroup childGroup;
 
         private static final boolean useEpoll = Epoll.isAvailable();
 
@@ -338,6 +339,16 @@ public final class TChannel {
         public @NotNull Builder setTracer(Tracer tracer) {
             this.tracer = tracer;
             return this;
+        }
+
+        @VisibleForTesting
+        @Nullable EventLoopGroup getBossGroup() {
+            return bossGroup;
+        }
+
+        @VisibleForTesting
+        @Nullable EventLoopGroup getChildGroup() {
+            return childGroup;
         }
 
         /**
