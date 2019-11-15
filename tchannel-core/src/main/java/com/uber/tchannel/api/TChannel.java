@@ -56,6 +56,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.HashedWheelTimer;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.opentracing.Tracer;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -232,6 +233,9 @@ public final class TChannel {
 
     public static class Builder {
 
+        private int bossGroupThreads = 1;
+        private int childGroupThreads = 0; // 0 (zero) defaults to NettyRuntime.availableProcessors()
+
         private final @NotNull HashedWheelTimer timer;
         private static ExecutorService defaultExecutorService = null;
         private @NotNull EventLoopGroup bossGroup;
@@ -265,8 +269,6 @@ public final class TChannel {
             }
 
             timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS); // FIXME this is premature and may leak timer
-            bossGroup = useEpoll ? new EpollEventLoopGroup(1) : new NioEventLoopGroup(1);
-            childGroup = useEpoll ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         }
 
         /** This provides legacy behavior of globally shared {@link ForkJoinPool} as the default executor. */
@@ -299,6 +301,17 @@ public final class TChannel {
 
         public @NotNull Builder setServerPort(int port) {
             this.port = port;
+            return this;
+        }
+
+        public @NotNull Builder setBossGroupThreads(int bossGroupThreads) {
+            this.bossGroupThreads = bossGroupThreads;
+            return this;
+        }
+
+        /** Set to 0 (zero) to default to environment-based count. */
+        public @NotNull Builder setChildGroupThreads(int childGroupThreads) {
+            this.childGroupThreads = childGroupThreads;
             return this;
         }
 
@@ -339,6 +352,12 @@ public final class TChannel {
 
         public @NotNull TChannel build() {
             logger.debug(useEpoll ? "Using native epoll transport" : "Using NIO transport");
+            bossGroup = useEpoll
+                ? new EpollEventLoopGroup(bossGroupThreads, new DefaultThreadFactory("epoll-boss-group"))
+                : new NioEventLoopGroup(bossGroupThreads, new DefaultThreadFactory("nio-boss-group"));
+            childGroup = useEpoll
+                ? new EpollEventLoopGroup(childGroupThreads, new DefaultThreadFactory("epoll-child-group"))
+                : new NioEventLoopGroup(childGroupThreads, new DefaultThreadFactory("nio-child-group"));
             return new TChannel(this);
         }
 
