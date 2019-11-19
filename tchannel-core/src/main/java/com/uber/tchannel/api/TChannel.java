@@ -21,6 +21,7 @@
  */
 package com.uber.tchannel.api;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.uber.tchannel.api.handlers.RequestHandler;
 import com.uber.tchannel.channels.ChannelRegistrar;
 import com.uber.tchannel.channels.Connection;
@@ -56,6 +57,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.HashedWheelTimer;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.opentracing.Tracer;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -232,10 +234,13 @@ public final class TChannel {
 
     public static class Builder {
 
+        private int bossGroupThreads = 1;
+        private int childGroupThreads = 0; // 0 (zero) defaults to NettyRuntime.availableProcessors()
+
         private final @NotNull HashedWheelTimer timer;
         private static ExecutorService defaultExecutorService = null;
-        private @NotNull EventLoopGroup bossGroup;
-        private @NotNull EventLoopGroup childGroup;
+        private EventLoopGroup bossGroup;
+        private EventLoopGroup childGroup;
 
         private static final boolean useEpoll = Epoll.isAvailable();
 
@@ -265,8 +270,6 @@ public final class TChannel {
             }
 
             timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS); // FIXME this is premature and may leak timer
-            bossGroup = useEpoll ? new EpollEventLoopGroup(1) : new NioEventLoopGroup(1);
-            childGroup = useEpoll ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         }
 
         /** This provides legacy behavior of globally shared {@link ForkJoinPool} as the default executor. */
@@ -302,6 +305,30 @@ public final class TChannel {
             return this;
         }
 
+        /**
+         * Set the number of threads used for the boss group.
+         *
+         * Default value: 1
+         *
+         * {@link #setBossGroup} takes precedence over this, if set.
+         */
+        public @NotNull Builder setBossGroupThreads(int bossGroupThreads) {
+            this.bossGroupThreads = bossGroupThreads;
+            return this;
+        }
+
+        /**
+         * Set the number of threads used for the child group.
+         *
+         * Default value: 0 (falls back to {@code NettyRuntime.availableProcessors()})
+         *
+         * {@link #setChildGroup} takes precedence over this, if set.
+         */
+        public @NotNull Builder setChildGroupThreads(int childGroupThreads) {
+            this.childGroupThreads = childGroupThreads;
+            return this;
+        }
+
         public @NotNull Builder setBossGroup(@NotNull EventLoopGroup bossGroup) {
             this.bossGroup = bossGroup;
             return this;
@@ -327,6 +354,16 @@ public final class TChannel {
             return this;
         }
 
+        @VisibleForTesting
+        @Nullable EventLoopGroup getBossGroup() {
+            return bossGroup;
+        }
+
+        @VisibleForTesting
+        @Nullable EventLoopGroup getChildGroup() {
+            return childGroup;
+        }
+
         /**
          * As of v.0.8.5, default {@link TracingContext} implementation will be automatically provided when a non-null
          * {@link Tracer} instance is set via {@link #setTracer(Tracer)}.
@@ -339,6 +376,16 @@ public final class TChannel {
 
         public @NotNull TChannel build() {
             logger.debug(useEpoll ? "Using native epoll transport" : "Using NIO transport");
+            if (bossGroup == null) {
+                bossGroup = useEpoll
+                    ? new EpollEventLoopGroup(bossGroupThreads, new DefaultThreadFactory("epoll-boss-group"))
+                    : new NioEventLoopGroup(bossGroupThreads, new DefaultThreadFactory("nio-boss-group"));
+            }
+            if (childGroup == null) {
+                childGroup = useEpoll
+                    ? new EpollEventLoopGroup(childGroupThreads, new DefaultThreadFactory("epoll-child-group"))
+                    : new NioEventLoopGroup(childGroupThreads, new DefaultThreadFactory("nio-child-group"));
+            }
             return new TChannel(this);
         }
 
