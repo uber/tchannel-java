@@ -142,7 +142,12 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             public void onSuccess(Response response) {
                 if (ctx.channel().isActive()) {
                     responseQueue.offer(response);
-                    sendResponse(ctx);
+                    ctx.channel().eventLoop().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            sendResponse(ctx);
+                        }
+                    });
                 } else {
                     response.release();
                 }
