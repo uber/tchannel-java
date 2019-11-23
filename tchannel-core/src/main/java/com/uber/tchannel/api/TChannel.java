@@ -29,6 +29,7 @@ import com.uber.tchannel.channels.PeerManager;
 import com.uber.tchannel.codecs.TChannelLengthFieldBasedFrameDecoder;
 import com.uber.tchannel.handlers.InitRequestHandler;
 import com.uber.tchannel.handlers.InitRequestInitiator;
+import com.uber.tchannel.handlers.LoadControlHandler;
 import com.uber.tchannel.handlers.MessageDefragmenter;
 import com.uber.tchannel.handlers.MessageFragmenter;
 import com.uber.tchannel.handlers.RequestRouter;
@@ -258,6 +259,8 @@ public final class TChannel {
         private TracingContext tracingContext;
         private ExecutorService executorService = null;
 
+        private LoadControlHandler.Factory loadControlHandlerFactory;
+
         public Builder(@NotNull String service) {
             if (service == null) {
                 throw new NullPointerException("`service` cannot be null");
@@ -354,6 +357,15 @@ public final class TChannel {
             return this;
         }
 
+        public @NotNull Builder setChildLoadControl() {
+            return setChildLoadControl(8, 32);
+        }
+
+        public @NotNull Builder setChildLoadControl(int lowWaterMark, int highWaterMark) {
+            loadControlHandlerFactory = new LoadControlHandler.Factory(lowWaterMark, highWaterMark);
+            return this;
+        }
+
         @VisibleForTesting
         @Nullable EventLoopGroup getBossGroup() {
             return bossGroup;
@@ -446,6 +458,10 @@ public final class TChannel {
                     // Handles Call Request RPC
                     ch.pipeline().addLast("MessageDefragmenter", new MessageDefragmenter());
                     ch.pipeline().addLast("MessageFragmenter", new MessageFragmenter());
+
+                    if (isServer && loadControlHandlerFactory != null) {
+                        ch.pipeline().addLast("LoadControl", loadControlHandlerFactory.create(ch.config()));
+                    }
 
                     // Pass RequestHandlers to the RequestRouter
                     ch.pipeline().addLast(
