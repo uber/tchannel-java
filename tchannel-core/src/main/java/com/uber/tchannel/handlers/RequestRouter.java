@@ -195,12 +195,12 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                     break;
                 }
 
-                channel.write(res, channel.voidPromise());
+                ctx.write(res, channel.voidPromise());
                 flush = true;
             }
 
             if (flush) {
-                channel.flush();
+                ctx.flush();
             }
         } finally {
             busy.set(false);
