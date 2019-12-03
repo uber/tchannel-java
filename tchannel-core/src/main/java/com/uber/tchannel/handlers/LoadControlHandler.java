@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * When the number of outstanding requests surpasses the {@link #high} water mark, reading is paused.
  *
- * When the number of outstanding requests goes blow the {@link #low} water mark, reading is resumed.
+ * When the number of outstanding requests goes below the {@link #low} water mark, reading is resumed.
  *
  * This signals the upstream producer (the client) to back off / slow down, because it will not be able to write any
  * more requests to the connection.
