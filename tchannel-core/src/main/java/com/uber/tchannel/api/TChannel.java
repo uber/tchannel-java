@@ -357,10 +357,6 @@ public final class TChannel {
             return this;
         }
 
-        public @NotNull Builder setChildLoadControl() {
-            return setChildLoadControl(8, 32);
-        }
-
         public @NotNull Builder setChildLoadControl(int lowWaterMark, int highWaterMark) {
             loadControlHandlerFactory = new LoadControlHandler.Factory(lowWaterMark, highWaterMark);
             return this;
