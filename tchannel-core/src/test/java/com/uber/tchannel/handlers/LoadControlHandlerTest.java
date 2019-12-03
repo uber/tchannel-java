@@ -8,12 +8,17 @@ import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TChannel.Builder;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.RequestHandler;
+import com.uber.tchannel.channels.Connection;
+import com.uber.tchannel.channels.ConnectionState;
+import com.uber.tchannel.channels.Peer;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.RawRequest;
 import com.uber.tchannel.messages.RawResponse;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 import org.junit.Test;
 
@@ -40,62 +45,28 @@ public class LoadControlHandlerTest {
             .build();
     }
 
-    /**
-     * Send two requests in parallel.
-     *
-     * One of the requests will not be resolved, because it triggers the high water mark.
-     *
-     * The request that _does_ resolve, will not trigger the low water mark.
-     *
-     * So the other request will timeout.
-     */
     @Test
     public void testHighWaterMark() throws Exception {
 
         try (Scenario scenario = new Scenario(0, 2)) {
-            TFuture<RawResponse> future1 = scenario.sendRequest(100);
-            TFuture<RawResponse> future2 = scenario.sendRequest(100);
+            ArrayList<TFuture<RawResponse>> futures = new ArrayList<>();
+            futures.add(scenario.sendRequest(1000));
+            Thread.sleep(100); // required to avoid write batching
+            futures.add(scenario.sendRequest(1000));
+            Thread.sleep(100); // required to avoid write batching
+            futures.add(scenario.sendRequest(1000));
+            Thread.sleep(100); // required to avoid write batching
 
-            scenario.releaseResponses(2);
+            // Only two requests reached the handler (third request not read)
+            assertEquals(2, scenario.responseGate.getQueueLength());
 
-            int success = 0;
+            // Allow handler to respond
+            scenario.releaseResponses(futures.size());
 
-            if (ResponseCode.OK.equals(future1.get().getResponseCode())) {
-                success += 1;
-                assertEquals(ErrorType.Timeout, future2.get().getError().getErrorType());
+            // All requests should be resolved
+            for (TFuture<RawResponse> future : futures) {
+                assertEquals(ResponseCode.OK, future.get().getResponseCode());
             }
-
-            if (ResponseCode.OK.equals(future2.get().getResponseCode())) {
-                success += 1;
-                assertEquals(ErrorType.Timeout, future1.get().getError().getErrorType());
-            }
-
-            assertEquals(1, success);
-        }
-    }
-
-    /**
-     * Send two requests in parallel.
-     *
-     * One of the requests will trigger the water mark. It will not be read.
-     *
-     * The other request will be resolved, and will trigger the low water mark.
-     *
-     * The paused request is resumed.
-     *
-     * All requests are resolved.
-     */
-    @Test
-    public void testLowWaterMark() throws Exception {
-
-        try (Scenario scenario = new Scenario(1, 2)) {
-            TFuture<RawResponse> future1 = scenario.sendRequest(100);
-            TFuture<RawResponse> future2 = scenario.sendRequest(100);
-
-            scenario.releaseResponses(2);
-
-            assertEquals(ResponseCode.OK, future1.get().getResponseCode());
-            assertEquals(ResponseCode.OK, future2.get().getResponseCode());
         }
     }
 

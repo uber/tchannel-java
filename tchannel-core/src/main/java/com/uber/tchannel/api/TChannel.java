@@ -460,7 +460,7 @@ public final class TChannel {
                     ch.pipeline().addLast("MessageFragmenter", new MessageFragmenter());
 
                     if (isServer && loadControlHandlerFactory != null) {
-                        ch.pipeline().addLast("LoadControl", loadControlHandlerFactory.create(ch.config()));
+                        ch.pipeline().addLast("LoadControl", loadControlHandlerFactory.create());
                     }
 
                     // Pass RequestHandlers to the RequestRouter

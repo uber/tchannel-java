@@ -1,5 +1,7 @@
 package com.uber.tchannel.handlers;
 
+import com.uber.tchannel.messages.Request;
+import com.uber.tchannel.messages.Response;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,35 +26,36 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class LoadControlHandler extends ChannelDuplexHandler {
 
-    private static final AtomicIntegerFieldUpdater<LoadControlHandler> OUTSTANDING_UPDATER =
-        AtomicIntegerFieldUpdater.newUpdater(LoadControlHandler.class, "outstanding");
-
-    private final ChannelConfig config;
     private final int low;
     private final int high;
 
-    private volatile int outstanding = 0;
+    private int outstanding = 0;
 
-    private LoadControlHandler(@NotNull ChannelConfig config, int low, int high) {
-        this.config = config;
+    private LoadControlHandler(int low, int high) {
         this.low = low;
         this.high = high;
     }
 
     @Override
-    public void read(ChannelHandlerContext ctx) throws Exception {
-        if (OUTSTANDING_UPDATER.incrementAndGet(this) >= high && config.isAutoRead()) {
-            config.setAutoRead(false);
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        if (msg instanceof Request) {
+            ChannelConfig config = ctx.channel().config();
+            if (++outstanding >= high && config.isAutoRead()) {
+                config.setAutoRead(false);
+            }
         }
-        super.read(ctx);
+        ctx.fireChannelRead(msg);
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (OUTSTANDING_UPDATER.decrementAndGet(this) <= low && !config.isAutoRead()) {
-            config.setAutoRead(true);
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        if (msg instanceof Response) {
+            ChannelConfig config = ctx.channel().config();
+            if (--outstanding <= low && !config.isAutoRead()) {
+                config.setAutoRead(true);
+            }
         }
-        super.write(ctx, msg, promise);
+        ctx.write(msg, promise);
     }
 
     public static final class Factory {
@@ -70,8 +73,8 @@ public final class LoadControlHandler extends ChannelDuplexHandler {
             this.high = high;
         }
 
-        public LoadControlHandler create(@NotNull ChannelConfig config) {
-            return new LoadControlHandler(Objects.requireNonNull(config), low, high);
+        public LoadControlHandler create() {
+            return new LoadControlHandler(low, high);
         }
     }
 }
