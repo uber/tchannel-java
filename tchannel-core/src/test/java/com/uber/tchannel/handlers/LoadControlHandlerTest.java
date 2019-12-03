@@ -1,5 +1,6 @@
 package com.uber.tchannel.handlers;
 
+import static com.uber.tchannel.handlers.LoadControlHandler.Factory.MAX_HIGH;
 import static org.junit.Assert.assertEquals;
 
 import com.uber.tchannel.api.ResponseCode;
@@ -42,6 +43,13 @@ public class LoadControlHandlerTest {
     public void invariant_highLessThanLow() {
         new TChannel.Builder("server")
             .setChildLoadControl(10, 5)
+            .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void invariant_highTooBig() {
+        new TChannel.Builder("server")
+            .setChildLoadControl(0, MAX_HIGH + 1)
             .build();
     }
 

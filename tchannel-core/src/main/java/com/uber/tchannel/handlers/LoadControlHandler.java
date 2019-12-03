@@ -59,6 +59,19 @@ public final class LoadControlHandler extends ChannelDuplexHandler {
     }
 
     public static final class Factory {
+
+        /**
+         * The high water mark should not be big.
+         *
+         * Queuing up outstanding requests means that the server cannot keep up with the incoming RPS.
+         * Sooner or later, the high water mark will be reached. Prefer to do this sooner and avoid OOMs.
+         *
+         * A small high water mark is more sensitive to server 'hiccups'. These are resolved quickly (thus 'hiccups'),
+         * so there is little harm.
+         * Still, there can be some unnecessary CPU churn from triggering the high water mark on and off.
+         */
+        public static final int MAX_HIGH = 100;
+
         private final int low;
         private final int high;
 
@@ -68,6 +81,9 @@ public final class LoadControlHandler extends ChannelDuplexHandler {
             }
             if (high <= low) {
                 throw new IllegalArgumentException("invariant violation: high <= low");
+            }
+            if (high > MAX_HIGH) {
+                throw new IllegalArgumentException("invariant violation: high > " + MAX_HIGH);
             }
             this.low = low;
             this.high = high;

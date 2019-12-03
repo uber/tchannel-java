@@ -357,6 +357,25 @@ public final class TChannel {
             return this;
         }
 
+        /**
+         * This activates the load control mechanism. (It is disabled by default.)
+         *
+         * Each connection will keep track of the number of outstanding Requests.
+         * These are requests which haven't been resolved by a Response (successful or otherwise).
+         *
+         * Based on {@code lowWaterMark} and {@code highWaterMark}, reading from the connection will be paused/resumed
+         * to avoid practically unfulfillable load on the server. This is called backpressure.
+         * When configured correctly, this does not affect server throughput but reduces GC churn and the risk of OOM.
+         *
+         * Suggestions:
+         *   - Make sure {@code lowWaterMark} and {@code highWaterMark} are distanced. (Good: 8 and 32; Bad: 20 and 25)
+         *   - {@code highWaterMark} need not be very big. See {@link LoadControlHandler.Factory#MAX_HIGH}.
+         *
+         * @param highWaterMark when the number of outstanding request is equal to or greater than this value, reading
+         * from the connection is paused temporarily.
+         * @param lowWaterMark when the number of outstanding requests is equal to or less than this value, reading
+         * from the connection is resumed.
+         */
         public @NotNull Builder setChildLoadControl(int lowWaterMark, int highWaterMark) {
             loadControlHandlerFactory = new LoadControlHandler.Factory(lowWaterMark, highWaterMark);
             return this;
