@@ -5,7 +5,7 @@
     <parent>
         <artifactId>tchannel</artifactId>
         <groupId>com.uber.tchannel</groupId>
-        <version>0.8.8-SNAPSHOT</version>
+        <version>0.8.8</version>
     </parent>
 
     <artifactId>tchannel-hyperbahn</artifactId>
