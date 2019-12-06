@@ -136,8 +136,11 @@ public final class ErrorFrame extends Frame {
             new Trace(0, 0, 0, (byte) 0x00),
             message);
 
-        MessageCodec.write(ctx, errorFrame);
-        request.release();
+        try {
+            MessageCodec.write(ctx, errorFrame);
+        } finally {
+            request.release();
+        }
         return errorFrame;
     }
 
