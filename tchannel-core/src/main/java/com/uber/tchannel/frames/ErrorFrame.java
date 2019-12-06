@@ -129,16 +129,20 @@ public final class ErrorFrame extends Frame {
                                        String message,
                                        Request request,
                                        ChannelHandlerContext ctx) {
-        ErrorFrame errorFrame = new ErrorFrame(
-            request.getId(),
-            type,
-            // TODO: get trace from request
-            new Trace(0, 0, 0, (byte) 0x00),
-            message);
+        try {
+            ErrorFrame errorFrame = new ErrorFrame(
+                request.getId(),
+                type,
+                // TODO: get trace from request
+                new Trace(0, 0, 0, (byte) 0x00),
+                message
+            );
 
-        MessageCodec.write(ctx, errorFrame);
-        request.release();
-        return errorFrame;
+            MessageCodec.write(ctx, errorFrame);
+            return errorFrame;
+        } finally {
+            request.release();
+        }
     }
 
     public static ErrorFrame sendError(ErrorType type, String message,
