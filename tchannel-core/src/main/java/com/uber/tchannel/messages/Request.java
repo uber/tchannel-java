@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.messages;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.RetryFlag;
@@ -323,6 +324,11 @@ public abstract class Request implements RawMessage {
 
             this.arg3 = arg3;
             return this;
+        }
+
+        @VisibleForTesting
+        ByteBuf getArg1() {
+            return arg1;
         }
 
         public Builder setTransportHeader(String key, String value) {

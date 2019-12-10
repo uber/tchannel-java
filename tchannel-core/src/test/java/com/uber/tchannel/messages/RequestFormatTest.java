@@ -23,10 +23,22 @@
 package com.uber.tchannel.messages;
 
 import com.uber.tchannel.messages.generated.Example;
+import com.uber.tchannel.messages.generated.ExampleWithRequiredField;
+import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RequestFormatTest {
 
@@ -34,11 +46,24 @@ public class RequestFormatTest {
     public void testThriftHeader() throws Exception {
         ThriftRequest<Example> request = new ThriftRequest.Builder<Example>("keyvalue-service", "KeyValue::setValue")
             .build();
+        ByteBuf arg1 = request.getArg1();
         ByteBuf arg2 = request.getArg2();
+        ByteBuf arg3 = request.getArg3();
         assertEquals(2, arg2.readableBytes());
         assertEquals(0, arg2.getByte(0));
         assertEquals(0, arg2.getByte(1));
+        assertNotNull(arg3);
+        assertTrue(TChannelUtilities.emptyByteBuf == arg3);
         request.release();
+        assertEquals(0, arg1.refCnt());
+        assertEquals(0, arg2.refCnt());
+
+        //still points to TChannelUtilities.emptyByteBuf
+        assertEquals(1, arg3.refCnt());
+
+        assertNull(request.getArg1());
+        assertNull(request.getArg2());
+        assertNull(request.getArg3());
     }
 
     @Test
@@ -61,5 +86,65 @@ public class RequestFormatTest {
         ByteBuf arg2 = request.getArg2();
         assertEquals(0, arg2.readableBytes());
         request.release();
+    }
+
+    /**
+     * Header serialization should not cause memory leaksl
+     */
+    @Test
+    public void testCantSerializeHeaders() throws Exception {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("key", null);
+        ThriftRequest.Builder<ExampleWithRequiredField> requestBuilder =
+            new ThriftRequest.Builder<ExampleWithRequiredField>(
+                "keyvalue-service",
+                "KeyValue::setValue"
+            )
+                .setBody(new ExampleWithRequiredField())
+                .setHeaders(headers);
+
+        try {
+            requestBuilder.validate();
+            fail("Expected exception");
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            assertTrue(exceptionAsString.contains("validateHeader"));
+        }
+        assertNotNull("Service endpoint initialized before validation stage", requestBuilder.getArg1());
+        assertFalse("Arg1 should utilize Heap to avoid mem-leaks in validate", requestBuilder.getArg1().isDirect());
+        assertFalse(
+            "Arg1 should utilize Heap to avoid mem-leaks in validate",
+            requestBuilder.getArg1().hasMemoryAddress()
+        );
+        assertTrue("Arg1 should utilize Heap to avoid mem-leaks in validate", requestBuilder.getArg1().hasArray());
+
+        assertNull(requestBuilder.arg2);
+        assertNull(requestBuilder.arg3);
+    }
+
+    /**
+     * Body serialization should never fail
+     */
+    @Test
+    public void testCantSerializeBody() throws Exception {
+        ThriftRequest<ExampleWithRequiredField> request = new ThriftRequest.Builder<ExampleWithRequiredField>("keyvalue-service", "KeyValue::setValue")
+            .setBody(new ExampleWithRequiredField())
+            .build();
+        ByteBuf arg1 = request.getArg1();
+        ByteBuf arg2 = request.getArg2();
+        ByteBuf arg3 = request.getArg3();
+        assertEquals(2, arg2.readableBytes());
+        assertEquals(0, arg2.getByte(0));
+        assertEquals(0, arg2.getByte(1));
+        assertNull(arg3);
+        request.release();
+        assertEquals(0, arg1.refCnt());
+        assertEquals(0, arg2.refCnt());
+
+        assertNull(request.getArg1());
+        assertNull(request.getArg2());
+        assertNull(request.getArg3());
     }
 }
