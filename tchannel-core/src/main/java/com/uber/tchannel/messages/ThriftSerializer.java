@@ -93,8 +93,16 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
 
     @Override
     public ByteBuf encodeHeaders(@NotNull Map<String, String> applicationHeaders) {
+        boolean release = true;
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
-        CodecUtils.encodeHeaders(applicationHeaders, buf);
+        try {
+            CodecUtils.encodeHeaders(applicationHeaders, buf);
+            release = false;
+        } finally {
+            if (release) {
+                buf.release();
+            }
+        }
         return buf;
     }
 
