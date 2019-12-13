@@ -23,7 +23,13 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.ResultCaptor;
+import com.uber.tchannel.api.ResponseCode;
+import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.frames.CallResponseContinueFrame;
+import com.uber.tchannel.frames.CallResponseFrame;
+import com.uber.tchannel.tracing.Trace;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -31,6 +37,10 @@ import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 public class CallResponseFrameContinueCodecTest {
 
@@ -53,5 +63,28 @@ public class CallResponseFrameContinueCodecTest {
 
         assertEquals("Hello, World!", inboundCallResponseContinueFrame.getPayload().toString(CharsetUtil.UTF_8));
         inboundCallResponseContinueFrame.release();
+    }
+
+    @Test
+    public void testEncodeWithError() throws Exception {
+
+        CallResponseContinueFrame callResponseContinueFrame = new CallResponseContinueFrame(
+            42,
+             (byte) 1,
+            null,
+            0,
+            Unpooled.wrappedBuffer("Hello, World!".getBytes(StandardCharsets.UTF_8))
+        );
+        ByteBufAllocator spy = spy(ByteBufAllocator.DEFAULT);
+        ResultCaptor<ByteBuf> byteBufResultCaptor = new ResultCaptor<>();
+        doAnswer(byteBufResultCaptor).when(spy).buffer(anyInt(), anyInt());
+
+        try {
+            callResponseContinueFrame.encodeHeader(spy);
+            fail();
+        } catch (Exception ex) {
+            //expected
+        }
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
     }
 }

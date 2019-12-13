@@ -22,14 +22,23 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.ResultCaptor;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.frames.InitRequestFrame;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 public class InitRequestFrameCodecTest {
 
@@ -45,11 +54,15 @@ public class InitRequestFrameCodecTest {
                 }}
         );
 
-        TFrame tFrame = CodecTestUtil.encodeDecode(
-            MessageCodec.encode(
-                ByteBufAllocator.DEFAULT, initReq
-            )
-        );
+        ByteBufAllocator spy = spy(ByteBufAllocator.DEFAULT);
+        ResultCaptor<ByteBuf> byteBufResultCaptor = new ResultCaptor<>();
+        doAnswer(byteBufResultCaptor).when(spy).buffer(anyInt());
+
+        TFrame encode = MessageCodec.encode(spy, initReq);
+        assertEquals(1, byteBufResultCaptor.getResult().refCnt());
+
+        TFrame tFrame = CodecTestUtil.encodeDecode(encode);
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
 
         InitRequestFrame newInitReq =
             (InitRequestFrame) MessageCodec.decode(
@@ -62,6 +75,32 @@ public class InitRequestFrameCodecTest {
         assertEquals(newInitReq.getVersion(), newInitReq.getVersion());
         assertEquals(newInitReq.getHostPort(), newInitReq.getHostPort());
         assertEquals(newInitReq.getProcessName(), initReq.getProcessName());
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
+    }
+
+    @Test
+    public void encodeWithError() throws Exception {
+
+        InitRequestFrame initReq = new InitRequestFrame(
+            42,
+            InitRequestFrame.DEFAULT_VERSION,
+            new HashMap<String, String>() {{
+                put(InitFrame.HOST_PORT_KEY, null);
+                put(InitFrame.PROCESS_NAME_KEY, null);
+            }}
+        );
+
+        ByteBufAllocator spy = spy(ByteBufAllocator.DEFAULT);
+        ResultCaptor<ByteBuf> byteBufResultCaptor = new ResultCaptor<>();
+        doAnswer(byteBufResultCaptor).when(spy).buffer(anyInt());
+
+        try {
+            TFrame encode = MessageCodec.encode(spy, initReq);
+            fail();
+        } catch (Exception ex) {
+            //expected
+        }
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
     }
 
 }

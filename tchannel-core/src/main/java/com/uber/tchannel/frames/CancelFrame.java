@@ -68,16 +68,22 @@ public final class CancelFrame extends Frame {
     @Override
     public ByteBuf encodeHeader(ByteBufAllocator allocator) {
         ByteBuf buffer = allocator.buffer(31);
+        boolean release = true;
+        try {
+            // ttl:4
+            buffer.writeInt((int) getTTL());
 
-        // ttl:4
-        buffer.writeInt((int) getTTL());
+            // tracing:25
+            CodecUtils.encodeTrace(getTracing(), buffer);
 
-        // tracing:25
-        CodecUtils.encodeTrace(getTracing(), buffer);
-
-        // why~2
-        CodecUtils.encodeString(getWhy(), buffer);
-
+            // why~2
+            CodecUtils.encodeString(getWhy(), buffer);
+            release = false;
+        } finally {
+            if (release) {
+                buffer.release();
+            }
+        }
         return buffer;
     }
 

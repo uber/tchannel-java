@@ -105,27 +105,34 @@ public class CallRequestFrame extends CallFrame {
     public ByteBuf encodeHeader(ByteBufAllocator allocator) {
         ByteBuf buffer = allocator.buffer(1024);
 
-        // flags:1
-        buffer.writeByte(getFlags());
+        boolean release = true;
+        try {
+            // flags:1
+            buffer.writeByte(getFlags());
 
-        // ttl:4
-        buffer.writeInt((int) getTTL());
+            // ttl:4
+            buffer.writeInt((int) getTTL());
 
-        // tracing:25
-        CodecUtils.encodeTrace(getTracing(), buffer);
+            // tracing:25
+            CodecUtils.encodeTrace(getTracing(), buffer);
 
-        // service~1
-        CodecUtils.encodeSmallString(getService(), buffer);
+            // service~1
+            CodecUtils.encodeSmallString(getService(), buffer);
 
-        // nh:1 (hk~1, hv~1){nh}
-        CodecUtils.encodeSmallHeaders(getHeaders(), buffer);
+            // nh:1 (hk~1, hv~1){nh}
+            CodecUtils.encodeSmallHeaders(getHeaders(), buffer);
 
-        // csumtype:1
-        buffer.writeByte(getChecksumType().byteValue());
+            // csumtype:1
+            buffer.writeByte(getChecksumType().byteValue());
 
-        // (csum:4){0,1}
-        CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
-
+            // (csum:4){0,1}
+            CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
+            release = false;
+        } finally {
+            if (release) {
+                buffer.release();
+            }
+        }
         return buffer;
     }
 

@@ -226,14 +226,14 @@ public class ConnectionTest {
         final SubChannel subClient = client.makeSubChannel("server");
         subClient.setPeers(new ArrayList<InetSocketAddress>(){
             {
-                add(new InetSocketAddress("127.0.0.1", 8888));
+                add(new InetSocketAddress(InetAddress.getLoopbackAddress(), 8888));
             }
         });
 
         RawRequest req = new RawRequest.Builder("server", "echo")
             .setHeader("title")
             .setBody("hello")
-            .setTimeout(2000)
+            .setTimeout(2500)
             .build();
 
         TFuture<RawResponse> future = subClient.send(

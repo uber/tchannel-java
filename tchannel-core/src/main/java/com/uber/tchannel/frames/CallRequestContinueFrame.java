@@ -51,15 +51,22 @@ public final class CallRequestContinueFrame extends CallFrame {
     public ByteBuf encodeHeader(ByteBufAllocator allocator) {
 
         ByteBuf buffer = allocator.buffer(2, 6);
+        boolean release = true;
+        try {
+            // flags:1
+            buffer.writeByte(getFlags());
 
-        // flags:1
-        buffer.writeByte(getFlags());
+            // csumtype:1
+            buffer.writeByte(getChecksumType().byteValue());
 
-        // csumtype:1
-        buffer.writeByte(getChecksumType().byteValue());
-
-        // checksum -> (csum:4){0,1}
-        CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
+            // checksum -> (csum:4){0,1}
+            CodecUtils.encodeChecksum(getChecksum(), getChecksumType(), buffer);
+            release = false;
+        } finally {
+            if (release) {
+                buffer.release();
+            }
+        }
 
         return buffer;
     }

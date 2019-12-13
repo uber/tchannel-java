@@ -35,6 +35,8 @@ import io.netty.buffer.Unpooled;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkState;
+
 public final class Fixtures {
 
     private Fixtures() {}
@@ -59,11 +61,10 @@ public final class Fixtures {
             null
         );
 
-        callRequestFrame.setPayload(Unpooled.wrappedBuffer(
-            callRequestFrame.encodeHeader(PooledByteBufAllocator.DEFAULT),
-            payload
-        ));
+        ByteBuf byteBuf = callRequestFrame.encodeHeader(PooledByteBufAllocator.DEFAULT);
+        callRequestFrame.setPayload(Unpooled.wrappedBuffer(byteBuf, payload));
 
+        checkState(byteBuf.refCnt() == 1);
         return callRequestFrame;
     }
 
@@ -76,11 +77,9 @@ public final class Fixtures {
                 null
         );
 
-        callRequestContinueFrame.setPayload(Unpooled.wrappedBuffer(
-            callRequestContinueFrame.encodeHeader(PooledByteBufAllocator.DEFAULT),
-            payload
-        ));
-
+        ByteBuf byteBuf = callRequestContinueFrame.encodeHeader(PooledByteBufAllocator.DEFAULT);
+        callRequestContinueFrame.setPayload(Unpooled.wrappedBuffer(byteBuf, payload));
+        checkState(byteBuf.refCnt() == 1);
         return callRequestContinueFrame;
     }
 
@@ -103,11 +102,10 @@ public final class Fixtures {
                 null
         );
 
-        callResponseFrame.setPayload(Unpooled.wrappedBuffer(
-            callResponseFrame.encodeHeader(PooledByteBufAllocator.DEFAULT),
-            payload
-        ));
+        ByteBuf byteBuf = callResponseFrame.encodeHeader(PooledByteBufAllocator.DEFAULT);
+        callResponseFrame.setPayload(Unpooled.wrappedBuffer(byteBuf, payload));
 
+        checkState(byteBuf.refCnt() == 1);
         return callResponseFrame;
     }
 
@@ -120,11 +118,9 @@ public final class Fixtures {
                 payload
         );
 
-        callResponseContinueFrame.setPayload(Unpooled.wrappedBuffer(
-            callResponseContinueFrame.encodeHeader(PooledByteBufAllocator.DEFAULT),
-            payload
-        ));
-
+        ByteBuf byteBuf = callResponseContinueFrame.encodeHeader(PooledByteBufAllocator.DEFAULT);
+        callResponseContinueFrame.setPayload(Unpooled.wrappedBuffer(byteBuf, payload));
+        checkState(byteBuf.refCnt() == 1);
         return callResponseContinueFrame;
     }
 }

@@ -101,11 +101,19 @@ public final class InitResponseFrame extends InitFrame {
         // Allocate new ByteBuf
         ByteBuf buffer = allocator.buffer(256);
 
-        // version:2
-        buffer.writeShort(getVersion());
+        boolean release = true;
+        try {
+            // version:2
+            buffer.writeShort(getVersion());
 
-        // headers -> nh:2 (key~2 value~2){nh}
-        CodecUtils.encodeHeaders(getHeaders(), buffer);
+            // headers -> nh:2 (key~2 value~2){nh}
+            CodecUtils.encodeHeaders(getHeaders(), buffer);
+            release = false;
+        } finally {
+            if (release) {
+                buffer.release();
+            }
+        }
 
         return buffer;
     }
