@@ -66,13 +66,19 @@ public final class ClaimFrame extends Frame {
     @Override
     public ByteBuf encodeHeader(ByteBufAllocator allocator) {
         ByteBuf buffer = allocator.buffer(4 + Trace.TRACING_HEADER_LENGTH);
+        boolean release = true;
+        try {
+            // ttl: 4
+            buffer.writeInt((int) getTTL());
 
-        // ttl: 4
-        buffer.writeInt((int) getTTL());
-
-        // tracing: 25
-        CodecUtils.encodeTrace(getTracing(), buffer);
-
+            // tracing: 25
+            CodecUtils.encodeTrace(getTracing(), buffer);
+            release = false;
+        } finally {
+            if (release) {
+                buffer.release();
+            }
+        }
         return buffer;
     }
 

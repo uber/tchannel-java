@@ -100,16 +100,22 @@ public final class ErrorFrame extends Frame {
     @Override
     public ByteBuf encodeHeader(ByteBufAllocator allocator) {
         ByteBuf buffer = allocator.buffer(28);
+        boolean release = true;
+        try {
+            // code:1
+            buffer.writeByte(getErrorType().byteValue());
 
-        // code:1
-        buffer.writeByte(getErrorType().byteValue());
+            // tracing:25
+            CodecUtils.encodeTrace(getTracing(), buffer);
 
-        // tracing:25
-        CodecUtils.encodeTrace(getTracing(), buffer);
-
-        // message~2
-        CodecUtils.encodeString(getMessage(), buffer);
-
+            // message~2
+            CodecUtils.encodeString(getMessage(), buffer);
+            release = false;
+        } finally {
+            if (release) {
+                buffer.release();
+            }
+        }
         return buffer;
     }
 

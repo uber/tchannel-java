@@ -22,13 +22,19 @@
 
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.ResultCaptor;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.frames.ErrorFrame;
 import com.uber.tchannel.tracing.Trace;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 public class ErrorCodecTest {
 
@@ -42,8 +48,15 @@ public class ErrorCodecTest {
                 "I'm sorry Dave, I can't do that."
         );
 
-        TFrame tFrame = MessageCodec.encode(ByteBufAllocator.DEFAULT, errorFrame);
+        ByteBufAllocator spy = spy(ByteBufAllocator.DEFAULT);
+        ResultCaptor<ByteBuf> byteBufResultCaptor = new ResultCaptor<>();
+        doAnswer(byteBufResultCaptor).when(spy).buffer(anyInt());
+
+        TFrame tFrame = MessageCodec.encode(spy, errorFrame);
+        assertEquals(1, byteBufResultCaptor.getResult().refCnt());
+
         tFrame = CodecTestUtil.encodeDecode(tFrame);
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
 
         ErrorFrame newErrorFrame =
             (ErrorFrame) MessageCodec.decode(
@@ -53,5 +66,28 @@ public class ErrorCodecTest {
         assertEquals(errorFrame.getId(), newErrorFrame.getId());
         assertEquals(errorFrame.getMessage(), newErrorFrame.getMessage());
         tFrame.release();
+    }
+
+    @Test
+    public void testEncodeWithError() throws Exception {
+
+        ErrorFrame errorFrame = new ErrorFrame(
+            42,
+            ErrorType.FatalProtocolError,
+            null,
+            "I'm sorry Dave, I can't do that."
+        );
+
+        ByteBufAllocator spy = spy(ByteBufAllocator.DEFAULT);
+        ResultCaptor<ByteBuf> byteBufResultCaptor = new ResultCaptor<>();
+        doAnswer(byteBufResultCaptor).when(spy).buffer(anyInt());
+
+        try {
+            TFrame encode = MessageCodec.encode(spy, errorFrame);
+            fail();
+        } catch (Exception npe) {
+            //expected
+        }
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
     }
 }

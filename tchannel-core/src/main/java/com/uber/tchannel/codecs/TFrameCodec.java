@@ -62,30 +62,40 @@ public final class TFrameCodec extends ByteToMessageCodec<TFrame> {
     public static ByteBuf encode(ByteBufAllocator allocator, TFrame frame) {
         ByteBuf buffer = allocator.buffer(TFrame.FRAME_HEADER_LENGTH, TFrame.FRAME_HEADER_LENGTH);
 
-        // size:2
-        buffer.writeShort(frame.size + TFrame.FRAME_HEADER_LENGTH);
+        final ByteBuf result;
+        boolean release = true;
+        try {
+            // size:2
+            buffer.writeShort(frame.size + TFrame.FRAME_HEADER_LENGTH);
 
-        // type:1
-        buffer.writeByte(frame.type);
+            // type:1
+            buffer.writeByte(frame.type);
 
-        // reserved:1
-        buffer.writeZero(1);
+            // reserved:1
+            buffer.writeZero(1);
 
-        // id:4
-        buffer.writeInt((int) frame.id);
+            // id:4
+            buffer.writeInt((int) frame.id);
 
-        // reserved:8
-        buffer.writeZero(8);
+            // reserved:8
+            buffer.writeZero(8);
 
-        // TODO: refactor
-        if (frame.payload instanceof CompositeByteBuf) {
-            CompositeByteBuf cbf = (CompositeByteBuf) frame.payload;
-            cbf.addComponent(0, buffer);
-            cbf.writerIndex(cbf.writerIndex() + TFrame.FRAME_HEADER_LENGTH);
-            return cbf;
+            // TODO: refactor
+            if (frame.payload instanceof CompositeByteBuf) {
+                CompositeByteBuf cbf = (CompositeByteBuf) frame.payload;
+                cbf.addComponent(0, buffer);
+                cbf.writerIndex(cbf.writerIndex() + TFrame.FRAME_HEADER_LENGTH);
+                result = cbf;
+            } else {
+                result = Unpooled.wrappedBuffer(buffer, frame.payload);
+            }
+            release = false;
+        } finally {
+            if (release) {
+                buffer.release();
+            }
         }
-
-        return Unpooled.wrappedBuffer(buffer, frame.payload);
+        return result;
     }
 
     public static TFrame decode(ByteBuf buffer) {

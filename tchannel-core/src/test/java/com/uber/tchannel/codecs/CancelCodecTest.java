@@ -21,13 +21,21 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.uber.tchannel.ResultCaptor;
 import com.uber.tchannel.frames.CancelFrame;
 import com.uber.tchannel.tracing.Trace;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.Test;
+import org.mockito.internal.matchers.Null;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 public class CancelCodecTest {
 
@@ -36,11 +44,17 @@ public class CancelCodecTest {
 
         CancelFrame cancelFrame = new CancelFrame(Integer.MAX_VALUE, Integer.MAX_VALUE, new Trace(0, 1, 2, (byte) 0x03), "Whoopsies");
 
+        ByteBufAllocator spy = spy(ByteBufAllocator.DEFAULT);
+        ResultCaptor<ByteBuf> byteBufResultCaptor = new ResultCaptor<>();
+        doAnswer(byteBufResultCaptor).when(spy).buffer(anyInt());
+
+        TFrame encode = MessageCodec.encode(spy, cancelFrame);
+        assertEquals(1, byteBufResultCaptor.getResult().refCnt());
+
         CancelFrame newCancelFrame = (CancelFrame)MessageCodec.decode(
-            CodecTestUtil.encodeDecode(MessageCodec.encode(
-                PooledByteBufAllocator.DEFAULT, cancelFrame
-            ))
+            CodecTestUtil.encodeDecode(encode)
         );
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
 
         assertEquals(cancelFrame.getId(), newCancelFrame.getId());
         assertEquals(cancelFrame.getTTL(), newCancelFrame.getTTL());
@@ -52,5 +66,28 @@ public class CancelCodecTest {
     @Test
     public void testEncode() throws Exception {
 
+    }
+
+    @Test
+    public void testEncodeWithError() throws Exception {
+
+        CancelFrame cancelFrame = new CancelFrame(
+            Integer.MAX_VALUE,
+            Integer.MAX_VALUE,
+            new Trace(0, 1, 2, (byte) 0x03),
+            null
+        );
+
+        ByteBufAllocator spy = spy(ByteBufAllocator.DEFAULT);
+        ResultCaptor<ByteBuf> byteBufResultCaptor = new ResultCaptor<>();
+        doAnswer(byteBufResultCaptor).when(spy).buffer(anyInt());
+
+        try {
+            TFrame encode = MessageCodec.encode(spy, cancelFrame);
+            fail();
+        } catch (Exception ex) {
+            //expected
+        }
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
     }
 }

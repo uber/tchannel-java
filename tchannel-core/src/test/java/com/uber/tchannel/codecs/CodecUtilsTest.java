@@ -23,13 +23,24 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CodecUtilsTest {
 
@@ -121,6 +132,47 @@ public class CodecUtilsTest {
         assertEquals(trace.traceId, newTrace.traceId);
         assertEquals(trace.traceFlags, newTrace.traceFlags);
 
+    }
+
+    @Test
+    public void testWriteArgsNoError() {
+        ByteBuf allocatedByteBuf = Unpooled.buffer(TFrame.FRAME_SIZE_LENGTH);
+        UnpooledByteBufAllocator allocatorDelegate = new UnpooledByteBufAllocator(false);
+        ByteBufAllocator allocator = Mockito.mock(ByteBufAllocator.class);
+        when(allocator.buffer(TFrame.FRAME_SIZE_LENGTH)).thenReturn(allocatedByteBuf);
+        when(allocator.compositeBuffer()).thenReturn(allocatorDelegate.compositeBuffer());
+        List<ByteBuf> args = new ArrayList<>();
+        args.add(Unpooled.wrappedBuffer("arg1".getBytes()));
+        CodecUtils.writeArgs(allocator, Unpooled.wrappedBuffer("header".getBytes()), args);
+
+        verify(allocator, times(1)).buffer(TFrame.FRAME_SIZE_LENGTH);
+        assertEquals(1, allocatedByteBuf.refCnt());
+    }
+
+    @Test
+    public void testWriteArgsSecondArgWriteFails() {
+        ByteBuf allocatedByteBuf1 = Unpooled.buffer(TFrame.FRAME_SIZE_LENGTH);
+        ByteBuf allocatedByteBuf2 = Unpooled.buffer(TFrame.FRAME_SIZE_LENGTH);
+        ByteBufAllocator allocator = Mockito.mock(ByteBufAllocator.class);
+        when(allocator.buffer(TFrame.FRAME_SIZE_LENGTH)).thenReturn(allocatedByteBuf1).thenReturn(allocatedByteBuf2);
+        ByteBuf arg1 = Unpooled.wrappedBuffer("arg1".getBytes());
+        ByteBuf arg2 = Mockito.mock(ByteBuf.class);
+        when(arg2.readableBytes()).thenReturn(10);
+        when(arg2.readSlice(anyInt())).thenThrow(new RuntimeException("Can't read"));
+
+        List<ByteBuf> args = new ArrayList<>();
+        args.add(arg1);
+        args.add(arg2);
+        try {
+            CodecUtils.writeArgs(allocator, Unpooled.wrappedBuffer("header".getBytes()),args);
+            fail();
+        } catch (Exception e) {
+            assertEquals("Can't read", e.getMessage());
+        }
+
+        verify(allocator, times(2)).buffer(TFrame.FRAME_SIZE_LENGTH);
+        assertEquals(0, allocatedByteBuf1.refCnt());
+        assertEquals(0, allocatedByteBuf2.refCnt());
     }
 
 }

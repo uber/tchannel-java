@@ -23,14 +23,26 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.Fixtures;
+import com.uber.tchannel.ResultCaptor;
+import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.frames.CallRequestFrame;
+import com.uber.tchannel.frames.InitFrame;
+import com.uber.tchannel.tracing.Trace;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 public class CallRequestFrameCodecTest {
 
@@ -51,4 +63,33 @@ public class CallRequestFrameCodecTest {
         inboundCallRequestFrame.getPayload().release();
     }
 
+    @Test
+    public void testEncodeWithError() throws Exception {
+
+        CallRequestFrame callRequestFrame = new CallRequestFrame(
+            42,
+            (byte) 1,
+            0L,
+            new Trace(0, 0, 0, (byte) 0x00),
+            "service",
+            new HashMap<String, String>() {{
+                put(InitFrame.HOST_PORT_KEY, null);
+                put(InitFrame.PROCESS_NAME_KEY, null);
+            }},
+            ChecksumType.NoChecksum,
+            0,
+            null
+        );
+        ByteBufAllocator spy = spy(ByteBufAllocator.DEFAULT);
+        ResultCaptor<ByteBuf> byteBufResultCaptor = new ResultCaptor<>();
+        doAnswer(byteBufResultCaptor).when(spy).buffer(anyInt());
+
+        try {
+            callRequestFrame.encodeHeader(spy);
+            fail();
+        } catch (Exception ex) {
+            //expected
+        }
+        assertEquals(0, byteBufResultCaptor.getResult().refCnt());
+    }
 }

@@ -156,11 +156,23 @@ public final class CodecUtils {
                 .writeByte(trace.traceFlags);
     }
 
+    /** @deprecated use - use {@link #writeArg(ByteBufAllocator, ByteBuf, int, List, List)}. */
+    @Deprecated
     public static int writeArg(
         @NotNull ByteBufAllocator allocator,
         @NotNull ByteBuf arg,
         int writableBytes,
         @NotNull List<ByteBuf> bufs
+    ) {
+        return writeArg(allocator, arg, writableBytes, bufs, new ArrayList<ByteBuf>());
+    }
+
+    public static int writeArg(
+        @NotNull ByteBufAllocator allocator,
+        @NotNull ByteBuf arg,
+        int writableBytes,
+        @NotNull List<ByteBuf> bufs,
+        @NotNull List<ByteBuf> allocatedBufs
     ) {
         if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
             throw new UnsupportedOperationException("writableBytes must be larger than " + TFrame.FRAME_SIZE_LENGTH);
@@ -168,6 +180,7 @@ public final class CodecUtils {
 
         int readableBytes = arg.readableBytes();
         ByteBuf sizeBuf = allocator.buffer(TFrame.FRAME_SIZE_LENGTH);
+        allocatedBufs.add(sizeBuf);
         bufs.add(sizeBuf);
 
         // Write the size of the `arg`
@@ -188,27 +201,40 @@ public final class CodecUtils {
         @NotNull List<ByteBuf> args
     ) {
         int writableBytes = TFrame.MAX_FRAME_PAYLOAD_LENGTH - header.readableBytes();
+        List<ByteBuf> allocatedBufs = new ArrayList<>(7);
         List<ByteBuf> bufs = new ArrayList<>(7);
         bufs.add(header);
 
-        while (!args.isEmpty()) {
-            ByteBuf arg = args.get(0);
-            int len = writeArg(allocator, arg, writableBytes, bufs);
-            writableBytes -= len;
-            if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
-                break;
+        boolean release = true;
+        try {
+            while (!args.isEmpty()) {
+                ByteBuf arg = args.get(0);
+                int len = writeArg(allocator, arg, writableBytes, bufs, allocatedBufs);
+                writableBytes -= len;
+                if (writableBytes <= TFrame.FRAME_SIZE_LENGTH) {
+                    break;
+                }
+
+                if (arg.readableBytes() == 0) {
+                    args.remove(0);
+                }
             }
 
-            if (arg.readableBytes() == 0) {
-                args.remove(0);
+            CompositeByteBuf comp = allocator.compositeBuffer();
+            comp.addComponents(bufs);
+            comp.writerIndex(TFrame.MAX_FRAME_PAYLOAD_LENGTH - writableBytes);
+            release = false;
+            return comp;
+        } finally {
+            if (release) {
+                for (ByteBuf buf : allocatedBufs) {
+                    if (buf != null) {
+                        buf.release();
+                    }
+                }
             }
         }
 
-        CompositeByteBuf comp = allocator.compositeBuffer();
-        comp.addComponents(bufs);
-        comp.writerIndex(TFrame.MAX_FRAME_PAYLOAD_LENGTH - writableBytes);
-
-        return comp;
     }
 
     public static @NotNull ByteBuf writeArgCopy(
