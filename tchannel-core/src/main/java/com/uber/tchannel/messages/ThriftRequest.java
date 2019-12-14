@@ -58,14 +58,43 @@ public class ThriftRequest<T> extends EncodedRequest<T> {
             this.argScheme = ArgScheme.THRIFT;
         }
 
+        /**
+         * Validates payload and populates {@link #arg1}, {@link #arg2}, {@link #arg3}.
+         *
+         * Args <b>>need</b> to be cleared if validation fails.
+         *
+         * Use {@link #release()} to clear args above.
+         *
+         * @throws Exception
+         *     if validation fails.
+         */
         @Override
         public Builder<T> validate() {
             super.validate();
             return this;
         }
 
+        /**
+         * Validates payload, populates {@link #arg1}, {@link #arg2}, {@link #arg3} and builds {@link ThriftRequest}.
+         *
+         * Args above will be auto-released if validation fails.
+         *
+         * Note: Don't call it again if fails.
+         * <br/>unless header/body are re-populated this method will fail if called after the initial failure.
+         */
         public ThriftRequest<T> build() {
-            return new ThriftRequest<>(this.validate());
+            ThriftRequest<T> result;
+            boolean release = true;
+            try {
+                Builder<T> validated = this.validate();
+                result = new ThriftRequest<>(validated);
+                release = false;
+            } finally {
+                if (release) {
+                    this.release();
+                }
+            }
+            return result;
         }
 
         @Override

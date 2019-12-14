@@ -288,6 +288,20 @@ public abstract class Response extends ResponseMessage implements RawMessage {
             return this;
         }
 
+        public void release() {
+            //arg1 is static and Global, no need to release
+
+            if (arg2 != null) {
+                arg2.release();
+                arg2 = null;
+            }
+
+            if (arg3 != null) {
+                arg3.release();
+                arg3 = null;
+            }
+        }
+
     }
 
 }

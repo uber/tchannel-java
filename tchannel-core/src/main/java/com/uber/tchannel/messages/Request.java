@@ -381,6 +381,23 @@ public abstract class Request implements RawMessage {
             return this;
         }
 
+        public void release() {
+            if (arg1 != null) {
+                arg1.release();
+                arg1 = null;
+            }
+
+            if (arg2 != null) {
+                arg2.release();
+                arg2 = null;
+            }
+
+            if (arg3 != null) {
+                arg3.release();
+                arg3 = null;
+            }
+        }
+
     }
 
 }
