@@ -55,14 +55,41 @@ public final class ThriftResponse<T> extends EncodedResponse<T> {
             this.argScheme = ArgScheme.THRIFT;
         }
 
+        /**
+         * Validates payload and populates {@link #arg1}, {@link #arg2}, {@link #arg3}.
+         *
+         * Args <b>>need</b> to be cleared if validation fails.
+         *
+         * Use {@link #release()} to clear args above.
+         *
+         * @throws Exception
+         *     if validation fails.
+         */
         @Override
         public @NotNull Builder<T> validate() {
             super.validate();
             return this;
         }
 
+        /**
+         * Validates payload, populates {@link #arg1}, {@link #arg2}, {@link #arg3} and builds {@link ThriftResponse}.
+         *
+         * Args above will be auto-released if validation fails.
+         *
+         */
         public @NotNull ThriftResponse<T> build() {
-            return new ThriftResponse<>(this.validate());
+            ThriftResponse<T> result;
+            boolean release = true;
+            try {
+                ThriftResponse.Builder<T> validated = this.validate();
+                result = new ThriftResponse<>(validated);
+                release = false;
+            } finally {
+                if (release) {
+                    this.release();
+                }
+            }
+            return result;
         }
 
         @Override

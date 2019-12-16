@@ -26,6 +26,8 @@ import com.uber.tchannel.messages.generated.Example;
 import com.uber.tchannel.messages.generated.ExampleWithRequiredField;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TProtocol;
 import org.junit.Test;
 
 import java.io.PrintWriter;
@@ -125,10 +127,10 @@ public class RequestFormatTest {
     }
 
     /**
-     * Body serialization should never fail
+     * Body serialization should never fail if serializable
      */
     @Test
-    public void testCantSerializeBody() throws Exception {
+    public void testCantSerializeBodySoftError() throws Exception {
         ThriftRequest<ExampleWithRequiredField> request = new ThriftRequest.Builder<ExampleWithRequiredField>("keyvalue-service", "KeyValue::setValue")
             .setBody(new ExampleWithRequiredField())
             .build();
@@ -146,5 +148,71 @@ public class RequestFormatTest {
         assertNull(request.getArg1());
         assertNull(request.getArg2());
         assertNull(request.getArg3());
+    }
+
+    @Test
+    public void testCantSerializeBodyHardError() throws Exception {
+        ThriftRequest.Builder<Example> builder = new ThriftRequest.Builder<Example>(
+            "keyvalue-service",
+            "KeyValue::setValue"
+        )
+            .setBody(new NonSerializable());
+        try {
+            builder.build();
+            fail();
+        } catch (Exception e) {
+            //expected
+        }
+        assertNotNull(builder.getArg1());
+        assertNull(builder.arg2);
+        assertNull(builder.arg3);
+        assertNotNull(builder.headers);
+
+        try {
+            builder.build();
+            fail();
+        } catch (Exception e) {
+            //expected
+        }
+        assertNotNull(builder.getArg1());
+        assertNull(builder.arg2);
+        assertNull(builder.arg3);
+        assertNotNull(builder.headers);
+
+
+        builder.setBody(new Example());
+        ThriftRequest<Example> request = builder.build();
+        assertNotNull(builder.getArg1());
+        assertNotNull(builder.arg2);
+        assertNotNull(builder.arg3);
+        assertNotNull(builder.headers);
+
+        assertTrue(builder.getArg1() == request.getArg1());
+        assertTrue(builder.arg2 == request.arg2);
+        assertTrue(builder.arg3 == request.arg3);
+    }
+
+    @Test
+    public void testReuseBuilder() throws Exception {
+        ThriftRequest.Builder<Example> builder = new ThriftRequest.Builder<Example>(
+            "keyvalue-service",
+            "KeyValue::setValue"
+        )
+            .setBody(new Example());
+        ThriftRequest<Example> req1 = builder.build();
+        ThriftRequest<Example> req2 = builder.build();
+
+        assertTrue(req1 != req2);
+        assertEquals(req1.getArg1(), req2.getArg1());
+        assertEquals(req1.getArg2(), req2.getArg2());
+        assertEquals(req1.getArg3(), req2.getArg3());
+    }
+
+    public static class NonSerializable extends Example {
+
+        @Override
+        public void write(TProtocol oprot) throws TException {
+            throw new RuntimeException("Can't write");
+        }
     }
 }
