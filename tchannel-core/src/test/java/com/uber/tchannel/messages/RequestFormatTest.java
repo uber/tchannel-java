@@ -26,6 +26,8 @@ import com.uber.tchannel.messages.generated.Example;
 import com.uber.tchannel.messages.generated.ExampleWithRequiredField;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TProtocol;
 import org.junit.Test;
 
 import java.io.PrintWriter;
@@ -150,7 +152,7 @@ public class RequestFormatTest {
 
     @Test
     public void testCantSerializeBodyHardError() throws Exception {
-        ThriftRequest.Builder<NonSerializable> builder = new ThriftRequest.Builder<NonSerializable>(
+        ThriftRequest.Builder<Example> builder = new ThriftRequest.Builder<Example>(
             "keyvalue-service",
             "KeyValue::setValue"
         )
@@ -161,9 +163,10 @@ public class RequestFormatTest {
         } catch (Exception e) {
             //expected
         }
-        assertNull(builder.getArg1());
+        assertNotNull(builder.getArg1());
         assertNull(builder.arg2);
         assertNull(builder.arg3);
+        assertNotNull(builder.headers);
 
         try {
             builder.build();
@@ -171,9 +174,22 @@ public class RequestFormatTest {
         } catch (Exception e) {
             //expected
         }
-        assertNull(builder.getArg1());
+        assertNotNull(builder.getArg1());
         assertNull(builder.arg2);
         assertNull(builder.arg3);
+        assertNotNull(builder.headers);
+
+
+        builder.setBody(new Example());
+        ThriftRequest<Example> request = builder.build();
+        assertNotNull(builder.getArg1());
+        assertNotNull(builder.arg2);
+        assertNotNull(builder.arg3);
+        assertNotNull(builder.headers);
+
+        assertTrue(builder.getArg1() == request.getArg1());
+        assertTrue(builder.arg2 == request.arg2);
+        assertTrue(builder.arg3 == request.arg3);
     }
 
     @Test
@@ -192,6 +208,11 @@ public class RequestFormatTest {
         assertEquals(req1.getArg3(), req2.getArg3());
     }
 
-    public static class NonSerializable {
+    public static class NonSerializable extends Example {
+
+        @Override
+        public void write(TProtocol oprot) throws TException {
+            throw new RuntimeException("Can't write");
+        }
     }
 }

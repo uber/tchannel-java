@@ -152,8 +152,6 @@ public abstract class EncodedResponse<T> extends Response {
         private @NotNull Builder<T> validateHeader() {
             if (arg2 == null) {
                 arg2 = serializer.encodeHeaders(this.headers, argScheme);
-            } else {
-                headers = null;
             }
             return this;
         }
@@ -161,8 +159,6 @@ public abstract class EncodedResponse<T> extends Response {
         private @NotNull Builder<T> validateBody() {
             if (arg3 == null) {
                 arg3 = body == null ? TChannelUtilities.emptyByteBuf : serializer.encodeBody(this.body, argScheme);
-            } else {
-                body = null;
             }
             return this;
         }
@@ -170,12 +166,12 @@ public abstract class EncodedResponse<T> extends Response {
         @Override
         public @NotNull Builder<T> validate() throws IllegalStateException {
             super.validate();
-            this.validateHeader();
-            this.validateBody();
-
             if (responseCode == null) {
                 throw new IllegalStateException("`responseCode` cannot be null.");
             }
+            //these two methods allocate native memory, put them the last
+            this.validateHeader();
+            this.validateBody();
 
             return this;
         }

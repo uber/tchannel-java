@@ -145,7 +145,6 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
 
         private Builder<T> validateHeader() {
             if (arg2 != null) {
-                headers = null;
                 return this;
             }
 
@@ -156,7 +155,6 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
 
         private Builder<T> validateBody() {
             if (arg3 != null) {
-                body = null;
                 return this;
             }
 

@@ -382,11 +382,10 @@ public abstract class Request implements RawMessage {
         }
 
         public void release() {
-            if (arg1 != null) {
-                arg1.release();
-                arg1 = null;
-            }
-
+            //no need to clear arg1, the places where arg1 is set are:
+            // a) Builder(java.lang.String, java.lang.String) uses Unpooled.wrappedBuffer
+            // b) Builder.Builder(java.lang.String, io.netty.buffer.ByteBuf) - we haven't allocated ByteBuf, we
+            // shouldn't clean it up
             if (arg2 != null) {
                 arg2.release();
                 arg2 = null;

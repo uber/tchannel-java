@@ -79,8 +79,6 @@ public class ThriftRequest<T> extends EncodedRequest<T> {
          *
          * Args above will be auto-released if validation fails.
          *
-         * Note: Don't call it again if fails.
-         * <br/>unless header/body are re-populated this method will fail if called after the initial failure.
          */
         public ThriftRequest<T> build() {
             ThriftRequest<T> result;
