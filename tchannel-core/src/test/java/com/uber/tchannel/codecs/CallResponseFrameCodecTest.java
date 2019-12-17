@@ -26,7 +26,6 @@ import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.ResultCaptor;
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.checksum.ChecksumType;
-import com.uber.tchannel.frames.CallRequestContinueFrame;
 import com.uber.tchannel.frames.CallResponseFrame;
 import com.uber.tchannel.frames.InitFrame;
 import com.uber.tchannel.tracing.Trace;

@@ -24,17 +24,12 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.ResultCaptor;
-import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.frames.CallRequestContinueFrame;
-import com.uber.tchannel.frames.CallRequestFrame;
-import com.uber.tchannel.frames.InitFrame;
-import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 
 import org.junit.Test;
 

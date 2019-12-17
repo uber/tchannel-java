@@ -24,11 +24,7 @@ package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.ResultCaptor;
-import com.uber.tchannel.api.ResponseCode;
-import com.uber.tchannel.checksum.ChecksumType;
 import com.uber.tchannel.frames.CallResponseContinueFrame;
-import com.uber.tchannel.frames.CallResponseFrame;
-import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;

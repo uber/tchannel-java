@@ -26,9 +26,7 @@ import com.uber.tchannel.frames.CancelFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.Test;
-import org.mockito.internal.matchers.Null;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

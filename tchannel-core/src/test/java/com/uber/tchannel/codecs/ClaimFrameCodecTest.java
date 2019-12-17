@@ -22,7 +22,6 @@
 package com.uber.tchannel.codecs;
 
 import com.uber.tchannel.ResultCaptor;
-import com.uber.tchannel.frames.CancelFrame;
 import com.uber.tchannel.frames.ClaimFrame;
 import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
