@@ -24,21 +24,39 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.messages.generated.Example;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.internal.PlatformDependent;
+import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.RestoreSystemProperties;
+import org.junit.rules.TestRule;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ThriftSerializerTest {
+
+    @Rule
+    public final TestRule restoreSystemProperties
+        = new RestoreSystemProperties();
 
     private Serializer.SerializerInterface serializer;
 
     @org.junit.Before
     public void setUp() {
         this.serializer = new ThriftSerializer();
+        ThriftSerializer.init();
+    }
+
+    @After
+    public void after() {
+        ThriftSerializer.init();
     }
 
     @Test
@@ -73,9 +91,54 @@ public class ThriftSerializerTest {
     public void testEncodeDecodeEmptyHeaders() {
         Map<String, String> emptyHeaders = new HashMap<>();
         ByteBuf binaryHeaders = serializer.encodeHeaders(emptyHeaders);
+        assertTrue(binaryHeaders.isDirect());
+        assertFalse(binaryHeaders.hasArray());
+
         Map<String, String> decodedHeaders = serializer.decodeHeaders(binaryHeaders);
         assertEquals(emptyHeaders, decodedHeaders);
         binaryHeaders.release();
+    }
+
+    @Test
+    public void testEncodeDecodeInvalidHeaders() {
+        Map<String, String> emptyHeaders = new HashMap<>();
+        emptyHeaders.put("key", null);
+        try {
+            ByteBuf binaryHeaders = serializer.encodeHeaders(emptyHeaders);
+            fail();
+        } catch (Exception e) {
+            //expected
+        }
+    }
+
+    @Test
+    public void testDirectBufferPreferred() {
+        assertEquals(PlatformDependent.directBufferPreferred(), ThriftSerializer.directBufferPreferred());
+        assertTrue(ThriftSerializer.directBufferPreferred());
+    }
+
+    @Test
+    public void testOverrideDirectBufferPreferred() {
+        System.setProperty("com.uber.tchannel.thrift_serializer.noPreferDirect", "true");
+        ThriftSerializer.init();
+        assertFalse(ThriftSerializer.directBufferPreferred());
+
+        ByteBuf binaryHeaders = serializer.encodeHeaders(new HashMap<String, String>());
+        assertTrue(binaryHeaders.hasArray());
+        assertFalse(binaryHeaders.isDirect());
+
+        binaryHeaders.release();
+
+        try {
+            serializer.encodeHeaders(new HashMap<String, String>() {
+                {
+                    put("key", null);
+                }
+            });
+            fail();
+        } catch (Exception e) {
+            //expected
+        }
     }
 
     @Test

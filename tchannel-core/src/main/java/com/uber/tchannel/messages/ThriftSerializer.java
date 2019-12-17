@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.messages;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.uber.tchannel.codecs.CodecUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -30,6 +31,9 @@ import io.netty.util.CharsetUtil;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+
+import io.netty.util.internal.PlatformDependent;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
@@ -45,6 +49,31 @@ import java.util.Map;
 public class ThriftSerializer implements Serializer.SerializerInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(ThriftSerializer.class);
+
+    private static boolean DIRECT_BUFFER_PREFERRED;
+
+    static {
+        init();
+    }
+
+    @VisibleForTesting
+    static void init()
+    {
+        // We should always prefer direct buffers by default if Netty prefers it and not explicitly prohibited.
+        DIRECT_BUFFER_PREFERRED = PlatformDependent.directBufferPreferred()
+            && !SystemPropertyUtil.getBoolean("com.uber.tchannel.thrift_serializer.noPreferDirect", false);
+        if (logger.isDebugEnabled()) {
+            logger.debug("-Dcom.uber.tchannel.thrift_serializer.noPreferDirect: {}", !DIRECT_BUFFER_PREFERRED);
+        }
+    }
+
+    /**
+     * Returns {@code true} if the platform has reliable low-level direct buffer access API and a user has not specified
+     * {@code -Dcom.uber.tchannel.thrift_serializer.noPreferDirect} option.
+     */
+    public static boolean directBufferPreferred() {
+        return DIRECT_BUFFER_PREFERRED;
+    }
 
     @Override
     public @NotNull String decodeEndpoint(@NotNull ByteBuf arg1) {
@@ -94,7 +123,8 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
     @Override
     public ByteBuf encodeHeaders(@NotNull Map<String, String> applicationHeaders) {
         boolean release = true;
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+        ByteBuf buf =
+            DIRECT_BUFFER_PREFERRED ? ByteBufAllocator.DEFAULT.buffer() : ByteBufAllocator.DEFAULT.heapBuffer();
         try {
             CodecUtils.encodeHeaders(applicationHeaders, buf);
             release = false;
