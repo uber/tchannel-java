@@ -89,7 +89,9 @@ public class ThriftSerializerTest {
 
     @Test
     public void testEncodeDecodeEmptyHeaders() {
-        Map<String, String> emptyHeaders = new HashMap<>();
+        Map<String, String> emptyHeaders = new HashMap<String, String>(){{
+            put("key", "value");
+        }};
         ByteBuf binaryHeaders = serializer.encodeHeaders(emptyHeaders);
         assertTrue(binaryHeaders.isDirect());
         assertFalse(binaryHeaders.hasArray());
@@ -112,6 +114,14 @@ public class ThriftSerializerTest {
     }
 
     @Test
+    public void testEmptyHeadersBackedByHeapConstantByteBuf() {
+        Map<String, String> emptyHeaders = new HashMap<>();
+        ByteBuf binaryHeaders = serializer.encodeHeaders(emptyHeaders);
+        assertTrue(binaryHeaders.hasArray());
+        assertFalse(binaryHeaders.isDirect());
+    }
+
+    @Test
     public void testDirectBufferPreferred() {
         assertEquals(PlatformDependent.directBufferPreferred(), ThriftSerializer.directBufferPreferred());
         assertTrue(ThriftSerializer.directBufferPreferred());
@@ -123,7 +133,11 @@ public class ThriftSerializerTest {
         ThriftSerializer.init();
         assertFalse(ThriftSerializer.directBufferPreferred());
 
-        ByteBuf binaryHeaders = serializer.encodeHeaders(new HashMap<String, String>());
+        ByteBuf binaryHeaders = serializer.encodeHeaders(new HashMap<String, String>() {
+            {
+                put("key", "value");
+            }
+        });
         assertTrue(binaryHeaders.hasArray());
         assertFalse(binaryHeaders.isDirect());
 

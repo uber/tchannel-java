@@ -44,11 +44,14 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class ThriftSerializer implements Serializer.SerializerInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(ThriftSerializer.class);
+
+    private static ByteBuf EMPTY_HEADER_BYTEBUF;
 
     private static boolean DIRECT_BUFFER_PREFERRED;
 
@@ -65,6 +68,10 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
         if (logger.isDebugEnabled()) {
             logger.debug("-Dcom.uber.tchannel.thrift_serializer.noPreferDirect: {}", !DIRECT_BUFFER_PREFERRED);
         }
+
+        //heap is ok since we allocate once
+        EMPTY_HEADER_BYTEBUF = ByteBufAllocator.DEFAULT.heapBuffer();
+        CodecUtils.encodeHeaders(new HashMap<String, String>(), EMPTY_HEADER_BYTEBUF);
     }
 
     /**
@@ -122,6 +129,9 @@ public class ThriftSerializer implements Serializer.SerializerInterface {
 
     @Override
     public ByteBuf encodeHeaders(@NotNull Map<String, String> applicationHeaders) {
+        if (applicationHeaders.isEmpty()) {
+            return EMPTY_HEADER_BYTEBUF.copy();
+        }
         boolean release = true;
         ByteBuf buf =
             DIRECT_BUFFER_PREFERRED ? ByteBufAllocator.DEFAULT.buffer() : ByteBufAllocator.DEFAULT.heapBuffer();
