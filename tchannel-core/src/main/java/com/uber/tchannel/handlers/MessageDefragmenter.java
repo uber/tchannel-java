@@ -61,6 +61,7 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out) throws Exception {
 
+        buf.touch("MessageDefragmenter.decode(...)");
         Frame frame = MessageCodec.decode(
             MessageCodec.decode(buf)
         );
