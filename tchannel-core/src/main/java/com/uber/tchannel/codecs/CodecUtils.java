@@ -31,12 +31,15 @@ import io.netty.buffer.Unpooled;
 import java.nio.charset.StandardCharsets;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public final class CodecUtils {
+    private static final Logger logger = LoggerFactory.getLogger(CodecUtils.class);
 
     private CodecUtils() {}
 
@@ -229,7 +232,11 @@ public final class CodecUtils {
             if (release) {
                 for (ByteBuf buf : allocatedBufs) {
                     if (buf != null) {
-                        buf.release();
+                        try {
+                            buf.release();
+                        } catch (Exception e) {
+                            logger.warn("Failed to release", e);
+                        }
                     }
                 }
             }

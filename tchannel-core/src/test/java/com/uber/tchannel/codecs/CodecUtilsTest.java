@@ -151,17 +151,24 @@ public class CodecUtilsTest {
     @Test
     public void testWriteArgsSecondArgWriteFails() {
         ByteBuf allocatedByteBuf1 = Unpooled.buffer(TFrame.FRAME_SIZE_LENGTH);
-        ByteBuf allocatedByteBuf2 = Unpooled.buffer(TFrame.FRAME_SIZE_LENGTH);
+        ByteBuf allocatedByteBuf2 = Mockito.mock(ByteBuf.class);
+        when(allocatedByteBuf2.release()).thenThrow(new RuntimeException("Can't release"));
+        ByteBuf allocatedByteBuf3 = Unpooled.buffer(TFrame.FRAME_SIZE_LENGTH);
         ByteBufAllocator allocator = Mockito.mock(ByteBufAllocator.class);
-        when(allocator.buffer(TFrame.FRAME_SIZE_LENGTH)).thenReturn(allocatedByteBuf1).thenReturn(allocatedByteBuf2);
+        when(allocator.buffer(TFrame.FRAME_SIZE_LENGTH))
+            .thenReturn(allocatedByteBuf1)
+            .thenReturn(allocatedByteBuf2)
+            .thenReturn(allocatedByteBuf3);
         ByteBuf arg1 = Unpooled.wrappedBuffer("arg1".getBytes());
-        ByteBuf arg2 = Mockito.mock(ByteBuf.class);
-        when(arg2.readableBytes()).thenReturn(10);
-        when(arg2.readSlice(anyInt())).thenThrow(new RuntimeException("Can't read"));
+        ByteBuf arg2 = Unpooled.wrappedBuffer("arg3".getBytes());
+        ByteBuf arg3 = Mockito.mock(ByteBuf.class);
+        when(arg3.readableBytes()).thenReturn(10);
+        when(arg3.readSlice(anyInt())).thenThrow(new RuntimeException("Can't read"));
 
         List<ByteBuf> args = new ArrayList<>();
         args.add(arg1);
         args.add(arg2);
+        args.add(arg3);
         try {
             CodecUtils.writeArgs(allocator, Unpooled.wrappedBuffer("header".getBytes()),args);
             fail();
@@ -169,9 +176,10 @@ public class CodecUtilsTest {
             assertEquals("Can't read", e.getMessage());
         }
 
-        verify(allocator, times(2)).buffer(TFrame.FRAME_SIZE_LENGTH);
+        verify(allocator, times(3)).buffer(TFrame.FRAME_SIZE_LENGTH);
         assertEquals(0, allocatedByteBuf1.refCnt());
         assertEquals(0, allocatedByteBuf2.refCnt());
+        assertEquals(0, allocatedByteBuf3.refCnt());
     }
 
 }
