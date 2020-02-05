@@ -142,16 +142,40 @@ public abstract class Response extends ResponseMessage implements RawMessage {
 
     @Override
     public void release() {
-        arg1.release();
+        RuntimeException releaseError = null;
+        try {
+            arg1.release();
+        } catch (RuntimeException ex) {
+            releaseError = ex;
+        }
 
         if (arg2 != null) {
-            arg2.release();
-            arg2 = null;
+            try {
+                arg2.release();
+                arg2 = null;
+            } catch (RuntimeException ex) {
+                if (releaseError != null) {
+                    releaseError.addSuppressed(ex);
+                } else {
+                    releaseError = ex;
+                }
+            }
         }
 
         if (arg3 != null) {
-            arg3.release();
-            arg3 = null;
+            try {
+                arg3.release();
+                arg3 = null;
+            } catch (RuntimeException ex) {
+                if (releaseError != null) {
+                    releaseError.addSuppressed(ex);
+                } else {
+                    releaseError = ex;
+                }
+            }
+        }
+        if (releaseError != null) {
+            throw releaseError;
         }
     }
 
