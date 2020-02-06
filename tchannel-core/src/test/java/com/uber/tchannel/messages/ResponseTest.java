@@ -2,6 +2,7 @@ package com.uber.tchannel.messages;
 
 import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.messages.generated.Example;
+import io.netty.util.IllegalReferenceCountException;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocol;
 import org.junit.Test;
@@ -94,6 +95,101 @@ public class ResponseTest {
         assertEquals(resp1.getArg1(), resp2.getArg1());
         assertEquals(resp1.getArg2(), resp2.getArg2());
         assertEquals(resp1.getArg3(), resp2.getArg3());
+    }
+
+    @Test
+    public void testReleaseSuccess() throws Exception {
+        ThriftRequest<Example> request = new ThriftRequest.Builder<Example>("keyvalue-service", "KeyValue::setValue")
+            .build();
+
+        ThriftResponse.Builder<Example> builder = new ThriftResponse.Builder<Example>(request)
+            .setBody(new Example());
+        ThriftResponse<Example> response = builder.build();
+        assertNotNull(response.getArg1());
+        assertNotNull(response.getArg2());
+        assertNotNull(response.getArg3());
+
+
+        response.release();
+
+        //arg1 is static empty and has no effect
+        assertNotNull(response.getArg1());
+        assertNull(response.getArg2());
+        assertNull(response.getArg3());
+    }
+
+    @Test
+    public void testReleaseArg1Fail() throws Exception {
+        ThriftRequest<Example> request = new ThriftRequest.Builder<Example>("keyvalue-service", "KeyValue::setValue")
+            .build();
+
+        ThriftResponse.Builder<Example> builder = new ThriftResponse.Builder<Example>(request)
+            .setBody(new Example());
+        ThriftResponse<Example> response = builder.build();
+        assertNotNull(response.getArg1());
+        assertNotNull(response.getArg2());
+        assertNotNull(response.getArg3());
+
+
+        //arg1 is static empty and has no effect
+        response.getArg1().release();
+            response.release();
+
+        assertNotNull(response.getArg1());
+        assertNull(response.getArg2());
+        assertNull(response.getArg3());
+    }
+
+    @Test
+    public void testReleaseArg2Fail() throws Exception {
+        ThriftRequest<Example> request = new ThriftRequest.Builder<Example>("keyvalue-service", "KeyValue::setValue")
+            .build();
+
+        ThriftResponse.Builder<Example> builder = new ThriftResponse.Builder<Example>(request)
+            .setBody(new Example());
+        ThriftResponse<Example> response = builder.build();
+        assertNotNull(response.getArg1());
+        assertNotNull(response.getArg2());
+        assertNotNull(response.getArg3());
+
+
+        response.getArg2().release();
+        try {
+            response.release();
+            fail();
+        } catch (IllegalReferenceCountException ex) {
+            //expected
+        }
+
+        assertNotNull(response.getArg1());
+        assertNotNull(response.getArg2());
+        assertNull(response.getArg3());
+    }
+
+    @Test
+    public void testReleaseArg3Fail() throws Exception {
+        ThriftRequest<Example> request = new ThriftRequest.Builder<Example>("keyvalue-service", "KeyValue::setValue")
+            .build();
+
+        ThriftResponse.Builder<Example> builder = new ThriftResponse.Builder<Example>(request)
+            .setBody(new Example());
+        ThriftResponse<Example> response = builder.build();
+        assertNotNull(response.getArg1());
+        assertNotNull(response.getArg2());
+        assertNotNull(response.getArg3());
+
+
+        response.getArg3().release();
+        try {
+            response.release();
+            fail();
+        } catch (IllegalReferenceCountException ex) {
+            //expected
+        }
+
+        assertNotNull(response.getArg1());
+        assertNull(response.getArg2());
+        assertNotNull(response.getArg3());
     }
 
     public static class NonSerializable extends Example {
