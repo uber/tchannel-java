@@ -124,19 +124,44 @@ public abstract class Request implements RawMessage {
 
     @Override
     public void release() {
+        RuntimeException releaseError = null;
         if (arg1 != null) {
-            arg1.release();
-            arg1 = null;
+            try {
+                arg1.release();
+                arg1 = null;
+            } catch (RuntimeException ex) {
+                releaseError = ex;
+            }
         }
 
         if (arg2 != null) {
-            arg2.release();
-            arg2 = null;
+            try {
+                arg2.release();
+                arg2 = null;
+            } catch (RuntimeException ex) {
+                if (releaseError != null) {
+                    releaseError.addSuppressed(ex);
+                } else {
+                    releaseError = ex;
+                }
+            }
         }
 
         if (arg3 != null) {
-            arg3.release();
-            arg3 = null;
+            try {
+                arg3.release();
+                arg3 = null;
+            } catch (RuntimeException ex) {
+                if (releaseError != null) {
+                    releaseError.addSuppressed(ex);
+                } else {
+                    releaseError = ex;
+                }
+            }
+        }
+
+        if (releaseError != null) {
+            throw releaseError;
         }
     }
 

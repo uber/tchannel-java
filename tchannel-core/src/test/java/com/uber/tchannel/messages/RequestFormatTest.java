@@ -26,6 +26,8 @@ import com.uber.tchannel.messages.generated.Example;
 import com.uber.tchannel.messages.generated.ExampleWithRequiredField;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.IllegalReferenceCountException;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocol;
 import org.junit.Test;
@@ -88,6 +90,105 @@ public class RequestFormatTest {
         ByteBuf arg2 = request.getArg2();
         assertEquals(0, arg2.readableBytes());
         request.release();
+    }
+
+    @Test
+    public void testReleaseArg1Fail() throws Exception {
+        RawRequest request = new RawRequest.Builder("keyvalue-service", "setValue").setBody("Body").setArg2(
+            ByteBufAllocator.DEFAULT.buffer())
+            .build();
+        assertNotNull( request.arg1);
+        assertNotNull( request.arg2);
+        assertNotNull( request.arg3);
+
+        //forcefully force release of arg1 to fail
+        request.arg1.release();
+
+        try {
+            request.release();
+            fail();
+        } catch (IllegalReferenceCountException ex) {
+            //expected
+        }
+
+        assertNotNull( request.arg1); // tried , but failed
+        assertNull( request.arg2);
+        assertNull( request.arg3);
+    }
+
+    @Test
+    public void testReleaseArg2Fail() throws Exception {
+        RawRequest request = new RawRequest.Builder("keyvalue-service", "setValue").setBody("Body").setArg2(
+            ByteBufAllocator.DEFAULT.buffer())
+            .build();
+        assertNotNull( request.arg1);
+        assertNotNull( request.arg2);
+        assertNotNull( request.arg3);
+
+        //forcefully force release of arg2 to fail
+        request.arg2.release();
+
+        try {
+            request.release();
+            fail();
+        } catch (IllegalReferenceCountException ex) {
+            //expected
+        }
+
+        assertNull( request.arg1);
+        assertNotNull( request.arg2); // tried , but failed
+        assertNull( request.arg3);
+    }
+
+    @Test
+    public void testReleaseArg1Arg2Arg3Fail() throws Exception {
+        RawRequest request = new RawRequest.Builder("keyvalue-service", "setValue").setBody("Body").setArg2(
+            ByteBufAllocator.DEFAULT.buffer())
+            .build();
+        assertNotNull( request.arg1);
+        assertNotNull( request.arg2);
+        assertNotNull( request.arg3);
+
+        //forcefully force release of arg2 to fail
+        request.arg1.release();
+        request.arg2.release();
+        request.arg3.release();
+
+        try {
+            request.release();
+            fail();
+        } catch (IllegalReferenceCountException ex) {
+            assertEquals(2, ex.getSuppressed().length);
+            //expected
+        }
+
+        assertNotNull( request.arg1);// tried , but failed
+        assertNotNull( request.arg2); // tried , but failed
+        assertNotNull( request.arg3);
+    }
+
+    @Test
+    public void testReleaseArg3Fail() throws Exception {
+        RawRequest request = new RawRequest.Builder("keyvalue-service", "setValue").setBody("Body").setArg2(
+            ByteBufAllocator.DEFAULT.buffer())
+            .build();
+        assertNotNull( request.arg1);
+        assertNotNull( request.arg2);
+        assertNotNull( request.arg3);
+
+        //forcefully force release of arg3 to fail
+        request.arg3.release();
+
+        try {
+            request.release();
+            fail();
+        } catch (IllegalReferenceCountException ex) {
+            //expected
+        }
+
+        assertNull( request.arg1);
+        assertNull( request.arg2);
+        assertNotNull( request.arg3);// tried , but failed
     }
 
     /**
