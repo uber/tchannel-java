@@ -141,6 +141,33 @@ public class RequestFormatTest {
     }
 
     @Test
+    public void testReleaseArg1Arg2Arg3Fail() throws Exception {
+        RawRequest request = new RawRequest.Builder("keyvalue-service", "setValue").setBody("Body").setArg2(
+            ByteBufAllocator.DEFAULT.buffer())
+            .build();
+        assertNotNull( request.arg1);
+        assertNotNull( request.arg2);
+        assertNotNull( request.arg3);
+
+        //forcefully force release of arg2 to fail
+        request.arg1.release();
+        request.arg2.release();
+        request.arg3.release();
+
+        try {
+            request.release();
+            fail();
+        } catch (IllegalReferenceCountException ex) {
+            assertEquals(2, ex.getSuppressed().length);
+            //expected
+        }
+
+        assertNotNull( request.arg1);// tried , but failed
+        assertNotNull( request.arg2); // tried , but failed
+        assertNotNull( request.arg3);
+    }
+
+    @Test
     public void testReleaseArg3Fail() throws Exception {
         RawRequest request = new RawRequest.Builder("keyvalue-service", "setValue").setBody("Body").setArg2(
             ByteBufAllocator.DEFAULT.buffer())

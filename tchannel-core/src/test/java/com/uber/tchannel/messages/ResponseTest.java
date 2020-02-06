@@ -167,6 +167,34 @@ public class ResponseTest {
     }
 
     @Test
+    public void testReleaseArg2Arg3Fail() throws Exception {
+        ThriftRequest<Example> request = new ThriftRequest.Builder<Example>("keyvalue-service", "KeyValue::setValue")
+            .build();
+
+        ThriftResponse.Builder<Example> builder = new ThriftResponse.Builder<Example>(request)
+            .setBody(new Example());
+        ThriftResponse<Example> response = builder.build();
+        assertNotNull(response.getArg1());
+        assertNotNull(response.getArg2());
+        assertNotNull(response.getArg3());
+
+
+        response.getArg2().release();
+        response.getArg3().release();
+        try {
+            response.release();
+            fail();
+        } catch (IllegalReferenceCountException ex) {
+            assertEquals(1, ex.getSuppressed().length);
+            //expected
+        }
+
+        assertNotNull(response.getArg1());
+        assertNotNull(response.getArg2());
+        assertNotNull(response.getArg3());
+    }
+
+    @Test
     public void testReleaseArg3Fail() throws Exception {
         ThriftRequest<Example> request = new ThriftRequest.Builder<Example>("keyvalue-service", "KeyValue::setValue")
             .build();
