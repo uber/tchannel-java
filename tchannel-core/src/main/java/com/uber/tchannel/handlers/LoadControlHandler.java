@@ -6,9 +6,6 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Provides backpressure for a Netty pipeline.

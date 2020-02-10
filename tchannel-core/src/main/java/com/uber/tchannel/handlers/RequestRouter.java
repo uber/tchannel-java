@@ -132,7 +132,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 ? sendRequestToAsyncHandler((AsyncRequestHandler) handler, request)
                 : listeningExecutorService.submit(new CallableHandler(handler, topChannel, request));
         } catch (Throwable re) {
-            request.release();
+            request.releaseQuietly();
             responseFuture = Futures.immediateFailedFuture(re);
         }
 
@@ -249,7 +249,7 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
             }
 
             private void closeRequestAndSpan() {
-                request.release();
+                request.releaseQuietly();
                 if (span != null) {
                     span.finish();
                 }

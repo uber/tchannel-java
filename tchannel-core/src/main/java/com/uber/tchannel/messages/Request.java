@@ -165,6 +165,17 @@ public abstract class Request implements RawMessage {
         }
     }
 
+    public void releaseQuietly() {
+        try {
+            release();
+        } catch (RuntimeException rex) {
+            //no op
+        }
+        this.arg1 = null;
+        this.arg2 = null;
+        this.arg3 = null;
+    }
+
     @Override
     public void close() {
         release();

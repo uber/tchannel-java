@@ -148,7 +148,7 @@ public final class ErrorFrame extends Frame {
             return errorFrame;
         } finally {
             try {
-                request.release();
+                request.releaseQuietly();
             } catch (RuntimeException ex) {
                 //no op
                 //double release doesn't cause mem-leaks or other side effects, just ignore
