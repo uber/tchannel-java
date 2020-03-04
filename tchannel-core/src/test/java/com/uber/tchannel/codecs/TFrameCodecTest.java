@@ -21,22 +21,27 @@
  */
 package com.uber.tchannel.codecs;
 
+import com.google.common.base.Charsets;
 import com.uber.tchannel.frames.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -116,6 +121,47 @@ public class TFrameCodecTest {
 
         verify(allocator, times(1)).buffer(TFrame.FRAME_HEADER_LENGTH, TFrame.FRAME_HEADER_LENGTH);
         assertEquals(0, allocatedByteBuf1.refCnt());
+    }
+
+    @Test
+    public void decodeWithErrorDoesntRetainExtraCopy() throws Exception {
+        ByteBuf input = Unpooled.buffer(TFrame.FRAME_SIZE_LENGTH);
+        ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+
+        assertEquals(1, input.refCnt());
+        try {
+            new TFrameCodec().decode(ctx, input, new ArrayList<Object>());
+            fail();
+        } catch (IndexOutOfBoundsException e) {
+            assertTrue(e
+                .getMessage()
+                .contains(
+                    "readerIndex(0) + length(2) exceeds writerIndex(0): "));
+        }
+
+        assertEquals(1, input.refCnt());
+    }
+
+    @Test
+    public void decodeWithoutErrorRetainsExtraCopy() throws Exception {
+        ByteBuf input = Unpooled.buffer(2 * TFrame.FRAME_HEADER_LENGTH);
+        byte[] payload = "hello".getBytes(Charsets.US_ASCII);
+        input.writeShort((payload.length + TFrame.FRAME_HEADER_LENGTH)); // payload size
+        input.writeByte(1); // type
+        input.writeByte(1); // reserved
+        input.writeInt(25); // id
+        input.writeBytes(new byte[]{0,0,0,0,0,0,0,0}); //reserved
+        input.writeBytes(payload); //payload
+
+        ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+
+        assertEquals(1, input.refCnt());
+        ArrayList<Object> out = new ArrayList<>();
+        new TFrameCodec().decode(ctx, input, out);
+
+        assertEquals(1, out.size());
+        assertEquals("hello", ((TFrame)out.get(0)).payload.toString(Charsets.US_ASCII));
+        assertEquals(2, input.refCnt());
     }
 
 }
