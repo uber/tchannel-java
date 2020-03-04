@@ -56,7 +56,15 @@ public final class TFrameCodec extends ByteToMessageCodec<TFrame> {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
         msg.retain();
-        out.add(decode(msg));
+        boolean release = true;
+        try {
+            out.add(decode(msg));
+            release = false;
+        } finally {
+            if (release) {
+                msg.release();
+            }
+        }
     }
 
     public static ByteBuf encode(ByteBufAllocator allocator, TFrame frame) {

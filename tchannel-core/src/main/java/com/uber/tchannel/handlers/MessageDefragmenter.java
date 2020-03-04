@@ -118,12 +118,22 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
         frames.add(frame);
         frame.retain();
 
-        if (!hasMore(frame)) {
-            return MessageCodec.decodeCallFrames(frames);
-        } else {
-            callFrames.put(frame.getId(), frames);
-            return null;
+        final TChannelMessage result;
+        boolean release = true;
+        try {
+            if (!hasMore(frame)) {
+                result = MessageCodec.decodeCallFrames(frames);
+            } else {
+                callFrames.put(frame.getId(), frames);
+                result = null;
+            }
+            release = false;
+        } finally {
+            if (release) {
+                frame.release();
+            }
         }
+        return result;
     }
 
     private TChannelMessage decodeCallContinueFrame(CallFrame frame)
@@ -137,12 +147,22 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
         frames.add(frame);
         frame.retain();
 
-        if (!hasMore(frame)) {
-            callFrames.remove(frame.getId());
-            return MessageCodec.decodeCallFrames(frames);
-        } else {
-            return null;
+        final TChannelMessage result;
+        boolean release = true;
+        try {
+            if (!hasMore(frame)) {
+                callFrames.remove(frame.getId());
+                result = MessageCodec.decodeCallFrames(frames);
+            } else {
+                result = null;
+            }
+            release = false;
+        } finally {
+            if (release) {
+                frame.release();
+            }
         }
+        return result;
     }
 
 }
