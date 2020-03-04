@@ -176,6 +176,7 @@ public class CodecUtilsTest {
             assertEquals("Can't read", e.getMessage());
         }
 
+
         verify(allocator, times(3)).buffer(TFrame.FRAME_SIZE_LENGTH);
         assertEquals(0, allocatedByteBuf1.refCnt());
         assertEquals(0, allocatedByteBuf2.refCnt());
