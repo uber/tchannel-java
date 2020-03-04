@@ -23,6 +23,7 @@ package com.uber.tchannel.handlers;
 
 import com.uber.tchannel.Fixtures;
 import com.uber.tchannel.codecs.MessageCodec;
+import com.uber.tchannel.codecs.TFrame;
 import com.uber.tchannel.frames.CallFrame;
 import com.uber.tchannel.frames.CallRequestContinueFrame;
 import com.uber.tchannel.frames.CallRequestFrame;
@@ -31,8 +32,10 @@ import com.uber.tchannel.frames.CallResponseFrame;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.TransportHeaders;
 import com.uber.tchannel.messages.RawMessage;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.DecoderException;
 import io.netty.util.CharsetUtil;
 import java.nio.charset.StandardCharsets;
 import org.junit.Rule;
@@ -46,11 +49,80 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestMessageMultiplexer {
 
     @Rule
     public final ExpectedException expectedAssertionError = ExpectedException.none();
+
+    @Test
+    public void testSuccessfulDecodeRetainsExtraCopyOfFrame() {
+
+        MessageDefragmenter mux = new MessageDefragmenter();
+        Map<Long, List<CallFrame>> map = mux.getCallFrames();
+        EmbeddedChannel channel = new EmbeddedChannel(mux);
+        long id = 42;
+
+        CallRequestFrame callRequestFrame = Fixtures.callRequest(
+            id,
+            true,
+            new HashMap<String, String>() {{
+                put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
+            }},
+            Unpooled.wrappedBuffer(
+                // arg1 size
+                new byte[]{ 0x00, 0x04 },
+                "arg1".getBytes(StandardCharsets.UTF_8),
+                new byte[]{ 0x00, 0x00 }
+            )
+        );
+
+        TFrame encoded = MessageCodec.encode(callRequestFrame);
+        ByteBuf encodeByteBuf = MessageCodec.encode(encoded);
+        channel.writeInbound(encodeByteBuf);
+
+        assertEquals(1, map.size());
+        assertNotNull(map.get(id));
+        assertEquals(1, callRequestFrame.refCnt());
+        assertEquals(1, encodeByteBuf.refCnt());
+    }
+
+    @Test
+    public void testFailedDecodeDoesntRetainExtraCopyOfFrame() {
+
+        MessageDefragmenter mux = new MessageDefragmenter();
+        Map<Long, List<CallFrame>> map = mux.getCallFrames();
+        EmbeddedChannel channel = new EmbeddedChannel(mux);
+        long id = 42;
+
+        CallRequestFrame callRequestFrame = Fixtures.callRequest(
+            id,
+            false,
+            new HashMap<String, String>() {{
+                put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
+            }},
+            Unpooled.wrappedBuffer(
+                // arg1 size
+                new byte[]{ 0x00, 0x04 },
+                new byte[]{ 0x00, 0x00 }
+            )
+        );
+
+        TFrame encoded = MessageCodec.encode(callRequestFrame);
+        ByteBuf encodeByteBuf = MessageCodec.encode(encoded);
+        try {
+            channel.writeInbound(encodeByteBuf);
+            fail();
+        } catch (DecoderException e) {
+            assertTrue(e.getMessage().contains("wrong read index for args"));
+        }
+
+        assertEquals(0, map.size());
+        assertEquals(0, callRequestFrame.refCnt());
+        assertEquals(0, encodeByteBuf.refCnt());
+    }
 
     @Test
     public void testMergeRequestMessage() {
@@ -145,6 +217,65 @@ public class TestMessageMultiplexer {
     }
 
     @Test
+    public void testContinueResponseRefNotRetainedIfFailed() {
+
+        MessageDefragmenter mux = new MessageDefragmenter();
+        Map<Long, List<CallFrame>> map = mux.getCallFrames();
+        EmbeddedChannel channel = new EmbeddedChannel(mux);
+        long id = 42;
+
+        CallResponseFrame callResponseFrame = Fixtures.callResponse(id,
+            true,
+            new HashMap<String, String>() {{
+                put(TransportHeaders.ARG_SCHEME_KEY, ArgScheme.RAW.getScheme());
+            }},
+            Unpooled.wrappedBuffer(
+                // arg1 needs to be empty
+                new byte[]{0x00, 0x00},
+                new byte[]{0x00, 0x00}
+            )
+        );
+        channel.writeInbound(
+            MessageCodec.encode(
+                MessageCodec.encode(callResponseFrame)
+            )
+        );
+
+        CallResponseContinueFrame firstCallResponseContinueFrame = Fixtures.callResponseContinue(id, true, Unpooled.wrappedBuffer(
+            // arg2 size
+            new byte[]{0x00, 0x04}
+        ));
+        ByteBuf firstEncodedByteBuf = MessageCodec.encode(MessageCodec.encode(firstCallResponseContinueFrame));
+        channel.writeInbound(firstEncodedByteBuf);
+        assertEquals(1, map.size());
+        assertNotNull(map.get(id));
+        assertEquals(2, map.get(id).size());
+        assertEquals(1, callResponseFrame.refCnt());
+        assertEquals(1, firstCallResponseContinueFrame.refCnt());
+        assertEquals(1, firstEncodedByteBuf.refCnt());
+
+        CallResponseContinueFrame secondCallResponseContinueFrame = Fixtures.callResponseContinue(id, false, Unpooled.wrappedBuffer(
+            new byte[]{0x00, 0x00},
+            // arg3 size
+            new byte[]{0x00, 0x04},
+            "arg3".getBytes(StandardCharsets.UTF_8)
+        ));
+        ByteBuf secondEncodeByteBuf = MessageCodec.encode(MessageCodec.encode(secondCallResponseContinueFrame));
+        try {
+            channel.writeInbound(secondEncodeByteBuf);
+            fail();
+        } catch (DecoderException e) {
+            assertTrue(e.getMessage().contains("wrong read index for args"));
+        }
+        assertEquals(map.size(), 0);
+        assertNull(map.get(id));
+        assertEquals(0, callResponseFrame.refCnt());
+        assertEquals(1, firstCallResponseContinueFrame.refCnt());
+        assertEquals(0, secondCallResponseContinueFrame.refCnt());
+        assertEquals(0, secondEncodeByteBuf.refCnt());
+    }
+
+    @Test
     public void testMergeResponseMessage() {
 
         MessageDefragmenter mux = new MessageDefragmenter();
@@ -177,16 +308,14 @@ public class TestMessageMultiplexer {
             new byte[]{0x00, 0x04},
             "arg2".getBytes(StandardCharsets.UTF_8)
         ));
-        channel.writeInbound(
-            MessageCodec.encode(
-                MessageCodec.encode(firstCallResponseContinueFrame)
-            )
-        );
+        ByteBuf firstEncodedByteBuf = MessageCodec.encode(MessageCodec.encode(firstCallResponseContinueFrame));
+        channel.writeInbound(firstEncodedByteBuf);
         assertEquals(1, map.size());
         assertNotNull(map.get(id));
         assertEquals(2, map.get(id).size());
         assertEquals(1, callResponseFrame.refCnt());
         assertEquals(1, firstCallResponseContinueFrame.refCnt());
+        assertEquals(1, firstEncodedByteBuf.refCnt());
 
         CallResponseContinueFrame secondCallResponseContinueFrame = Fixtures.callResponseContinue(id, false, Unpooled.wrappedBuffer(
             new byte[]{0x00, 0x00},
@@ -194,16 +323,14 @@ public class TestMessageMultiplexer {
             new byte[]{0x00, 0x04},
             "arg3".getBytes(StandardCharsets.UTF_8)
         ));
-        channel.writeInbound(
-            MessageCodec.encode(
-                MessageCodec.encode(secondCallResponseContinueFrame)
-            )
-        );
+        ByteBuf secondEncodeByteBuf = MessageCodec.encode(MessageCodec.encode(secondCallResponseContinueFrame));
+        channel.writeInbound(secondEncodeByteBuf);
         assertEquals(map.size(), 0);
         assertNull(map.get(id));
         assertEquals(0, callResponseFrame.refCnt());
         assertEquals(1, firstCallResponseContinueFrame.refCnt());
         assertEquals(1, secondCallResponseContinueFrame.refCnt());
+        assertEquals(1, secondEncodeByteBuf.refCnt());
 
         RawMessage fullMessage = channel.readInbound();
 
