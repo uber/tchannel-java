@@ -71,4 +71,10 @@ public final class ErrorResponse extends ResponseMessage {
 
     @Override
     public void release() {}
+
+    @Override
+    public void touch() { }
+
+    @Override
+    public void touch(Object hint) {    }
 }

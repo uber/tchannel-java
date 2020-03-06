@@ -123,6 +123,24 @@ public abstract class Request implements RawMessage {
     }
 
     @Override
+    public void touch() {
+        touch(null);
+    }
+
+    @Override
+    public void touch(Object hint) {
+        if (arg1 != null) {
+            arg1.touch(hint);
+        }
+        if (arg2 != null) {
+            arg2.touch(hint);
+        }
+        if (arg3 != null) {
+            arg3.touch(hint);
+        }
+    }
+
+    @Override
     public void release() {
         RuntimeException releaseError = null;
         if (arg1 != null) {

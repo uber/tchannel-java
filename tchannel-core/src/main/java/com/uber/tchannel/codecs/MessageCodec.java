@@ -176,12 +176,17 @@ public final class MessageCodec {
         }
 
         args.get(0).release();
-        return Response.build(
+        Response response = Response.build(
             scheme,
             first.getId(),
             first.getResponseCode(),
             first.getHeaders(),
             args.get(1),
-            args.get(2));
+            args.get(2)
+        );
+        if (response != null) {
+            response.touch("finished MessageCodec.decodeCallResponse(...)");
+        }
+        return response;
     }
 }

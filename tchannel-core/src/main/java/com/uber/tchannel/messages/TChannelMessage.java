@@ -32,4 +32,7 @@ public interface TChannelMessage extends AutoCloseable {
 
     void release();
 
+    void touch();
+
+    void touch(Object hint);
 }

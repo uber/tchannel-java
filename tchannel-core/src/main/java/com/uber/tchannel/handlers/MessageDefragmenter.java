@@ -133,6 +133,9 @@ public class MessageDefragmenter extends MessageToMessageDecoder<ByteBuf> {
                 frame.release();
             }
         }
+        if (result != null) {
+            result.touch("finished MessageDefragmenter.decodeCallFrame");
+        }
         return result;
     }
 
