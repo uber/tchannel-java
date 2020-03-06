@@ -49,6 +49,10 @@ public class RequestTest {
         assertEquals(String.class, request.getBody().getClass());
         assertEquals("Hello, World!", request.getBody());
         request.release();
+
+        //test no NPE
+        request.touch();
+        request.touch("hint");
     }
 
     @Test
@@ -86,6 +90,8 @@ public class RequestTest {
         );
 
         JsonResponse<Integer> response = responsePromise.get();
+        response.touch();
+        response.touch("hint");
         assertNull(response.getError());
         assertEquals(responseBody, (int) response.getBody(Integer.class));
         response.release();

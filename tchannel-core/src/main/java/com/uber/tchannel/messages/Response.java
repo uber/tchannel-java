@@ -181,12 +181,7 @@ public abstract class Response extends ResponseMessage implements RawMessage {
 
     @Override
     public void touch() {
-        if (arg2 != null) {
-            arg2.touch();
-        }
-        if (arg3 != null) {
-            arg3.touch();
-        }
+        touch(null);
     }
 
     @Override
