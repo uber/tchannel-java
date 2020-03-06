@@ -129,8 +129,8 @@ public abstract class Request implements RawMessage {
 
     @Override
     public void touch(Object hint) {
-        if (arg2 != null) {
-            arg2.touch();
+        if (arg1 != null) {
+            arg1.touch(hint);
         }
         if (arg2 != null) {
             arg2.touch(hint);
