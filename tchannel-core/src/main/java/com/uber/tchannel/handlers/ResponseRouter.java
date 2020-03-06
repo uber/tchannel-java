@@ -182,6 +182,10 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
             return;
         }
 
+        if (response != null) {
+            response.touch("ResponseRouter.handleResponse(...)");
+        }
+
         outRequest.handleResponse(response);
     }
 
