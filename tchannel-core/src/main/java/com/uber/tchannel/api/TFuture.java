@@ -137,7 +137,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                     }
                 } finally {
                     if (listenerCount.decrementAndGet() <= 0) {
-                        response.release();
+                        if (response != null) {
+                            response.release();
+                        }
                     }
                 }
             }
