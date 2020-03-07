@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.api;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -70,7 +71,8 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         return create(argScheme, null);
     }
 
-    private final AtomicInteger listenerCount = new AtomicInteger(0);
+    @VisibleForTesting
+    final AtomicInteger listenerCount = new AtomicInteger(0);
     private final ArgScheme argScheme;
     private final @Nullable TracingContext tracingContext;
     private V response = null;
@@ -136,6 +138,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                         popSpan(span, listener);
                     }
                 } finally {
+                    // if ALL listeners were given a CHANCE to run, then release response regardless:
+                    // a) whether listener actually ran or not;
+                    // b) whether tracing was pushed/popped or not;
                     int remainingListeners = listenerCount.decrementAndGet();
                     if (remainingListeners <= 0) {
                         if (response != null) {
@@ -171,8 +176,15 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
 
     @Override
     public V get() throws InterruptedException, ExecutionException {
+        V result = super.get();
+
+        // Don't double count number of outstanding consumers of Response<V> if #get() fail.
+        //
+        // For ex., certain code paths like com.google.common.util.concurrent.Futures.CallbackListener call this method
+        // multiple times if INTERRUPTED, see Uninterruptibles#getUninterruptibly(java.util.concurrent.Future<V>)
         listenerCount.incrementAndGet();
-        return super.get();
+
+        return result;
     }
 
     @Override
