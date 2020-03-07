@@ -1,6 +1,7 @@
 package com.uber.tchannel.api;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
@@ -12,6 +13,7 @@ import org.junit.Test;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -69,6 +71,41 @@ public class TFutureTest {
         assertEquals(0, arg3.refCnt());
         assertNull(response.getArg2());
         assertNull(response.getArg3());
+    }
+
+    @Test
+    public void testTfutureResponseNotAutoReleasedIfBlockingGetCalledFirst() throws Exception {
+        ThriftResponse<Example> response = prepareResponse();
+        ByteBuf arg2 = response.getArg2();
+        ByteBuf arg3 = response.getArg3();
+
+        assertEquals(1, arg2.refCnt());
+        assertEquals(1, arg3.refCnt());
+
+        final TFuture<ThriftResponse<Example>> future = TFuture.create(ArgScheme.THRIFT, null);
+
+        future.set(response);
+
+        ThriftResponse<Example> responseGet = future.get();
+        assertEquals(1, future.listenerCount.get());
+        assertEquals(response, responseGet);
+
+        //listeners are executed right away if future is complete
+        // add listener, will be executed right away and release() will be called
+        future.addListener(new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        }, MoreExecutors.directExecutor());
+
+        // listener executed right away, hence listener count is back to 1
+        assertEquals(1, future.listenerCount.get());
+
+        assertEquals(1, arg2.refCnt());
+        assertEquals(1, arg3.refCnt());
+        assertNotNull(response.getArg2());
+        assertNotNull(response.getArg3());
     }
 
     @Test
