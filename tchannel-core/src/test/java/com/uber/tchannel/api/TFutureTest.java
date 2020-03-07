@@ -1,5 +1,6 @@
 package com.uber.tchannel.api;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
@@ -61,6 +62,48 @@ public class TFutureTest {
             Thread.sleep(100);
         }
         assertEquals(0, future.listenerCount.intValue());
+
+        assertEquals(0, arg2.refCnt());
+        assertEquals(0, arg3.refCnt());
+        assertNull(response.getArg2());
+        assertNull(response.getArg3());
+    }
+
+    @Test
+    public void testTfutureGetInterrupted() throws Exception {
+        ThriftResponse<Example> response = prepareResponse();
+        ByteBuf arg2 = response.getArg2();
+        ByteBuf arg3 = response.getArg3();
+
+        assertEquals(1, arg2.refCnt());
+        assertEquals(1, arg3.refCnt());
+
+        final TFuture<ThriftResponse<Example>> future = TFuture.create(ArgScheme.THRIFT, null);
+        assertEquals(0, future.listenerCount.get());
+
+        future.set(response);
+
+        Thread.currentThread().interrupt();
+        try {
+            future.get();
+            fail();
+        } catch (InterruptedException ex) {
+            //expected
+        }
+        assertEquals(0, future.listenerCount.intValue());
+        assertEquals(1, arg2.refCnt());
+        assertEquals(1, arg3.refCnt());
+        assertNotNull(response.getArg2());
+        assertNotNull(response.getArg3());
+
+
+        // add listener, will be executed right away and release() will be called
+        future.addListener(new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        }, MoreExecutors.directExecutor());
 
         assertEquals(0, arg2.refCnt());
         assertEquals(0, arg3.refCnt());
