@@ -111,10 +111,20 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                 "No handler is set when response is set. Resource leak may occur.",
                 new IllegalStateException() // log the stacktrace
             );
+            if (response != null) {
+                response.touch("No Listener ;( Tfuture.set(...)");
+            }
         }
 
         this.response = response;
-        return super.set(response);
+        if (response != null) {
+            response.touch("Tfuture.set(...) about to set");
+        }
+        boolean result = super.set(response);
+        if (response != null) {
+            response.touch("Tfuture.set(...) was set");
+        }
+        return result;
     }
 
     @Override
@@ -124,6 +134,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
 
     @Override
     public void addListener(final Runnable listener, Executor exec) {
+        if (response != null) {
+            response.touch("TFuture.addListener(..)");
+        }
         listenerCount.incrementAndGet();
         // this is the current span of whomever is adding the listener - preserve it for the invocation of the latter
         final Span span = tracingContext != null && tracingContext.hasSpan() ? tracingContext.currentSpan() : null;
@@ -133,6 +146,10 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                 try {
                     try {
                         pushSpan(span);
+                        if (response != null) {
+                            response.touch(
+                                "TFuture.addListener(..) - before listener run(" + listener.getClass() + "/" + listener.toString() + ")");
+                        }
                         listener.run();
                     } finally {
                         popSpan(span, listener);
@@ -142,6 +159,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                     // a) whether listener actually ran or not;
                     // b) whether tracing was pushed/popped or not;
                     int remainingListeners = listenerCount.decrementAndGet();
+                    if (response != null) {
+                        response.touch("TFuture.addListener(..). About to release, remainingListeners:" + remainingListeners);
+                    }
                     if (remainingListeners <= 0) {
                         if (response != null) {
                             response.release();
@@ -153,6 +173,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     }
 
     private void popSpan(Span span, Runnable listener) {
+        if (response != null) {
+            response.touch("TFuture.popSpan(..) ");
+        }
         if (span != null) {
             try { // this _might_ fail in case the listener managed to corrupt the tracing context
                 Span poppedSpan = tracingContext.popSpan();
@@ -172,6 +195,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         if (span != null) {
             tracingContext.pushSpan(span);
         }
+        if (response != null) {
+            response.touch("TFuture.pushSpan(..) ");
+        }
     }
 
     @Override
@@ -183,6 +209,11 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         // For ex., certain code paths like com.google.common.util.concurrent.Futures.CallbackListener call this method
         // multiple times if INTERRUPTED, see Uninterruptibles#getUninterruptibly(java.util.concurrent.Future<V>)
         listenerCount.incrementAndGet();
+
+        if (response != null) {
+            response.touch(
+                "TFuture.get(..) - listenerCount incremented, new value :" + listenerCount.get());
+        }
 
         return result;
     }

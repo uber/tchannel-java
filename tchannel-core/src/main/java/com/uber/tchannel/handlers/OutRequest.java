@@ -126,6 +126,10 @@ public final class OutRequest<V extends Response> {
         }
 
         request.release();
+
+        if (lastError != null) {
+            lastError.touch("OutRequest.release()");
+        }
     }
 
     public boolean isUsedPeer(SocketAddress address) {
@@ -141,6 +145,9 @@ public final class OutRequest<V extends Response> {
     }
 
     public void setLastError(@NotNull ErrorResponse lastError) {
+        if (this.lastError != null) {
+            this.lastError.touch("Evicted previous last error OutRequest.setLastError(...)");
+        }
         this.lastError = lastError;
     }
 
@@ -155,6 +162,12 @@ public final class OutRequest<V extends Response> {
     public void setFuture(@NotNull Response response) {
         release();
         setResponseFuture(request.getArgScheme(), response);
+//        if (lastError != null) {
+//            lastError.release();
+//        }
+        if (lastError != null) {
+            lastError.touch("OutRequest.setFuture(...) left last error non-released");
+        }
     }
 
     public void setFuture() {
@@ -162,11 +175,17 @@ public final class OutRequest<V extends Response> {
     }
 
     public void handleResponse(@NotNull ResponseMessage response) {
+        if (response != null) {
+            response.touch("OutRequest.handleResponse(...)");
+        }
         if (!response.isError()) {
             setFuture((Response) response);
             return;
         }
 
+        if (response != null) {
+            response.touch("OutRequest.handleResponse-setLastErrors(...)");
+        }
         setLastError((ErrorResponse)response);
 
         // reset the read index of args for retries
@@ -176,6 +195,9 @@ public final class OutRequest<V extends Response> {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     protected void setResponseFuture(ArgScheme argScheme, Response response) {
+        if (response != null) {
+            response.touch("OutRequest.setResponseFuture(" + argScheme + ")");
+        }
         switch (argScheme) {
             case RAW:
                 ((TFuture<RawResponse>)future).set((RawResponse) response);
