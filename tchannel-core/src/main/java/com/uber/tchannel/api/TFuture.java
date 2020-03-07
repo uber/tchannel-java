@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.api;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -55,6 +56,16 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     private static final Logger logger = LoggerFactory.getLogger(TFuture.class);
 
     /**
+     * Tracks whether code is being executed inside listener
+     */
+    private final java.lang.ThreadLocal<Boolean> insideListener =
+        new java.lang.ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue() {
+                return Boolean.FALSE;
+            }
+        };
+    /**
      * Create future. Example usage: {@code TFuture<RawResponse> future = TFuture.create(...); }.
      */
     public static @NotNull <T extends Response> TFuture<T> create(
@@ -70,7 +81,8 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         return create(argScheme, null);
     }
 
-    private final AtomicInteger listenerCount = new AtomicInteger(0);
+    @VisibleForTesting
+    final AtomicInteger listenerCount = new AtomicInteger(0);
     private final ArgScheme argScheme;
     private final @Nullable TracingContext tracingContext;
     private V response = null;
@@ -128,26 +140,23 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         super.addListener(new Runnable() {
             @Override
             public void run() {
-                if (span != null) {
-                    tracingContext.pushSpan(span);
-                }
                 try {
-                    listener.run();
-                } finally {
-                    if (span != null) {
-                        try { // this _might_ fail in case the listener managed to corrupt the tracing context
-                            Span poppedSpan = tracingContext.popSpan();
-                            if (!span.equals(poppedSpan)) {
-                                logger.error(
-                                    "Corrupted tracing context after running listener {}: expected span {} but got {}",
-                                    listener, span, poppedSpan
-                                );
-                            }
-                        } catch (EmptyStackException e) {
-                            logger.error("Corrupted (empty) tracing context after running listener {}", listener, e);
-                        }
+                    // indicates that code is being executed inside listener
+                    // since some of the listeners like com.google.common.util.concurrent.Futures.CallbackListener call #get(),
+                    // we don't want to double count those listener in `listenerCount` variable
+                    insideListener.set(Boolean.TRUE);
+                    safePushSpan(span);
+                    try {
+                        listener.run();
+                    } finally {
+                        safePopSpan(span, listener);
                     }
-                    if (listenerCount.decrementAndGet() == 0) {
+                } finally {
+                    insideListener.remove();
+                    // if ALL listeners were given a CHANCE to run, then release response regardless:
+                    // a) whether listener actually ran or not;
+                    // b) whether tracing was pushed/popped or not;
+                    if (listenerCount.decrementAndGet() <= 0) {
                         response.release();
                     }
                 }
@@ -157,8 +166,38 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
 
     @Override
     public V get() throws InterruptedException, ExecutionException {
-        listenerCount.incrementAndGet();
+        //don't double count number of listeners if #get() was called within listener itself
+        if (!insideListener.get()) {
+            listenerCount.incrementAndGet();
+        }
         return super.get();
+    }
+
+
+    private void safePopSpan(Span span, Runnable listener) {
+        if (span != null) {
+            try { // this _might_ fail in case the listener managed to corrupt the tracing context
+                Span poppedSpan = tracingContext.popSpan();
+                if (!span.equals(poppedSpan)) {
+                    logger.error(
+                        "Corrupted tracing context after running listener {}: expected span {} but got {}",
+                        listener, span, poppedSpan
+                    );
+                }
+            } catch (EmptyStackException e) {
+                logger.error("Corrupted (empty) tracing context after running listener {}", listener, e);
+            }
+        }
+    }
+
+    private void safePushSpan(Span span) {
+        try {
+            if (span != null) {
+                tracingContext.pushSpan(span);
+            }
+        } catch (Exception e) {
+            logger.error("Can't push tracing span: {}", span, e);
+        }
     }
 
     @Override
