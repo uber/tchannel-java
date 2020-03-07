@@ -136,7 +136,8 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                         popSpan(span, listener);
                     }
                 } finally {
-                    if (listenerCount.decrementAndGet() <= 0) {
+                    int remainingListeners = listenerCount.decrementAndGet();
+                    if (remainingListeners <= 0) {
                         if (response != null) {
                             response.release();
                         }
