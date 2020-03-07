@@ -128,31 +128,42 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         super.addListener(new Runnable() {
             @Override
             public void run() {
-                if (span != null) {
-                    tracingContext.pushSpan(span);
-                }
                 try {
-                    listener.run();
-                } finally {
-                    if (span != null) {
-                        try { // this _might_ fail in case the listener managed to corrupt the tracing context
-                            Span poppedSpan = tracingContext.popSpan();
-                            if (!span.equals(poppedSpan)) {
-                                logger.error(
-                                    "Corrupted tracing context after running listener {}: expected span {} but got {}",
-                                    listener, span, poppedSpan
-                                );
-                            }
-                        } catch (EmptyStackException e) {
-                            logger.error("Corrupted (empty) tracing context after running listener {}", listener, e);
-                        }
+                    try {
+                        pushSpan(span);
+                        listener.run();
+                    } finally {
+                        popSpan(span, listener);
                     }
-                    if (listenerCount.decrementAndGet() == 0) {
+                } finally {
+                    if (listenerCount.decrementAndGet() <= 0) {
                         response.release();
                     }
                 }
             }
         }, exec);
+    }
+
+    private void popSpan(Span span, Runnable listener) {
+        if (span != null) {
+            try { // this _might_ fail in case the listener managed to corrupt the tracing context
+                Span poppedSpan = tracingContext.popSpan();
+                if (!span.equals(poppedSpan)) {
+                    logger.error(
+                        "Corrupted tracing context after running listener {}: expected span {} but got {}",
+                        listener, span, poppedSpan
+                    );
+                }
+            } catch (EmptyStackException e) {
+                logger.error("Corrupted (empty) tracing context after running listener {}", listener, e);
+            }
+        }
+    }
+
+    private void pushSpan(Span span) {
+        if (span != null) {
+            tracingContext.pushSpan(span);
+        }
     }
 
     @Override
