@@ -1,6 +1,9 @@
 package com.uber.tchannel.api;
 
+<<<<<<< HEAD
 import com.google.common.util.concurrent.MoreExecutors;
+=======
+>>>>>>> Don't count Response listener if result is not sucessfully returned
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
@@ -15,8 +18,11 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+<<<<<<< HEAD
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+=======
+>>>>>>> Don't count Response listener if result is not sucessfully returned
 
 public class TFutureTest {
 
@@ -71,6 +77,7 @@ public class TFutureTest {
         assertNull(response.getArg3());
     }
 
+<<<<<<< HEAD
     @Test
     public void testTfutureResponseNotAutoReleasedIfBlockingGetCalledFirst() throws Exception {
         ThriftResponse<Example> response = prepareResponse();
@@ -148,6 +155,8 @@ public class TFutureTest {
         assertNull(response.getArg3());
     }
 
+=======
+>>>>>>> Don't count Response listener if result is not sucessfully returned
     @NotNull
     private ThriftResponse<Example> prepareResponse() {
         ThriftRequest<Example> request = new ThriftRequest.Builder<Example>("keyvalue-service", "KeyValue::setValue")
