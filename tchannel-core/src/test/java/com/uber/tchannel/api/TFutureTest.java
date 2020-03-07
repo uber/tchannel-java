@@ -1,6 +1,7 @@
 package com.uber.tchannel.api;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.messages.ThriftRequest;
 import com.uber.tchannel.messages.ThriftResponse;
@@ -12,6 +13,7 @@ import org.junit.Test;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
