@@ -56,6 +56,16 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     private static final Logger logger = LoggerFactory.getLogger(TFuture.class);
 
     /**
+     * Tracks whether code is being executed inside listener
+     */
+    private final java.lang.ThreadLocal<Boolean> insideListener =
+        new java.lang.ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue() {
+                return Boolean.FALSE;
+            }
+        };
+    /**
      * Create future. Example usage: {@code TFuture<RawResponse> future = TFuture.create(...); }.
      */
     public static @NotNull <T extends Response> TFuture<T> create(
@@ -131,6 +141,10 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
             @Override
             public void run() {
                 try {
+                    // indicates that code is being executed inside listener
+                    // since some of the listeners like com.google.common.util.concurrent.Futures.CallbackListener call #get(),
+                    // we don't want to double count those listener in `listenerCount` variable
+                    insideListener.set(Boolean.TRUE);
                     try {
                         pushSpan(span);
                         listener.run();
@@ -138,6 +152,7 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                         popSpan(span, listener);
                     }
                 } finally {
+                    insideListener.remove();
                     // if ALL listeners were given a CHANCE to run, then release response regardless:
                     // a) whether listener actually ran or not;
                     // b) whether tracing was pushed/popped or not;
@@ -182,7 +197,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
         //
         // For ex., certain code paths like com.google.common.util.concurrent.Futures.CallbackListener call this method
         // multiple times if INTERRUPTED, see Uninterruptibles#getUninterruptibly(java.util.concurrent.Future<V>)
-        listenerCount.incrementAndGet();
+        if (!insideListener.get()) {
+            listenerCount.incrementAndGet();
+        }
 
         return result;
     }
