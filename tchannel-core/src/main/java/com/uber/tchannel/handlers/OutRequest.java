@@ -196,7 +196,8 @@ public final class OutRequest<V extends Response> {
     @SuppressWarnings({"rawtypes", "unchecked"})
     protected void setResponseFuture(ArgScheme argScheme, Response response) {
         if (response != null) {
-            response.touch("OutRequest.setResponseFuture(" + argScheme + ")");
+            String requestString = request == null ? "<unknown_request>" : this.request.toString();
+            response.touch("OutRequest.setResponseFuture(" + argScheme + ", " + requestString + ")");
         }
         switch (argScheme) {
             case RAW:

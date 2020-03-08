@@ -133,9 +133,10 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     }
 
     @Override
-    public void addListener(final Runnable listener, Executor exec) {
+    public void addListener(final Runnable listener, final Executor exec) {
+        final String listenerAsString = "listener:" + listener.getClass() + "/" + listener.toString();
         if (response != null) {
-            response.touch("TFuture.addListener(..)");
+            response.touch("TFuture.addListener(..) "+ listenerAsString);
         }
         listenerCount.incrementAndGet();
         // this is the current span of whomever is adding the listener - preserve it for the invocation of the latter
@@ -147,8 +148,7 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
                     try {
                         pushSpan(span);
                         if (response != null) {
-                            response.touch(
-                                "TFuture.addListener(..) - before listener run(" + listener.getClass() + "/" + listener.toString() + ")");
+                            response.touch("TFuture.addListener(..) - before listener run(" + listenerAsString + ")");
                         }
                         listener.run();
                     } finally {
