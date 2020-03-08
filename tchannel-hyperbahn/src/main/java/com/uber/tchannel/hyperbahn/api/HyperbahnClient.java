@@ -109,29 +109,21 @@ public final class HyperbahnClient {
         future.addCallback(new TFutureCallback<JsonResponse<AdvertiseResponse>>() {
             @Override
             public void onResponse(JsonResponse<AdvertiseResponse> response) {
-                boolean responseOpen = true;
-                try {
-                    if (response.isError()) {
-                        try (ErrorResponse error = response.getError()) {
-                            responseOpen = close(response);
-                            logger.error(
-                                "Failed to advertise to Hyperbahn: {} - {}",
-                                error.getErrorType(),
-                                error.getMessage()
-                            );
-                        }
-                    }
-
-                    if (destroyed.get()) {
-                        return;
-                    }
-
-                    scheduleAdvertise();
-                } finally {
-                    if (responseOpen) {
-                        close(response);
+                if (response.isError()) {
+                    try (ErrorResponse error = response.getError()) {
+                        logger.error(
+                            "Failed to advertise to Hyperbahn: {} - {}",
+                            error.getErrorType(),
+                            error.getMessage()
+                        );
                     }
                 }
+
+                if (destroyed.get()) {
+                    return;
+                }
+
+                scheduleAdvertise();
             }
         });
 
@@ -164,7 +156,13 @@ public final class HyperbahnClient {
         advertiseTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                advertise();
+                // We're the last consumer of this response. We should release it afterwards.
+                advertise().addCallback(new TFutureCallback<JsonResponse<AdvertiseResponse>>() {
+                    @Override
+                    public void onResponse(JsonResponse<AdvertiseResponse> response) {
+                        close(response);
+                    }
+                });
             }
         }, advertiseInterval);
     }
