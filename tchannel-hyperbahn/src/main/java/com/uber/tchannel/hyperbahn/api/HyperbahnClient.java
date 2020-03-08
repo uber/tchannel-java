@@ -31,10 +31,12 @@ import com.uber.tchannel.api.handlers.TFutureCallback;
 import com.uber.tchannel.channels.Connection;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseRequest;
 import com.uber.tchannel.hyperbahn.messages.AdvertiseResponse;
+import com.uber.tchannel.messages.ErrorResponse;
 import com.uber.tchannel.messages.JsonRequest;
 import com.uber.tchannel.messages.JsonResponse;
 import java.io.FileInputStream;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,9 +110,13 @@ public final class HyperbahnClient {
             @Override
             public void onResponse(JsonResponse<AdvertiseResponse> response) {
                 if (response.isError()) {
-                    logger.error("Failed to advertise to Hyperbahn: {} - {}",
-                        response.getError().getErrorType(),
-                        response.getError().getMessage());
+                    try (ErrorResponse error = response.getError()) {
+                        logger.error(
+                            "Failed to advertise to Hyperbahn: {} - {}",
+                            error.getErrorType(),
+                            error.getMessage()
+                        );
+                    }
                 }
 
                 if (destroyed.get()) {
@@ -124,6 +130,24 @@ public final class HyperbahnClient {
         return future;
     }
 
+    /**
+     * Tries to close the {@link AutoCloseable}, returns `true` if it's still open. Doesn't throw any
+     * exceptions.
+     */
+    protected static boolean close(@Nullable AutoCloseable closeable) {
+        if (closeable == null) {
+            return false;
+        } else {
+            try {
+                closeable.close();
+                return false;
+            } catch (Exception e) {
+                logger.error("Exception closing an instance of '{}'", closeable.getClass().getName(), e);
+                return true;
+            }
+        }
+    }
+
     private void scheduleAdvertise() {
         if (destroyed.get()) {
             return;
@@ -132,7 +156,13 @@ public final class HyperbahnClient {
         advertiseTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                advertise();
+                // We're the last consumer of this response. We should release it afterwards.
+                advertise().addCallback(new TFutureCallback<JsonResponse<AdvertiseResponse>>() {
+                    @Override
+                    public void onResponse(JsonResponse<AdvertiseResponse> response) {
+                        close(response);
+                    }
+                });
             }
         }, advertiseInterval);
     }
