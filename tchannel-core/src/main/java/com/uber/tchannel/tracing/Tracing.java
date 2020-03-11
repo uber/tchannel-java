@@ -31,6 +31,7 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import io.jaegertracing.internal.JaegerSpanContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -89,7 +90,18 @@ public final class Tracing {
             }
         }
 
-        // TODO if tracer is Zipkin compatible, inject Trace fields
+        // if Jaeger span context, set Trace fields
+        if (span.context() instanceof JaegerSpanContext) {
+            JaegerSpanContext jaegerSpanContext = (JaegerSpanContext) span.context();
+            Trace trace = new Trace(
+                jaegerSpanContext.getSpanId(),
+                jaegerSpanContext.getParentId(),
+                // tchannel only support 64bit IDs, https://github.com/uber/tchannel/blob/master/docs/protocol.md#tracing
+                jaegerSpanContext.getTraceIdLow(),
+                jaegerSpanContext.getFlags());
+            request.setTrace(trace);
+        }
+
         // if request has headers, inject tracing context
         if (request instanceof TraceableRequest) {
             TraceableRequest traceableRequest = (TraceableRequest) request;
@@ -141,7 +153,16 @@ public final class Tracing {
                 logger.error("Failed to extract span context from headers", e);
             }
         } else {
-            // TODO if tracer is Zipkin compatible, extract parent from Trace fields
+            // extract parent from request Trace fields
+            Trace trace = request.getTrace();
+            JaegerSpanContext jaegerSpanContext = new JaegerSpanContext(
+                // tchannel only support 64bit IDs, https://github.com/uber/tchannel/blob/master/docs/protocol.md#tracing
+                0,
+                trace.traceId,
+                trace.spanId,
+                trace.parentId,
+                trace.traceFlags);
+            builder.asChildOf(jaegerSpanContext);
         }
 
         builder

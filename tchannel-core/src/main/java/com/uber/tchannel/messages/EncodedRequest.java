@@ -24,6 +24,7 @@ package com.uber.tchannel.messages;
 
 import com.google.common.collect.ImmutableMap;
 import com.uber.tchannel.headers.ArgScheme;
+import com.uber.tchannel.tracing.Trace;
 import com.uber.tchannel.tracing.TraceableRequest;
 import com.uber.tchannel.utils.TChannelUtilities;
 import io.netty.buffer.ByteBuf;
@@ -47,10 +48,10 @@ public abstract class EncodedRequest<T> extends Request implements TraceableRequ
         this.headers = builder.headers;
     }
 
-    protected EncodedRequest(long id, long ttl,
+    protected EncodedRequest(long id, long ttl, Trace trace,
                          String service, Map<String, String> transportHeaders,
                          ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
-        super(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+        super(id, ttl, trace, service, transportHeaders, arg1, arg2, arg3);
     }
 
     @Override

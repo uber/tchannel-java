@@ -89,7 +89,7 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
                     request.getId(),
                     (byte)0,
                     request.getTTL(),
-                    new Trace(0, 0, 0, (byte) 0x00),
+                    request.getTrace(),
                     request.getService(),
                     request.getTransportHeaders(),
                     ChecksumType.NoChecksum,
