@@ -28,6 +28,7 @@ import com.uber.tchannel.handlers.OutRequest;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
@@ -138,13 +139,14 @@ public final class Tracing {
     ) throws RuntimeException {
         tracingContext.clear();
         Tracer.SpanBuilder builder = tracer.buildSpan(request.getEndpoint());
+        SpanContext parent = null;
 
         if (request instanceof TraceableRequest) {
             TraceableRequest traceableRequest = (TraceableRequest) request;
             Map<String, String> headers = traceableRequest.getHeaders();
             PrefixedHeadersCarrier carrier = new PrefixedHeadersCarrier(headers);
             try {
-                builder.asChildOf(tracer.extract(Format.Builtin.TEXT_MAP, carrier));
+                parent = tracer.extract(Format.Builtin.TEXT_MAP, carrier);
                 Map<String, String> nonTracingHeaders = carrier.getNonTracingHeaders();
                 if (nonTracingHeaders.size() < headers.size()) {
                     traceableRequest.setHeaders(nonTracingHeaders);
@@ -152,20 +154,22 @@ public final class Tracing {
             } catch (RuntimeException e) {
                 logger.error("Failed to extract span context from headers", e);
             }
-        } else {
-            // extract parent from request Trace fields
+        }
+
+        // if parent isn't in headers, try to extract parent from request Trace fields
+        if (parent == null && request.getTrace() != null) {
             Trace trace = request.getTrace();
-            JaegerSpanContext jaegerSpanContext = new JaegerSpanContext(
+            parent = new JaegerSpanContext(
                 // tchannel only support 64bit IDs, https://github.com/uber/tchannel/blob/master/docs/protocol.md#tracing
                 0,
                 trace.traceId,
                 trace.spanId,
                 trace.parentId,
                 trace.traceFlags);
-            builder.asChildOf(jaegerSpanContext);
         }
 
         builder
+            .asChildOf(parent)
             .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
             .withTag("as", request.getArgScheme().name());
         Map<String, String> transportHeaders = request.getTransportHeaders();

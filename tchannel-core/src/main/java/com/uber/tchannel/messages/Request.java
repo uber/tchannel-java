@@ -40,7 +40,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public abstract class Request implements RawMessage {
-    private static final Trace DUMMY_TRACE = new Trace(0, 0, 0, (byte) 0x00);
 
     protected final FrameType type = FrameType.CallRequest;
 
@@ -231,7 +230,7 @@ public abstract class Request implements RawMessage {
     }
 
     public Trace getTrace() {
-        return trace == null ? DUMMY_TRACE : trace;
+        return trace;
     }
 
     public long getTTL() {
