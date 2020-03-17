@@ -176,13 +176,18 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
 
     @Override
     public V get() throws InterruptedException, ExecutionException {
-        V result = super.get();
-
+        V result;
         // Don't double count number of outstanding consumers of Response<V> if #get() fail.
         //
         // For ex., certain code paths like com.google.common.util.concurrent.Futures.CallbackListener call this method
         // multiple times if INTERRUPTED, see Uninterruptibles#getUninterruptibly(java.util.concurrent.Future<V>)
-        listenerCount.incrementAndGet();
+        try {
+            listenerCount.incrementAndGet();
+            result = super.get();
+        } catch (InterruptedException ex) {
+            listenerCount.decrementAndGet();
+            throw ex;
+        }
 
         return result;
     }
