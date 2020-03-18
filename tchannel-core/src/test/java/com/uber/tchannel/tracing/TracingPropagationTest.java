@@ -40,6 +40,7 @@ import io.jaegertracing.spi.Sampler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import org.jetbrains.annotations.NotNull;
@@ -147,6 +148,8 @@ public class TracingPropagationTest {
         boolean sampled;
         String baggage;
         TraceResponse downstream;
+        // Captures the trace fields in the request
+        Trace requestTrace;
 
         @Override
         public String toString() {
@@ -163,7 +166,7 @@ public class TracingPropagationTest {
         @Override
         public JsonResponse<TraceResponse> handleImpl(JsonRequest<String> request) {
             String encodings = request.getBody(String.class);
-            TraceResponse response = observeSpanAndDownstream(encodings);
+            TraceResponse response = observeSpanAndDownstream(encodings, request.getTrace());
             return new JsonResponse.Builder<TraceResponse>(request)
                     .setTransportHeaders(request.getTransportHeaders())
                     .setBody(response)
@@ -175,7 +178,7 @@ public class TracingPropagationTest {
         @Override
         public ThriftResponse<Example> handleImpl(ThriftRequest<Example> request) {
             String encodings = request.getBody(Example.class).getAString();
-            TraceResponse response = observeSpanAndDownstream(encodings);
+            TraceResponse response = observeSpanAndDownstream(encodings, request.getTrace());
             ByteBuf bytes = new JSONSerializer().encodeBody(response);
             Example thriftResponse = new Example(new String(bytes.array(), StandardCharsets.UTF_8), 0);
             bytes.release();
@@ -200,7 +203,7 @@ public class TracingPropagationTest {
                         // continue the same span
                         tracingContext.pushSpan(span);
                         String encodings = request.getBody(Example.class).getAString();
-                        TraceResponse traceResponse = observeSpanAndDownstream(encodings);
+                        TraceResponse traceResponse = observeSpanAndDownstream(encodings, request.getTrace());
                         ByteBuf bytes = new JSONSerializer().encodeBody(traceResponse);
                         Example thriftResponse = new Example(new String(bytes.array(), StandardCharsets.UTF_8), 0);
                         bytes.release();
@@ -223,10 +226,11 @@ public class TracingPropagationTest {
         }
     }
 
-    private static TraceResponse observeSpanAndDownstream(String encodings) {
+    private static TraceResponse observeSpanAndDownstream(String encodings, Trace requestTrace) {
         Span span = tracingContext.currentSpan();
         TraceResponse response = new TraceResponse();
         JaegerSpanContext context = (JaegerSpanContext) span.context();
+        response.requestTrace = requestTrace;
         response.traceId = context.toTraceId();
         response.sampled = context.isSampled();
         response.baggage = span.getBaggageItem(BAGGAGE_KEY);
@@ -335,6 +339,7 @@ public class TracingPropagationTest {
             assertEquals("Only requests with 'pass' baggage should pass", "pass", customBaggage);
             List<String> encodings = new ArrayList<>(Arrays.asList(forwardEncodings.split(",")));
             validate(encodings, traceId, baggage, response);
+            validateRequestTrace(span.context(), response.requestTrace);
             if (sampled) {
                 for (int i = 0; i < 100; i++) {
                     if (reporter.getSpans().size() == 4) {
@@ -359,6 +364,22 @@ public class TracingPropagationTest {
         if (encodings.isEmpty()) return;
         assertNotNull("Expecting downstream response", response.downstream);
         validate(encodings, traceId, baggage, response.downstream);
+    }
+
+    /**
+     * Validates that span information is encoded in request (call request frame, not headers) and propagated through.
+     *
+     * @param upstreamSpanContext the upstream span context, i.e., the root span context
+     * @param requestTrace trace information as part of request
+     */
+    private void validateRequestTrace(SpanContext upstreamSpanContext, Trace requestTrace) {
+        assertNotNull(requestTrace);
+        JaegerSpanContext upstreamContext = (JaegerSpanContext) upstreamSpanContext;
+        assertEquals(upstreamContext.getTraceIdLow(), requestTrace.traceId);
+        // span encoded in request is child span of upstream span
+        assertEquals(upstreamContext.getSpanId(), requestTrace.parentId);
+        assertNotEquals(upstreamContext.getSpanId(), requestTrace.spanId);
+        assertEquals(upstreamContext.getFlags(), requestTrace.traceFlags);
     }
 
     /** Custom {@link TracingContext} implementation with request span interceptors. */

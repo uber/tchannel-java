@@ -27,6 +27,7 @@ import com.uber.tchannel.frames.FrameType;
 import com.uber.tchannel.headers.ArgScheme;
 import com.uber.tchannel.headers.RetryFlag;
 import com.uber.tchannel.headers.TransportHeaders;
+import com.uber.tchannel.tracing.Trace;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -41,6 +42,8 @@ import java.util.concurrent.TimeUnit;
 public abstract class Request implements RawMessage {
 
     protected final FrameType type = FrameType.CallRequest;
+
+    protected Trace trace = null;
 
     protected long id = -1;
     protected String service = null;
@@ -65,11 +68,12 @@ public abstract class Request implements RawMessage {
         this.retryLimit = builder.retryLimit;
     }
 
-    protected Request(long id, long ttl,
+    protected Request(long id, long ttl, Trace trace,
                       String service, Map<String, String> transportHeaders,
                       ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         this.id = id;
         this.ttl = ttl;
+        this.trace = trace;
         this.service = service;
         this.arg1 = arg1;
         this.arg2 = arg2;
@@ -221,6 +225,14 @@ public abstract class Request implements RawMessage {
         this.id = id;
     }
 
+    public void setTrace(Trace trace) {
+        this.trace = trace;
+    }
+
+    public Trace getTrace() {
+        return trace;
+    }
+
     public long getTTL() {
         return ttl;
     }
@@ -280,7 +292,7 @@ public abstract class Request implements RawMessage {
         setTransportHeader(TransportHeaders.RETRY_FLAGS_KEY, flags);
     }
 
-    public static @Nullable Request build(long id, long ttl,
+    public static @Nullable Request build(long id, long ttl, Trace trace,
                                 String service, Map<String, String> transportHeaders,
                                 ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         ArgScheme argScheme = ArgScheme.toScheme(transportHeaders.get(TransportHeaders.ARG_SCHEME_KEY));
@@ -288,22 +300,22 @@ public abstract class Request implements RawMessage {
             return null;
         }
 
-        return Request.build(argScheme, id, ttl, service, transportHeaders, arg1, arg2, arg3);
+        return Request.build(argScheme, id, ttl, trace, service, transportHeaders, arg1, arg2, arg3);
     }
 
-    public static @Nullable Request build(ArgScheme argScheme, long id, long ttl,
+    public static @Nullable Request build(ArgScheme argScheme, long id, long ttl, Trace trace,
                                 String service, Map<String, String> transportHeaders,
                                 ByteBuf arg1, ByteBuf arg2, ByteBuf arg3) {
         Request req;
         switch (argScheme) {
             case RAW:
-                req = new RawRequest(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+                req = new RawRequest(id, ttl, trace, service, transportHeaders, arg1, arg2, arg3);
                 break;
             case JSON:
-                req = new JsonRequest<>(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+                req = new JsonRequest<>(id, ttl, trace, service, transportHeaders, arg1, arg2, arg3);
                 break;
             case THRIFT:
-                req = new ThriftRequest<>(id, ttl, service, transportHeaders, arg1, arg2, arg3);
+                req = new ThriftRequest<>(id, ttl, trace, service, transportHeaders, arg1, arg2, arg3);
                 break;
             default:
                 req = null;

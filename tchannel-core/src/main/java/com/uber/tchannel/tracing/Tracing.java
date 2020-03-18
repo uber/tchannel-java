@@ -28,9 +28,11 @@ import com.uber.tchannel.handlers.OutRequest;
 import com.uber.tchannel.messages.Request;
 import com.uber.tchannel.messages.Response;
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import io.jaegertracing.internal.JaegerSpanContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -89,7 +91,18 @@ public final class Tracing {
             }
         }
 
-        // TODO if tracer is Zipkin compatible, inject Trace fields
+        // if Jaeger span context, set Trace fields
+        if (span.context() instanceof JaegerSpanContext) {
+            JaegerSpanContext jaegerSpanContext = (JaegerSpanContext) span.context();
+            Trace trace = new Trace(
+                jaegerSpanContext.getSpanId(),
+                jaegerSpanContext.getParentId(),
+                // tchannel only support 64bit IDs, https://github.com/uber/tchannel/blob/master/docs/protocol.md#tracing
+                jaegerSpanContext.getTraceIdLow(),
+                jaegerSpanContext.getFlags());
+            request.setTrace(trace);
+        }
+
         // if request has headers, inject tracing context
         if (request instanceof TraceableRequest) {
             TraceableRequest traceableRequest = (TraceableRequest) request;
@@ -126,13 +139,14 @@ public final class Tracing {
     ) throws RuntimeException {
         tracingContext.clear();
         Tracer.SpanBuilder builder = tracer.buildSpan(request.getEndpoint());
+        SpanContext parent = null;
 
         if (request instanceof TraceableRequest) {
             TraceableRequest traceableRequest = (TraceableRequest) request;
             Map<String, String> headers = traceableRequest.getHeaders();
             PrefixedHeadersCarrier carrier = new PrefixedHeadersCarrier(headers);
             try {
-                builder.asChildOf(tracer.extract(Format.Builtin.TEXT_MAP, carrier));
+                parent = tracer.extract(Format.Builtin.TEXT_MAP, carrier);
                 Map<String, String> nonTracingHeaders = carrier.getNonTracingHeaders();
                 if (nonTracingHeaders.size() < headers.size()) {
                     traceableRequest.setHeaders(nonTracingHeaders);
@@ -140,11 +154,22 @@ public final class Tracing {
             } catch (RuntimeException e) {
                 logger.error("Failed to extract span context from headers", e);
             }
-        } else {
-            // TODO if tracer is Zipkin compatible, extract parent from Trace fields
+        }
+
+        // if parent isn't in headers, try to extract parent from request Trace fields
+        if (parent == null && request.getTrace() != null) {
+            Trace trace = request.getTrace();
+            parent = new JaegerSpanContext(
+                // tchannel only support 64bit IDs, https://github.com/uber/tchannel/blob/master/docs/protocol.md#tracing
+                0,
+                trace.traceId,
+                trace.spanId,
+                trace.parentId,
+                trace.traceFlags);
         }
 
         builder
+            .asChildOf(parent)
             .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
             .withTag("as", request.getArgScheme().name());
         Map<String, String> transportHeaders = request.getTransportHeaders();

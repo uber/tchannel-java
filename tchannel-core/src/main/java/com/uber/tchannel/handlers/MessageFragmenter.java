@@ -45,6 +45,8 @@ import java.util.List;
 
 public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
 
+    private static final Trace DUMMY_TRACE = new Trace(0, 0, 0, (byte) 0x00);
+
     @Override
     protected void encode(ChannelHandlerContext ctx, RawMessage msg, List<Object> out) throws Exception {
         writeFrames(ctx, msg, out);
@@ -89,7 +91,8 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
                     request.getId(),
                     (byte)0,
                     request.getTTL(),
-                    new Trace(0, 0, 0, (byte) 0x00),
+                    // trace is required to be nonNull down the stack when frame is encoded
+                    request.getTrace() == null ? DUMMY_TRACE : request.getTrace(),
                     request.getService(),
                     request.getTransportHeaders(),
                     ChecksumType.NoChecksum,
@@ -112,7 +115,7 @@ public class MessageFragmenter extends MessageToMessageEncoder<RawMessage> {
                     response.getId(),
                     (byte)0,
                     response.getResponseCode(),
-                    new Trace(0, 0, 0, (byte) 0x00),
+                    DUMMY_TRACE,
                     response.getTransportHeaders(),
                     ChecksumType.NoChecksum,
                     0,

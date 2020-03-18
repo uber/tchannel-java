@@ -141,6 +141,7 @@ public final class MessageCodec {
             scheme,
             first.getId(),
             first.getTTL(),
+            first.getTracing(),
             first.getService(),
             first.getHeaders(),
             args.get(0),
