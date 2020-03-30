@@ -6,6 +6,7 @@ import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.TFuture;
 import com.uber.tchannel.api.handlers.AsyncRequestHandler;
+import com.uber.tchannel.errors.BadRequestError;
 import com.uber.tchannel.errors.BusyError;
 import com.uber.tchannel.errors.ErrorType;
 import com.uber.tchannel.messages.RawRequest;
@@ -16,6 +17,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetAddress;
+import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -45,7 +47,7 @@ public class RequestRouterTest {
 
     @Test
     public void returnUnexpectedErrorOnThrowable() throws Exception {
-        handler.setThrowable(new RuntimeException());
+        handler.setThrowable(new RuntimeException("unexpected error"));
 
         RawRequest req = new RawRequest.Builder("service", "endpoint").build();
 
@@ -67,6 +69,12 @@ public class RequestRouterTest {
             "Throwable must be mapped to ErrorType.UnexpectedError",
             response.getError().getErrorType(),
             equalTo(ErrorType.UnexpectedError)
+        );
+
+        assertThat(
+            "ProtocolError must be mapped to its message",
+            response.getError().getMessage(),
+            equalTo("Failed to handle the request: unexpected error")
         );
     }
 
@@ -94,6 +102,47 @@ public class RequestRouterTest {
             "ProtocolError must be mapped to its ErrorType",
             response.getError().getErrorType(),
             equalTo(ErrorType.Busy)
+        );
+
+        assertThat(
+            "ProtocolError must be mapped to its message",
+            response.getError().getMessage(),
+            equalTo("busy")
+        );
+    }
+
+    @Test
+    public void propagateErrorCodeOnProtocolErrorCause() throws Exception {
+        handler.setThrowable(new RuntimeException(
+            new ExecutionException(new BadRequestError("bad request", null, 0))
+        ));
+
+        RawRequest req = new RawRequest.Builder("service", "endpoint").build();
+
+        TFuture<RawResponse> responseTFuture = subChannel.send(
+            req,
+            tchannel.getHost(),
+            tchannel.getListeningPort()
+        );
+
+        RawResponse response = responseTFuture.get();
+
+        assertThat(
+            "Failed future must result in an error",
+            response.getError(),
+            notNullValue()
+        );
+
+        assertThat(
+            "ProtocolError must be mapped to its ErrorType",
+            response.getError().getErrorType(),
+            equalTo(ErrorType.BadRequest)
+        );
+
+        assertThat(
+            "ProtocolError must be mapped to its message",
+            response.getError().getMessage(),
+            equalTo("bad request")
         );
     }
 
