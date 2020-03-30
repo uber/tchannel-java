@@ -158,18 +158,32 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
                 logger.error("Failed to handle the request due to exception.", throwable);
 
                 ErrorType errorType = null;
+                String message = null;
+
                 if (throwable instanceof ProtocolError) {
                     ProtocolError protocolError = (ProtocolError) throwable;
                     errorType = protocolError.getErrorType();
+                    message = protocolError.getMessage();
+                } else {
+                    Throwable cause = throwable.getCause();
+                    while (cause != null) {
+                        if (cause instanceof ProtocolError) {
+                            ProtocolError protocolError = (ProtocolError) cause;
+                            errorType = protocolError.getErrorType();
+                            message = protocolError.getMessage();
+                            break;
+                        }
+                        cause = cause.getCause();
+                    }
                 }
 
                 if (errorType == null) {
                     errorType = ErrorType.UnexpectedError;
                 }
-
-                sendError(
-                    errorType, "Failed to handle the request: " + throwable.getMessage(), request, ctx
-                );
+                if (message == null) {
+                    message = "Failed to handle the request: " + throwable.getMessage();
+                }
+                sendError(errorType, message, request, ctx);
             }
 
         }, listeningExecutorService);
