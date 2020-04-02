@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.uber.tchannel.api.ResponseCode;
 import com.uber.tchannel.api.SubChannel;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.handlers.AsyncRequestHandler;
@@ -41,6 +42,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.opentracing.Span;
+import io.opentracing.log.Fields;
+import io.opentracing.tag.Tags;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -251,13 +254,20 @@ public class RequestRouter extends SimpleChannelInboundHandler<Request> {
         Futures.addCallback(responseFuture, new FutureCallback<Response>() {
             @Override
             public void onSuccess(Response response) {
+                if (response != null
+                    && response.getResponseCode() == ResponseCode.Error
+                    && span != null) {
+                    span.setTag(Tags.ERROR, true);
+                }
+
                 closeRequestAndSpan();
             }
 
             @Override
             public void onFailure(@NotNull Throwable e) {
                 if (span != null) {
-                    span.log(ImmutableMap.of("exception", e));
+                    span.setTag(Tags.ERROR, true);
+                    span.log(ImmutableMap.of(Fields.ERROR_OBJECT, e));
                 }
                 closeRequestAndSpan();
             }
