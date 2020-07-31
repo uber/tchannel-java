@@ -22,6 +22,7 @@
 
 package com.uber.tchannel.handlers;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.uber.tchannel.api.TChannel;
 import com.uber.tchannel.api.errors.TChannelConnectionReset;
 import com.uber.tchannel.channels.PeerManager;
@@ -66,6 +67,14 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
 
     public ResponseRouter(@NotNull TChannel topChannel, @NotNull HashedWheelTimer timer) {
         this.peerManager = topChannel.getPeerManager();
+        this.resetOnTimeoutLimit = topChannel.getResetOnTimeoutLimit();
+        this.timer = timer;
+        this.maxPendingRequests = topChannel.getClientMaxPendingRequests();
+    }
+
+    @VisibleForTesting
+    ResponseRouter(@NotNull TChannel topChannel, @NotNull PeerManager peerManager, @NotNull HashedWheelTimer timer) {
+        this.peerManager = peerManager;
         this.resetOnTimeoutLimit = topChannel.getResetOnTimeoutLimit();
         this.timer = timer;
         this.maxPendingRequests = topChannel.getClientMaxPendingRequests();
@@ -183,6 +192,11 @@ public class ResponseRouter extends SimpleChannelInboundHandler<ResponseMessage>
         }
 
         if (response != null) {
+            // Reset timeout counter if we receive a non-timeout response.
+            if (!(response.isError() &&
+                    ErrorType.Timeout.equals(((ErrorResponse) response).getErrorType()))) {
+                timeouts.set(0);
+            }
             response.touch("ResponseRouter.handleResponse(...)");
         }
 
