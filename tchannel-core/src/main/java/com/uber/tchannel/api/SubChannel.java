@@ -242,7 +242,7 @@ public final class SubChannel {
         return send(request, null, 0);
     }
 
-    protected <V extends Response> TFuture<V> sendRequest(
+    protected <V extends @NotNull Response> TFuture<V> sendRequest(
         Request request,
         InetAddress host,
         int port
