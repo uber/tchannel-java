@@ -42,6 +42,7 @@ import java.util.EmptyStackException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -193,8 +194,9 @@ public final class TFuture<V extends Response> extends AbstractFuture<V> {
     }
 
     @Override
-    public V get(long timeout, TimeUnit unit) {
-        throw new UnsupportedOperationException("Get timeout is unsupported. Use request timeout instead.");
+    public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+		listenerCount.incrementAndGet();
+		return super.get(timeout, unit);
     }
 
     @Override
