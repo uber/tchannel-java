@@ -67,7 +67,7 @@ public class SubPeer {
         }
 
         Peer peer = getPeer();
-        boolean flag = false;
+        boolean flag = false; // DUMMY COMMENT REMOVE ME
         if (peer == null) {
             score = SCORE_UNCONNECTED;
             return flag;
