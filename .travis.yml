@@ -17,9 +17,9 @@ env:
 
 matrix:
   include:
-    - jdk: openjdk7
+    - jdk: openjdk11
       env: CODECOV=true
-    - jdk: openjdk7
+    - jdk: openjdk11
       env: CROSSDOCK=true
 #   - jdk: oraclejdk8
 

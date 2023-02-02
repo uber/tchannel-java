@@ -143,6 +143,11 @@ public final class SubChannel {
             return null;
         }
 
+        // Start at a random spot in the peers list and iterate over it.
+
+        // Pick a SubPeer either that has the highest score.
+        // Stop immediately if you see a peer with the highest-possible score
+        // (SCORE_PREFERRED_DIRECTION).
         int start = new Random().nextInt(peers.size());
         int i = start;
         boolean stop;
@@ -150,6 +155,7 @@ public final class SubChannel {
         do {
             i = (i + 1) % peers.size();
             SubPeer peer = peers.get(i);
+            // Re-score every Peer based on whether we recently used it, whether there's an active connection, etc.
             stop = peer.updateScore(outRequest);
             if (stop || res == null || peer.getScore() > res.getScore()) {
                 res = peer;

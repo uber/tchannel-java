@@ -83,8 +83,10 @@
         <!-- store method parameter names in the bytecode (java 8+) -->
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
+        <java.version>11</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
         <!-- https://issues.apache.org/jira/browse/MCOMPILER-205 -->
         <maven.compiler.useIncrementalCompilation>false</maven.compiler.useIncrementalCompilation>
 
@@ -308,13 +310,13 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.2.0</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
+                    <version>3.10.1</version>
                 </plugin>
 
                 <plugin>
@@ -356,7 +358,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.5.3</version>
+                    <version>3.0.0-M7</version>
                 </plugin>
 
                 <plugin>
@@ -463,7 +465,7 @@
             <id>development</id>
 
             <activation>
-                <jdk>!1.7</jdk>
+                <jdk>11</jdk>
             </activation>
 
             <build>
@@ -472,89 +474,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>com.google.errorprone</groupId>
-                                <artifactId>error_prone_core</artifactId>
-                                <version>2.2.0</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.codehaus.plexus</groupId>
-                                <artifactId>plexus-compiler-javac-errorprone</artifactId>
-                                <version>2.8.2</version>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-
-                            <compilerArgs combine.children="append">
-
-                                <!-- - - - Error Prone flags (http://errorprone.info/docs/flags) - - - -->
-
-                                <!-- Exclude target/generated-[test-]sources from Error Prone analysis -->
-                                <arg>-XepExcludedPaths:\Q${project.build.directory}\E/generated(-test)?-sources/.*</arg>
-
-                                <arg>-XepDisableWarningsInGeneratedCode</arg>
-
-                                <!-- Ignore check names unknown to error prone -->
-                                <arg>-XepIgnoreUnknownCheckNames</arg>
-
-
-                                <!-- - - - Error Prone check tweaks (http://errorprone.info/bugpatterns) - - - -->
-
-                                <!-- Way too many false positives -->
-                                <arg>-Xep:FutureReturnValueIgnored:OFF</arg>
-
-                                <!-- Questionable value: http://errorprone.info/bugpattern/OperatorPrecedence -->
-                                <arg>-Xep:OperatorPrecedence:OFF</arg>
-
-                                <!-- Experimental : ERROR -->
-
-                                <arg>-Xep:ClassName</arg>
-                                <arg>-Xep:ComparisonContractViolated</arg>
-                                <arg>-Xep:DepAnn</arg>
-                                <arg>-Xep:EmptyIf</arg>
-                                <arg>-Xep:LongLiteralLowerCaseSuffix</arg>
-                                <arg>-Xep:NumericEquality</arg>
-                                <!-- false-positives in error-prone 2.2.0 -->
-                                <arg>-Xep:ParameterPackage:OFF</arg>
-
-                                <!-- Experimental : WARNING -->
-
-                                <arg>-Xep:BigDecimalLiteralDouble:ERROR</arg>
-                                <arg>-Xep:EmptyTopLevelDeclaration:ERROR</arg>
-                                <!-- Questionable value: http://errorprone.info/bugpattern/InconsistentOverloads -->
-                                <arg>-Xep:InconsistentOverloads:OFF</arg>
-                                <arg>-Xep:MissingDefault</arg>
-                                <arg>-Xep:NonCanonicalStaticMemberImport</arg>
-                                <arg>-Xep:PrimitiveArrayPassedToVarargsMethod</arg>
-                                <arg>-Xep:StaticQualifiedUsingExpression</arg>
-                                <arg>-Xep:StringEquality</arg>
-                                <arg>-Xep:StringSplit</arg>
-                                <arg>-Xep:TestExceptionChecker</arg>
-                                <arg>-Xep:UnnecessaryDefaultInEnumSwitch</arg>
-
-                                <!-- Experimental : SUGGESTION -->
-
-                                <!-- questionable value -->
-                                <arg>-Xep:ConstantField:OFF</arg>
-                                <arg>-Xep:FieldMissingNullable:WARN</arg>
-                                <arg>-Xep:MethodCanBeStatic</arg>
-                                <arg>-Xep:PackageLocation:ERROR</arg>
-                                <arg>-Xep:ParameterNotNullable:ERROR</arg>
-                                <arg>-Xep:PrivateConstructorForUtilityClass:WARN</arg>
-                                <arg>-Xep:RemoveUnusedImports:ERROR</arg>
-                                <arg>-Xep:ReturnMissingNullable:WARN</arg>
-                                <arg>-Xep:SwitchDefault</arg>
-                                <arg>-Xep:UngroupedOverloads</arg>
-
-                                <!--<arg>-XepAllErrorsAsWarnings</arg>-->
-
-                            </compilerArgs>
-
-                            <compilerId>javac-with-errorprone</compilerId>
-                            <forceJavacCompilerUse>true</forceJavacCompilerUse>
-
-                        </configuration>
                     </plugin>
 
                 </plugins>
